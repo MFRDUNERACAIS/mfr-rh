@@ -109,6 +109,15 @@ input,select,textarea{font-size:16px!important}/* évite zoom auto iOS */
 const SVC=["Pédagogie","Administratif","Vie résidentielle","Direction","AESH"];
 const ANN=[];for(let y=2025;y<=2034;y++)ANN.push(`${y}-${y+1}`);
 const ADM=[{id:"mfr001",pwd:"mfr2024"},{id:"mfr015",pwd:"grodecoeur2024"}];
+const PWDS_CLAIRS={
+  mfr001:"pascale8746",mfr002:"benoit7645",mfr003:"claire8575",mfr004:"mathieu0300",
+  mfr005:"teddy4542",mfr006:"celine8291",mfr007:"fanny9573",mfr008:"aurelie8723",
+  mfr009:"amelie9609",mfr010:"cannelle9771",mfr011:"marie2246",mfr012:"stephanie5294",
+  mfr013:"iric4230",mfr014:"claire0300",mfr015:"sandrine4504",mfr016:"melissa9252",
+  mfr017:"gabriel1315",mfr018:"loic4428",mfr019:"melina4885",mfr020:"marc2201",
+  mfr021:"caroline2906",mfr022:"romain0615",mfr023:"caroline4327",mfr024:"oceane3676",
+  mfr025:"laura7974",mfr026:"asmae9528"
+};
 const MNS=["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
 const JL={lun:"Lundi",mar:"Mardi",mer:"Mercredi",jeu:"Jeudi",ven:"Vendredi",sam:"Samedi"};
 const JK=["lun","mar","mer","jeu","ven","sam"];
@@ -255,7 +264,7 @@ const A={
     // Initialiser les hashes des mots de passe par défaut
     initPwdHashes();
     // Vérification version — force reset si ancienne version
-    const VER="v9";
+    const VER="v10";
     if(K.g("ver")!==VER){K.s("ver",VER);K.s("eq",null);K.s("abs",null);K.s("dem",null);K.s("heu",null);K.s("ord",null);K.s("ses",null);}
     const eq=K.g("eq");A.s.eq=eq&&eq.length>0?eq:JSON.parse(JSON.stringify(EQ0));if(!eq||!eq.length)K.s("eq",A.s.eq);
     const ab=K.g("abs");A.s.abs=ab&&ab.length>0?ab:JSON.parse(JSON.stringify(AB0));if(!ab||!ab.length)K.s("abs",A.s.abs);
@@ -302,14 +311,13 @@ function bLogin(){
     const who=document.getElementById("whs").value,pwd=document.getElementById("pwdsal").value;
     const m=A.s.eq.find(e=>e.id===who);
     if(!m){document.getElementById("lerr2").textContent="⚠ Sélectionnez votre nom";document.getElementById("lerr2").style.display="block";return;}
-    hashPwd(pwd).then(hpwd=>{
-      const storedHash=m.pwhash||PWD_HASHES[who]||"";
-      if(!storedHash||hpwd!==storedHash){
-        document.getElementById("lerr2").textContent="⚠ Mot de passe incorrect";
-        document.getElementById("lerr2").style.display="block";return;
-      }
-      A.s.role="salarie";A.s.user=m;K.s("ses",{role:"salarie",user:m});A.set({vue:"db"});
-    });
+    // Vérification mot de passe salarié
+    const pwdAttendu=m.pw||PWDS_CLAIRS[who]||"";
+    if(!pwdAttendu||pwd!==pwdAttendu){
+      document.getElementById("lerr2").textContent="⚠ Mot de passe incorrect";
+      document.getElementById("lerr2").style.display="block";return;
+    }
+    A.s.role="salarie";A.s.user=m;K.s("ses",{role:"salarie",user:m});A.set({vue:"db"});
 };
   };
 }
@@ -2590,10 +2598,8 @@ function bEQ(){
       const np=prompt(`Nouveau mot de passe pour ${m.pr} ${m.nom} :\n(Laisser vide pour annuler)`);
       if(np===null||np.trim()==="")return;
       if(np.trim().length<4){alert("Le mot de passe doit faire au moins 4 caractères.");return;}
-      hashPwd(np.trim()).then(hpwd=>{
-        const l=A.s.eq.map(x=>x.id===mid?{...x,pwhash:hpwd,pw:undefined}:x);
-        A.save("eq",l);A.toast(`Mot de passe de ${m.pr} réinitialisé ✓`,"success");
-      });
+      const l=A.s.eq.map(x=>x.id===mid?{...x,pw:np.trim(),pwhash:undefined}:x);
+      A.save("eq",l);A.toast(`Mot de passe de ${m.pr} réinitialisé ✓`,"success");
     };
   });
 }
@@ -2606,7 +2612,7 @@ function bMdlSM(){
     const pr=document.getElementById("mbpr").value,nom=document.getElementById("mbno").value,sv=document.getElementById("mbsv").value;
     if(!pr||!nom||!sv)return;
     const newpw=document.getElementById("mbpw").value.trim();
-    const saveEntry=(pwhash)=>{
+    const saveEntry=(pwhash,pwclair)=>{
       const e={id:i.id||uid(),nom,pr,
         po:document.getElementById("mbpo").value,sv,
         em:document.getElementById("mbem").value,
@@ -2615,14 +2621,14 @@ function bMdlSM(){
         cpp:i.cpp||0,ra:i.ra||0,rp:i.rp||0,
         ttp:parseFloat(document.getElementById("mbtt").value)||0,
         ttu:i.ttu||0,
-        pwhash:pwhash||(i.pwhash||"")
+        pw:pwclair||(i.pw||"")
       };
       const l=i.id?A.s.eq.map(m=>m.id===i.id?e:m):[...A.s.eq,e];
       A.save("eq",l);A.set({modal:null});
       A.toast(i.id?"Membre mis à jour ✓":"Membre ajouté ✓");
     };
-    if(newpw&&newpw.length>=4) hashPwd(newpw).then(hp=>saveEntry(hp));
-    else saveEntry(null);
+    if(newpw&&newpw.length>=4) saveEntry(null,newpw);
+    else saveEntry(null,null);
   };
 }
 
