@@ -2,10 +2,8 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#3A4425">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>MFR Néracais — RH</title>
 <style>
 
@@ -105,7 +103,8 @@ input,select,textarea{font-size:16px!important}/* évite zoom auto iOS */
 <body>
 <div id="app"></div>
 <script>
-// ══ CONFIG ══════════════════════════════════════════════════════
+
+
 const SVC=["Pédagogie","Administratif","Vie résidentielle","Direction","AESH"];
 const ANN=[];for(let y=2025;y<=2034;y++)ANN.push(`${y}-${y+1}`);
 const ADM=[{id:"mfr001",pwd:"mfr2024"},{id:"mfr015",pwd:"grodecoeur2024"}];
@@ -231,14 +230,17 @@ const K={
   g(k){try{const v=localStorage.getItem(`mfr_${k}`);return v?JSON.parse(v):null;}catch{return null;}},
   s(k,v){try{localStorage.setItem(`mfr_${k}`,JSON.stringify(v));}catch{}}
 };
-// ══ SÉCURITÉ — SHA-256 ══════════════════════════════════════════
+// Tri alphabétique Nom puis Prénom
+function sortEq(eq){return [...eq].sort((a,b)=>{const n=(a.nom||"").localeCompare(b.nom||"","fr");return n!==0?n:(a.pr||"").localeCompare(b.pr||"","fr");});}
+
+
 async function sha256(msg){
   const buf=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(msg));
   return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
 }
 async function hashPwd(pwd){return await sha256(pwd);}
-// Hashes SHA-256 pré-calculés des mots de passe initiaux
-// (calculés une fois, stockés sous forme de hash)
+
+
 const PWD_HASHES={};
 async function initPwdHashes(){
   const pwds={
@@ -254,752 +256,9 @@ async function initPwdHashes(){
   for(const[k,v]of Object.entries(pwds)) PWD_HASHES[k]=await sha256(v);
 }
 
-// ══ STATE ════════════════════════════════════════════════════════
-const A={
-  s:{role:null,user:null,vue:"db",toast:null,tT:null,modal:null,eq:[],abs:[],dem:[],heu:[],ord:[],fr:[],eqFiltreArch:false,planAnneeSco:null},
-  set(p){Object.assign(A.s,p);A.r();},
-  toast(msg,ty="success"){if(A.s.tT)clearTimeout(A.s.tT);const t=setTimeout(()=>A.set({toast:null,tT:null}),3200);A.set({toast:{msg,ty},tT:t});},
-  save(k,v){K.s(k,v);A.set({[k]:v});},
-  init(){
-    // Initialiser les hashes des mots de passe par défaut
-    initPwdHashes();
-    // Vérification version — force reset si ancienne version
-    const VER="v10";
-    if(K.g("ver")!==VER){K.s("ver",VER);K.s("eq",null);K.s("abs",null);K.s("dem",null);K.s("heu",null);K.s("ord",null);K.s("ses",null);}
-    const eq=K.g("eq");A.s.eq=eq&&eq.length>0?eq:JSON.parse(JSON.stringify(EQ0));if(!eq||!eq.length)K.s("eq",A.s.eq);
-    const ab=K.g("abs");A.s.abs=ab&&ab.length>0?ab:JSON.parse(JSON.stringify(AB0));if(!ab||!ab.length)K.s("abs",A.s.abs);
-    const dm=K.g("dem");if(dm)A.s.dem=dm;
-    const hr=K.g("heu");if(hr)A.s.heu=hr;
-    const or=K.g("ord");if(or)A.s.ord=or;
-    const frr=K.g("fr");if(frr)A.s.fr=frr;
-    const se=K.g("ses");if(se){A.s.role=se.role;A.s.user=se.user;}
-    A.r();
-  },
-  r(){
-    const el=document.getElementById("app");
-    if(!el)return;
-    if(!A.s.role){el.innerHTML=rLogin();bLogin();return;}
-    el.innerHTML=rMain();bMain();
-  }
-};
-
-// ══ HELPERS HTML ═════════════════════════════════════════════════
-function tBdg(ty,sm=false){const c=TC[ty]||TC["Autre"];return`<span class="bt" style="background:${c.bg};color:${c.c};border-color:${c.b};font-size:${sm?"12px":"14px"}">${c.e} ${ty}</span>`;}
-function sBdg(s){const c={[ST.ATT]:{bg:"#FEF3E2",c:"#B8670A",b:"#E8A030"},[ST.APP]:{bg:"#E8F5EE",c:"#2E7D52",b:"#5AAA80"},[ST.REF]:{bg:"#FDECEA",c:"#C0392B",b:"#E08080"},[ST.ANN]:{bg:"#F0F0F0",c:"#888",b:"#CCC"}}[s]||{bg:"#EEE",c:"#666",b:"#CCC"};return`<span class="bs2" style="background:${c.bg};color:${c.c};border-color:${c.b}">${s}</span>`;}
-function fld(lb,inp,hint=""){return`<div class="fld"><label>${lb}</label>${inp}${hint?`<span style="font-size:15px;color:#888">${hint}</span>`:""}</div>`;}
-function sel(id,opts,val="",ph="",cls=""){const o=opts.map(o=>{const v=o.v!==undefined?o.v:o,l=o.l!==undefined?o.l:o;return`<option value="${v}"${val===v?" selected":""}>${l}</option>`;}).join("");return`<select id="${id}" class="${cls}">${ph?`<option value="">${ph}</option>`:""}${o}</select>`;}
-function mdl(ti,body,w=540){return`<div class="ovl" id="mov"><div class="mdl" style="max-width:${w}px"><div class="mh"><h3>${ti}</h3><button class="mc" id="mcl">×</button></div><div class="mb">${body}</div></div></div>`;}
-
-// ══ LOGIN ════════════════════════════════════════════════════════
-function rLogin(){return`<div class="lgbg"><div class="lgbox"><div class="lglogo">🌿</div><h1 style="text-align:center;font-size:23px;font-weight:800;color:#3A4425;margin-bottom:4px">MFR du Néracais</h1><p style="text-align:center;font-size:15px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:24px">Gestion RH · Équipe</p><div id="lc"><p style="text-align:center;color:#555;font-size:17px;margin-bottom:12px">Qui êtes-vous ?</p><button class="btn bp bfull blg" id="bd" style="margin-bottom:10px">🏫 Direction / Administration</button><button class="btn bg bfull blg" id="bs">👤 Membre de l'équipe</button></div>
-    <div style="margin-top:20px;padding:12px;background:#EEF2E6;border-radius:10px;font-size:12px;color:#555;text-align:center;line-height:1.5">
-      🔒 Vos données sont traitées dans le cadre de votre contrat de travail conformément au RGPD.<br>
-      Responsable de traitement : MFR du Néracais · <a href="mailto:mfr.barbaste@mfr.asso.fr" style="color:#5C6B3A">mfr.barbaste@mfr.asso.fr</a>
-    </div>
-  </div></div></div>`;}
-function bLogin(){
-  const eq=A.s.eq;
-  document.getElementById("bd").onclick=()=>{
-    document.getElementById("lc").innerHTML=`${fld("Votre identité",sel("who",ADM.map(a=>{const m=eq.find(e=>e.id===a.id);return{v:a.id,l:m?`${m.pr} ${m.nom}`:a.id}}),"","-- Choisir --"))}${fld("Mot de passe",'<input type="password" id="pwd" placeholder="••••••••">')}<p id="lerr" style="color:#C0392B;font-size:16px;display:none">⚠ Identifiant ou mot de passe incorrect</p><button class="btn bp bfull" id="bld" style="margin-bottom:10px">Accéder →</button><button class="btn bl bfull bsm" id="brt">← Retour</button><p style="text-align:center;font-size:15px;color:#888;margin-top:8px">Direction : mfr2024 · Sandrine : grodecoeur2024</p>`;
-    document.getElementById("brt").onclick=()=>A.r();
-    document.getElementById("bld").onclick=()=>{const who=document.getElementById("who").value,pwd=document.getElementById("pwd").value,adm=ADM.find(a=>a.id===who&&a.pwd===pwd);if(adm){const m=eq.find(e=>e.id===who)||{id:who,nom:"Direction",pr:""};A.s.role="direction";A.s.user=m;K.s("ses",{role:"direction",user:m});A.set({vue:"db"});}else document.getElementById("lerr").style.display="block";};
-  };
-  document.getElementById("bs").onclick=()=>{
-    document.getElementById("lc").innerHTML=`${fld("Votre nom",sel("whs",A.s.eq.map(m=>({v:m.id,l:`${m.pr} ${m.nom} — ${m.sv||""}`})),"","-- Sélectionner --"))}${fld("Mot de passe",'<input type="password" id="pwdsal" placeholder="••••••••">')}<p id="lerr2" style="color:#C0392B;font-size:16px;display:none">⚠ Sélectionnez votre nom</p><button class="btn bp bfull" id="bls" style="margin-bottom:10px">Accéder →</button><button class="btn bl bfull bsm" id="brt2">← Retour</button>`;
-    document.getElementById("brt2").onclick=()=>A.r();
-    document.getElementById("bls").onclick=()=>{
-    const who=document.getElementById("whs").value,pwd=document.getElementById("pwdsal").value;
-    const m=A.s.eq.find(e=>e.id===who);
-    if(!m){document.getElementById("lerr2").textContent="⚠ Sélectionnez votre nom";document.getElementById("lerr2").style.display="block";return;}
-    // Vérification mot de passe salarié
-    const pwdAttendu=m.pw||PWDS_CLAIRS[who]||"";
-    if(!pwdAttendu||pwd!==pwdAttendu){
-      document.getElementById("lerr2").textContent="⚠ Mot de passe incorrect";
-      document.getElementById("lerr2").style.display="block";return;
-    }
-    A.s.role="salarie";A.s.user=m;K.s("ses",{role:"salarie",user:m});A.set({vue:"db"});
-};
-  };
-}
-
-// ══ LAYOUT PRINCIPAL ═════════════════════════════════════════════
-function rMain(){
-  const {role,user,vue,toast,dem,ord}=A.s;
-  const nAtt=dem.filter(d=>d.st===ST.ATT).length;
-  const nOM=ord.filter(o=>o.st===ST.ATT).length;
-  const nu=user?`${user.pr||""} ${user.nom||""}`.trim():"";
-  const navItems=[
-    {id:"db",ic:"🏠",lb:"Accueil"},
-    {id:"rc",ic:"📋",lb:"Récap"},
-    {id:"dm",ic:"📨",lb:"Demandes",bdg:role==="direction"?nAtt:0},
-    {id:"ab",ic:"📅",lb:"Absences"},
-    {id:"pl",ic:"🗓",lb:"Planning"},
-    {id:"hr",ic:"⏱",lb:"Heures"},
-    {id:"om",ic:"🗺️",lb:"Missions"},
-    ...(role==="direction"?[{id:"fr",ic:"💶",lb:"Frais"},
-    {id:"pc",ic:"🎓",lb:"Classes"},{id:"fi",ic:"📚",lb:"Filières"},{id:"im",ic:"🖨️",lb:"Imprimer"},{id:"eq",ic:"👥",lb:"Équipe"},{id:"pr",ic:"⚙️",lb:"Réglages"}]:[])
-  ];
-  const nav=navItems.map(n=>`<button class="nb${vue===n.id?" on":""}" data-v="${n.id}"><span class="ic">${n.ic}</span><span class="lb">${n.lb}</span>${n.bdg>0?`<span class="bdg">${n.bdg}</span>`:""}</button>`).join("");
-  let content="";
-  if(vue==="db")content=rDB();
-  else if(vue==="rc")content=rRC();
-  else if(vue==="dm")content=rDM();
-  else if(vue==="ab")content=rAB();
-  else if(vue==="pl")content=rPL();
-  else if(vue==="hr")content=rHR();
-  else if(vue==="om")content=rOM();
-  else if(vue==="fr")content=rFR();
-  else if(vue==="pc")content=rPLANNING_CLASSES();
-  else if(vue==="fi"&&role==="direction")content=rFILIERES();
-  else if(vue==="im"&&role==="direction")content=rIM();
-  else if(vue==="eq"&&role==="direction")content=rEQ();
-  else if(vue==="pr"&&role==="direction")content=rPR();
-  const tst=toast?`<div class="tst" style="background:${{success:"#2E7D52",error:"#C0392B",info:"#1A6B9A",warn:"#B8670A"}[toast.ty]||"#5C6B3A"}">${toast.msg}</div>`:"";
-  const modal=A.s.modal?rMdl():"";
-  return`<div class="hdr"><div><div class="hdr-t">🌿 MFR Néracais</div><div class="hdr-s">${role==="direction"?`Dir. – ${nu}`:nu}</div></div>
-  <div style="display:flex;align-items:center;gap:8px">
-    ${role==="salarie"?`<button class="btn bgo bsm" id="bnd">+ Demande</button>`:""}
-    <button class="btn bd bsm" id="btn-logout-hdr" title="Se déconnecter">⬡ Quitter</button>
-  </div></div><div class="app">${content}</div><nav class="nav">${nav}</nav>${tst}${modal}`;
-}
-function bMain(){
-  document.querySelectorAll(".nb[data-v]").forEach(b=>b.onclick=()=>A.set({vue:b.dataset.v,modal:null}));
-  const bnd=document.getElementById("bnd");if(bnd)bnd.onclick=()=>A.set({modal:{ty:"nd"}});
-  const blo2=document.getElementById("btn-logout-hdr");
-  if(blo2)blo2.onclick=()=>{
-    if(!confirm("Se déconnecter ?"))return;
-    A.s.role=null;A.s.user=null;K.s("ses",null);A.r();
-  };
-  const mc=document.getElementById("mcl");if(mc)mc.onclick=()=>A.set({modal:null});
-  const ov=document.getElementById("mov");if(ov)ov.onclick=e=>{if(e.target===ov)A.set({modal:null});};
-  const v=A.s.vue;
-  if(v==="db")bDB();else if(v==="rc")bRC();else if(v==="dm")bDM();else if(v==="ab")bAB();
-  else if(v==="pl")bPL();else if(v==="hr")bHR();else if(v==="om")bOM();
-  else if(v==="fr")bFR();
-  else if(v==="pc")bPLANNING_CLASSES();
-  else if(v==="fi")bFILIERES();
-  else if(v==="im")bIM();
-  else if(v==="eq")bEQ();else if(v==="pr")bPR();
-  if(A.s.modal)bMdl();
-}
-function rMdl(){const {modal}=A.s;if(!modal)return"";const m={"nd":rMdlND,"vd":rMdlVD,"ad":rMdlAD,"sa":rMdlSA,"sm":rMdlSM,"dp":rMdlDP,"no":rMdlNO,"do":rMdlDO,"nf":rMdlNF,"df":rMdlDF,"class-filiere":rMdlClassFiliere}[modal.ty];return m?m():"";} 
-function bMdl(){const {modal}=A.s;const mc=document.getElementById("mcl");if(mc)mc.onclick=()=>A.set({modal:null});const m={"nd":bMdlND,"vd":bMdlVD,"ad":bMdlAD,"sa":bMdlSA,"sm":bMdlSM,"dp":bMdlDP,"no":bMdlNO,"do":bMdlDO,"nf":bMdlNF,"df":bMdlDF,"class-filiere":bMdlClassFiliere}[modal.ty];if(m)m();}
-
-// ══ RÉCAP ═══════════════════════════════════════════════════════
-function rRC(){
-  const {eq,abs,dem}=A.s;const ms=getMC();const[y,mo]=ms.split("-").map(Number);
-  const dJ=new Date(y,mo,0).getDate();
-  let jours=[];
-  for(let i=1;i<=dJ;i++){const ds=`${y}-${String(mo).padStart(2,"0")}-${String(i).padStart(2,"0")}`;const d=new Date(ds+"T12:00:00");jours.push({n:i,ds,we:d.getDay()===0||d.getDay()===6,td:ds===today2()});}
-  const gTy=(mid,ds)=>{const a=abs.find(a=>a.mid===mid&&a.ty!=="Annulée"&&a.dd<=ds&&(a.df||a.dd)>=ds);if(a)return a.ty;const d=dem.find(d=>d.mid===mid&&d.st===ST.APP&&d.dd<=ds&&(d.df||d.dd)>=ds);return d?d.ty:null;};
-  const an=new Date().getFullYear();
-  let th=`<tr><th class="stk1">Membre</th><th class="stk2">CP</th>`;
-  jours.forEach(j=>{const dy=["D","L","M","M","J","V","S"][new Date(j.ds+"T12:00:00").getDay()];th+=`<th style="${j.td?"background:#C8A84B":j.we?"background:#2A3818":""}">${dy}<br>${j.n}</th>`;});
-  th+=`</tr>`;
-  let tb="";
-  eq.forEach(m=>{
-    const cp=Math.max(0,(m.cp||0)-(m.cpp||0));const cc=cp>5?"#2E7D52":cp>0?"#B8670A":"#C0392B";
-    tb+=`<tr><td class="td1"><div style="font-weight:600;font-size:15px;color:#3A4425">${m.pr} ${m.nom}</div><div style="font-size:14px;color:#888">${m.sv}</div></td><td class="td2" style="color:${cc}">${cp}j</td>`;
-    jours.forEach(j=>{const ty=gTy(m.id,j.ds);const c=ty?TC[ty]||TC["Autre"]:null;tb+=`<td class="${j.td?"tod":j.we?"we":""}">${c?`<div title="${ty}" style="background:${c.bg};border-radius:3px;padding:2px 1px;font-size:15px;text-align:center">${c.e}</div>`:""}</td>`;});
-    tb+=`</tr>`;
-  });
-  const ms2=`<select id="rcm" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:7px 10px;font-size:16px">${MNS.map((m,i)=>{const v=`${an}-${String(i+1).padStart(2,"0")}`;return`<option value="${v}"${v===ms?" selected":""}>${m} ${an}</option>`;}).join("")}</select>`;
-  return`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px"><h2 style="color:#3A4425;font-size:22px;font-weight:800">📋 Tableau récapitulatif</h2>${ms2}</div>
-  <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px">${["Congés payés","Maladie","Formation","Télétravail","Récupération","Absence autorisée"].map(t=>tBdg(t,true)).join("")}</div>
-  <div class="rtbl"><table><thead>${th}</thead><tbody>${tb}</tbody></table></div>
-  <p style="font-size:15px;color:#888;margin-top:8px">Survolez les emojis pour voir le détail</p>`;
-}
-function bRC(){const s=document.getElementById("rcm");if(s)s.onchange=()=>A.r();}
-
-// ══ DEMANDES ════════════════════════════════════════════════════
-function rDM(){
-  const {role,user,dem}=A.s;
-  let vis=dem.filter(d=>{if(role==="salarie"&&d.mid!==user?.id)return false;return true;}).sort((a,b)=>(b.cr||"").localeCompare(a.cr||""));
-  let fH=role==="direction"?`<div class="flt">${sel("fsd",SVC,"","Tous les services")} ${sel("ftd",TSAL,"","Tous les types")} ${sel("fsd2",Object.values(ST),"","Tous les statuts")}</div>`:"";
-  let lH="";
-  if(!vis.length)lH=`<div class="card" style="text-align:center;padding:40px"><p style="color:#888">Aucune demande</p></div>`;
-  else vis.forEach(d=>{const c=TC[d.ty]||TC["Autre"];lH+=`<div class="card ca" style="border-left-color:${c.b}"><div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px"><div style="flex:1"><div style="display:flex;align-items:center;gap:7px;margin-bottom:5px;flex-wrap:wrap">${role==="direction"?`<span style="font-weight:800;font-size:17px;color:#3A4425">${d.nm}</span>`:""}<span class="tsv">${d.sv||""}</span>${tBdg(d.ty,true)} ${sBdg(d.st)}</div><div style="font-size:16px;color:#555">📅 ${fD(d.dd)}${d.df&&d.df!==d.dd?` → ${fD(d.df)}`:""} ${d.dj&&d.dj!=="journee"?` · ${d.dj==="matin"?"🌅":"🌇"}`:""} ${d.nj>0?`<strong> ${d.nj}j</strong>`:""}</div>${d.co?`<div style="font-size:15px;color:#888;margin-top:3px">💬 ${d.co}</div>`:""} ${d.rp?`<div style="font-size:15px;margin-top:5px;padding:5px 10px;border-radius:6px;background:${d.st===ST.APP?"#E8F5EE":"#FDECEA"};color:${d.st===ST.APP?"#2E7D52":"#C0392B"}">📩 ${d.rp}</div>`:""}<div style="font-size:15px;color:#888;margin-top:3px">Envoyée le ${fD(d.cr)}</div></div><div style="display:flex;gap:6px;flex-wrap:wrap">${role==="direction"&&d.st===ST.ATT?`<button class="btn bs bsm" data-val="${d.id}" data-vst="${ST.APP}">✓</button><button class="btn bd bsm" data-val="${d.id}" data-vst="${ST.REF}">✗</button>`:""} ${((role==="salarie"&&d.mid===user?.id&&d.st===ST.ATT)||(role==="direction"&&d.st!==ST.ANN))?`<button class="btn bw bsm" data-ann="${d.id}">Annuler</button>`:""}</div></div></div>`;});
-  return`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px"><h2 style="color:#3A4425;font-size:22px;font-weight:800">${role==="direction"?"Demandes de l'équipe":"Mes demandes"}</h2><span style="font-size:16px;color:#888">${vis.length} demande${vis.length>1?"s":""}</span></div>${fH}${lH}`;
-}
-function bDM(){
-  document.querySelectorAll("[data-val]").forEach(b=>b.onclick=()=>A.set({modal:{ty:"vd",data:{id:b.dataset.val,st:b.dataset.vst}}}));
-  document.querySelectorAll("[data-ann]").forEach(b=>b.onclick=()=>A.set({modal:{ty:"ad",data:{id:b.dataset.ann}}}));
-}
-// Modal nouvelle demande
-function rMdlND(){const mb=A.s.eq.find(m=>m.id===A.s.user?.id);const cpt={cp:Math.max(0,(mb?.cp||0)-(mb?.cpp||0)),rc:Math.max(0,(mb?.ra||0)-(mb?.rp||0))};return mdl("Nouvelle demande",`${fld("Type *",sel("nty",TSAL,"","-- Choisir --"))}<div id="nex" style="display:none">${fld("Date début *",'<input type="date" id="ndd">'+" "+fld("Date fin",'<input type="date" id="ndf">').replace('<div class="fld">','').replace('</div>',''))}<div class="fld"><label>Durée</label><div style="display:flex;gap:8px">${["journee","matin","apmidi"].map(v=>`<button class="btn bl bsm" data-dj="${v}" style="flex:1">${v==="journee"?"Journée":v==="matin"?"Matin":"Après-midi"}</button>`).join("")}</div></div>${fld("Commentaire",'<textarea id="nco" rows="2" placeholder="Précisions…"></textarea>')}<div class="dvd"></div><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn bl" id="ncn">Annuler</button><button class="btn bp" id="nsb">Envoyer ✉</button></div></div>`);}
-function bMdlND(){
-  let dj="journee";
-  document.querySelectorAll("[data-dj]").forEach(b=>{b.onclick=()=>{dj=b.dataset.dj;document.querySelectorAll("[data-dj]").forEach(x=>{x.style.background=x.dataset.dj===dj?"#EEF2E6":"#FAF7F0";x.style.borderColor=x.dataset.dj===dj?"#5C6B3A":"#DDD5B8";});}; });
-  document.getElementById("nty").onchange=function(){document.getElementById("nex").style.display=this.value?"block":"none";};
-  document.getElementById("ncn").onclick=()=>A.set({modal:null});
-  document.getElementById("nsb").onclick=()=>{
-    const ty=document.getElementById("nty").value,dd=document.getElementById("ndd").value,df=document.getElementById("ndf").value,co=document.getElementById("nco").value;
-    if(!ty||!dd)return;
-    const cj=dj==="journee"?1:0.5,nj=nJO(dd,df||dd,cj);
-    const mb=A.s.eq.find(m=>m.id===A.s.user?.id);
-    const d={id:uid(),cr:today2(),as:getAS(),ty,dd,df:df||dd,dj,cj,nj,nh:0,co,st:ST.ATT,mid:mb.id,nm:`${mb.pr} ${mb.nom}`,em:mb.em,sv:mb.sv};
-    A.save("dem",[...A.s.dem,d]);A.set({modal:null});A.toast("Demande envoyée ✓ — en attente de validation");
-  };
-}
-// Modal valider
-function rMdlVD(){const {id,st}=A.s.modal.data;const d=A.s.dem.find(x=>x.id===id);if(!d)return"";const isA=st===ST.APP;return mdl(isA?"✓ Valider":"✗ Refuser",`<div style="background:#FAF7F0;border:1px solid #DDD5B8;border-radius:10px;padding:11px 13px;margin-bottom:12px"><div style="font-weight:700">${d.nm}</div><div style="font-size:16px;color:#555;margin-top:3px">${tBdg(d.ty,true)} · ${fD(d.dd)}${d.nj>0?` · ${d.nj}j`:""}</div></div>${fld("Message (optionnel)",'<textarea id="vrp" rows="2" placeholder=""></textarea>')}<div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn bl" id="vcn">Annuler</button><button class="btn ${isA?"bs":"bd"}" id="vcf">Confirmer</button></div>`);}
-function bMdlVD(){
-  document.getElementById("vcn").onclick=()=>A.set({modal:null});
-  document.getElementById("vcf").onclick=()=>{
-    const {id,st}=A.s.modal.data;const rep=document.getElementById("vrp").value;
-    let neq=[...A.s.eq];
-    const dl=A.s.dem.map(d=>{
-      if(d.id!==id)return d;
-      if(st===ST.APP){
-        if(d.ty!=="Heures supp."){const na={id:uid(),cr:today2(),as:getAS(),mid:d.mid,nm:d.nm,sv:d.sv,ty:d.ty,dd:d.dd,df:d.df||d.dd,dj:d.dj,cj:d.cj,nj:d.nj,co:"Demande approuvée"};const la=[...A.s.abs,na];K.s("abs",la);A.s.abs=la;}
-        neq=neq.map(m=>{if(m.id!==d.mid)return m;let u={...m};if(d.ty==="Congés payés")u.cpp=(m.cpp||0)+(d.nj||0);if(d.ty==="Récupération")u.rp=(m.rp||0)+(d.nj||0);if(d.ty==="Récupération veillée")u.ra=(m.ra||0)+0.5;return u;});K.s("eq",neq);A.s.eq=neq;
-      }
-      if(st===ST.ANN&&d.st===ST.APP){neq=neq.map(m=>{if(m.id!==d.mid)return m;let u={...m};if(d.ty==="Congés payés")u.cpp=Math.max(0,(m.cpp||0)-(d.nj||0));if(d.ty==="Récupération")u.rp=Math.max(0,(m.rp||0)-(d.nj||0));return u;});K.s("eq",neq);A.s.eq=neq;const la=A.s.abs.map(a=>a.mid===d.mid&&a.dd===d.dd&&a.ty===d.ty?{...a,ty:"Annulée"}:a);K.s("abs",la);A.s.abs=la;}
-      return{...d,st,rp:rep};
-    });
-    A.save("dem",dl);A.set({modal:null});A.toast(`Demande ${st.toLowerCase()} ✓`,st===ST.APP?"success":"error");
-  };
-}
-// Modal annuler
-function rMdlAD(){const {id}=A.s.modal.data;const d=A.s.dem.find(x=>x.id===id);if(!d)return"";return mdl("Annuler la demande",`<p style="font-size:17px;margin-bottom:12px">Annuler la demande de <strong>${d.nm}</strong> (${d.ty} — ${fD(d.dd)}) ?</p>${d.st===ST.APP?`<div class="wbox">⚠ Déjà validée. L'annulation restituera le solde.</div>`:""}<div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn bl" id="acn">Non</button><button class="btn bd" id="acf">Oui, annuler</button></div>`);}
-function bMdlAD(){
-  document.getElementById("acn").onclick=()=>A.set({modal:null});
-  document.getElementById("acf").onclick=()=>{
-    const {id}=A.s.modal.data;let neq=[...A.s.eq];
-    const dl=A.s.dem.map(d=>{
-      if(d.id!==id)return d;
-      if(d.st===ST.APP){neq=neq.map(m=>{if(m.id!==d.mid)return m;let u={...m};if(d.ty==="Congés payés")u.cpp=Math.max(0,(m.cpp||0)-(d.nj||0));if(d.ty==="Récupération")u.rp=Math.max(0,(m.rp||0)-(d.nj||0));return u;});K.s("eq",neq);A.s.eq=neq;const la=A.s.abs.map(a=>a.mid===d.mid&&a.dd===d.dd&&a.ty===d.ty?{...a,ty:"Annulée"}:a);K.s("abs",la);A.s.abs=la;}
-      return{...d,st:ST.ANN,rp:"Demande annulée"};
-    });
-    A.save("dem",dl);A.set({modal:null});A.toast("Demande annulée","warn");
-  };
-}
-// ══ ABSENCES ════════════════════════════════════════════════════
-function rAB(){
-  const {role,abs}=A.s;const as=getAS();const[y1,y2]=as.split("-").map(Number);
-  const vis=abs.filter(a=>a.dd>=`${y1}-09-01`&&a.dd<=`${y2}-08-31`).sort((a,b)=>(b.dd||"").localeCompare(a.dd||""));
-  let lH="";
-  if(!vis.length)lH=`<div class="card" style="text-align:center;padding:40px"><p style="color:#888">Aucune absence</p></div>`;
-  else vis.forEach(a=>{const c=TC[a.ty]||TC["Autre"];lH+=`<div class="card ca" style="border-left-color:${c.b};opacity:${a.ty==="Annulée"?.6:1}"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><div style="flex:1"><div style="display:flex;align-items:center;gap:7px;margin-bottom:4px;flex-wrap:wrap"><span style="font-weight:800;font-size:17px">${a.nm}</span><span class="tsv">${a.sv||""}</span>${tBdg(a.ty,true)}</div><div style="font-size:16px;color:#555">📅 ${fD(a.dd)}${a.df&&a.df!==a.dd?` → ${fD(a.df)}`:""} ${a.nj>0?`<strong> ${a.nj}j</strong>`:""}</div>${a.co?`<div style="font-size:15px;color:#888;margin-top:2px">💬 ${a.co}</div>`:""}</div>${role==="direction"&&a.ty!=="Annulée"?`<div style="display:flex;gap:6px"><button class="btn bl bsm" data-edab="${a.id}">✏️</button><button class="btn bw bsm" data-anab="${a.id}">Annuler</button></div>`:""}</div></div>`;});
-  return`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px"><h2 style="color:#3A4425;font-size:22px;font-weight:800">Absences</h2>${role==="direction"?`<button class="btn bp" id="bnab">+ Saisir une absence</button>`:""}</div>${lH}`;
-}
-function bAB(){
-  const b=document.getElementById("bnab");if(b)b.onclick=()=>A.set({modal:{ty:"sa",data:{}}});
-  document.querySelectorAll("[data-edab]").forEach(b=>{const a=A.s.abs.find(x=>x.id===b.dataset.edab);if(a)b.onclick=()=>A.set({modal:{ty:"sa",data:{init:a}}});});
-  document.querySelectorAll("[data-anab]").forEach(b=>{b.onclick=()=>{const la=A.s.abs.map(x=>x.id===b.dataset.anab?{...x,ty:"Annulée"}:x);A.save("abs",la);A.toast("Absence annulée","warn");};});
-}
-function rMdlSA(){const i=A.s.modal.data?.init||{};const {eq}=A.s;return mdl(i.id?"Modifier":"Saisir une absence",`${fld("Membre *",sel("asm",eq.map(m=>({v:m.id,l:`${m.pr} ${m.nom}`})),i.mid||"","-- Choisir --"))}${fld("Type *",sel("asty",TDIR,i.ty||"","-- Choisir --"))}<div class="g2">${fld("Date début *",`<input type="date" id="asdd" value="${i.dd||""}">`)}${fld("Date fin",`<input type="date" id="asdf" value="${i.df||""}">`)}</div>${fld("Note",`<textarea id="asco" rows="2">${i.co||""}</textarea>`)}<div class="dvd"></div><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn bl" id="ascn">Annuler</button><button class="btn bp" id="assb">${i.id?"Mettre à jour":"Enregistrer"}</button></div>`);}
-function bMdlSA(){
-  document.getElementById("ascn").onclick=()=>A.set({modal:null});
-  document.getElementById("assb").onclick=()=>{
-    const i=A.s.modal.data?.init||{};const mid=document.getElementById("asm").value,ty=document.getElementById("asty").value,dd=document.getElementById("asdd").value,df=document.getElementById("asdf").value,co=document.getElementById("asco").value;
-    if(!mid||!ty||!dd)return;const mb=A.s.eq.find(m=>m.id===mid);
-    const e={id:i.id||uid(),cr:i.cr||today2(),as:getAS(),mid,nm:`${mb.pr} ${mb.nom}`,sv:mb.sv,ty,dd,df:df||dd,dj:"journee",cj:1,nj:nJO(dd,df||dd),co};
-    const la=i.id?A.s.abs.map(a=>a.id===i.id?e:a):[...A.s.abs,e];A.save("abs",la);A.set({modal:null});A.toast(i.id?"Absence mise à jour ✓":"Absence enregistrée ✓");
-  };
-}
-
-// ══ PLANNING ════════════════════════════════════════════════════
-let pMo=new Date().getMonth(),pAn=new Date().getFullYear();
-function rPL(){
-  const {eq,abs,dem}=A.s;const mo=pMo,an=pAn;
-  const pJ=new Date(an,mo,1),dJ=new Date(an,mo+1,0);const off=(pJ.getDay()+6)%7,nbJ=dJ.getDate();
-  const dS=`${an}-${String(mo+1).padStart(2,"0")}-01`,fS=`${an}-${String(mo+1).padStart(2,"0")}-${String(nbJ).padStart(2,"0")}`;
-  const evts=[...abs.filter(a=>a.ty!=="Annulée"),...dem.filter(d=>d.st===ST.APP)].filter(e=>{const d=e.dd||e.dd,f=e.df||e.dd;return!(d>fS||f<dS);});
-  const gE=j=>{const ds=`${an}-${String(mo+1).padStart(2,"0")}-${String(j).padStart(2,"0")}`;return evts.filter(e=>(e.dd||e.dd)<=ds&&(e.df||e.dd)>=ds);};
-  let calH=`<div style="background:#3A4425;border-radius:14px 14px 0 0"><div class="cgrd">`;
-  ["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"].forEach(j=>{calH+=`<div style="padding:8px 3px;text-align:center;font-size:15px;font-weight:700;color:#fff;text-transform:uppercase">${j}</div>`;});
-  calH+=`</div></div><div class="cgrd" style="border:1px solid #DDD5B8;border-top:none;background:#fff">`;
-  for(let i=0;i<off;i++)calH+=`<div class="cc ce"></div>`;
-  for(let i=1;i<=nbJ;i++){const ds=`${an}-${String(mo+1).padStart(2,"0")}-${String(i).padStart(2,"0")}`;const iT=ds===today2();const iW=((off+i-1)%7)>=5;const es=gE(i);calH+=`<div class="cc${iT?" ct":iW?" cw":""}"><div class="cd" style="${iT?"color:#C8A84B;font-weight:800":""}">${i}</div>`;es.slice(0,3).forEach(e=>{const c=TC[e.ty]||TC["Autre"];calH+=`<div class="cev" style="background:${c.bg};color:${c.c};border-left-color:${c.b}" title="${e.nm} — ${e.ty}">${c.e}${(e.nm||"").split(" ")[0]||"?"}</div>`;});if(es.length>3)calH+=`<div style="font-size:13px;color:#888">+${es.length-3}</div>`;calH+=`</div>`;}
-  calH+=`</div>`;
-  let lH="";
-  if(evts.length>0){lH=`<div class="card"><h3 style="font-size:17px;color:#3A4425;margin-bottom:10px">${MNS[mo]} ${an} — ${evts.length} évt</h3>`;evts.sort((a,b)=>(a.dd||"").localeCompare(b.dd||"")).forEach(e=>{const c=TC[e.ty]||TC["Autre"];lH+=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 10px;background:#FAF7F0;border-radius:7px;border-left:3px solid ${c.b};margin-bottom:5px"><span style="font-weight:700;font-size:16px">${e.nm}</span>${tBdg(e.ty,true)}<span style="font-size:15px;color:#555">${fD(e.dd)}${e.df&&e.df!==e.dd?` → ${fD(e.df)}`:""}</span></div>`;});lH+=`</div>`;}
-  return`<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px"><h2 style="color:#3A4425;font-size:22px;font-weight:800">Planning</h2><div style="display:flex;align-items:center;gap:8px"><button class="btn bl bsm" id="ppv">←</button><span style="font-weight:700;font-size:17px;min-width:130px;text-align:center">${MNS[mo]} ${an}</span><button class="btn bl bsm" id="pnx">→</button></div></div>${calH}${lH}`;
-}
-function bPL(){const p=document.getElementById("ppv");if(p)p.onclick=()=>{pMo--;if(pMo<0){pMo=11;pAn--;}A.r();};const n=document.getElementById("pnx");if(n)n.onclick=()=>{pMo++;if(pMo>11){pMo=0;pAn++;}A.r();};}
 
 
 
-// ══ HEURES ══════════════════════════════════════════════════════
-let hLun=getLun(today2());
-
-// Services spéciaux — uniquement Pédagogie et Direction
-const SVC_SPECIAUX=["Pédagogie","Direction"];
-const CRENEAUX_SPECIAUX={
-  svc_midi:{label:"Service midi",debut:"12:00",fin:"13:30",duree:1.5,emoji:"🍽️"},
-  svc_soir:{label:"Service soir",debut:"17:30",fin:"19:00",duree:1.5,emoji:"🌆"},
-  veillee:{label:"Veillée",debut:"13:30",fin:"21:00",duree:7.5,emoji:"🌙",remplace:true}
-};
-
-function isDimanche(ds){return new Date(ds+"T12:00:00").getDay()===0;}
-function coefRecup(ds){return isDimanche(ds)?1.5:1.0;}
-function isSvcSpecial(mb){return SVC_SPECIAUX.includes(mb?.sv);}
-
-// Heures théoriques d'un jour (veillée remplace si cochée)
-function gHT(mid,jk){
-  const p=HOR[mid];if(!p)return 0;
-  const j=p.j[jk];if(!j)return 0;
-  const[dm,fm,da,fa]=j;return cH(dm,fm)+cH(da,fa);
-}
-
-// ── Vue salarié ─────────────────────────────────────────────────
-function rHR(){
-  const {role,user,eq,heu}=A.s;
-  const mb=role==="salarie"?eq.find(m=>m.id===user?.id):null;
-
-  if(role==="salarie"&&mb){
-    const prof=HOR[mb.id];
-    const canSvcSpecial=isSvcSpecial(mb);
-
-    // Jours actifs cette semaine
-    const joursActifs=JK.filter(jk=>{
-      const ds=getDJ(hLun,jk);
-      return(prof?.j[jk]||heu.find(x=>x.mid===mb.id&&x.dt===ds))&&ds<=today2();
-    });
-    const tousConfirmes=joursActifs.length>0&&joursActifs.every(jk=>{
-      const ds=getDJ(hLun,jk);
-      return heu.find(x=>x.mid===mb.id&&x.dt===ds);
-    });
-
-    // Totaux semaine
-    let totalTheo=0,totalReel=0,totalDep=0,totalRecup=0,totalSvc=0;
-    JK.forEach(jk=>{
-      const ds=getDJ(hLun,jk);
-      const dc=heu.find(x=>x.mid===mb.id&&x.dt===ds);
-      totalTheo+=gHT(mb.id,jk);
-      if(dc){
-        totalReel+=dc.hr||0;
-        totalDep+=dc.dep||0;
-        totalRecup+=dc.rc||0;
-        // Ajouter services spéciaux au total
-        if(dc.svcMidi)totalSvc+=CRENEAUX_SPECIAUX.svc_midi.duree;
-        if(dc.svcSoir)totalSvc+=CRENEAUX_SPECIAUX.svc_soir.duree;
-        if(dc.veillee)totalReel+=CRENEAUX_SPECIAUX.veillee.duree;
-      }
-    });
-
-    let h=`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
-      <h2 style="color:#3A4425;font-size:22px;font-weight:800">⏱ Mes heures</h2>
-      <div class="snav">
-        <button class="btn bl bsm" id="hpv">← Sem.</button>
-        <span>${fD(hLun)}</span>
-        <button class="btn bl bsm" id="hnx">Sem. →</button>
-      </div>
-    </div>
-    <div class="wbox">⚠️ Toute heure supplémentaire doit être validée en amont par la direction, sauf situation d'urgence. Les heures du dimanche sont récupérées à 1,5×.</div>
-    ${prof?.note?`<div class="ibox">ℹ️ ${prof.note}</div>`:""}`;
-
-    if(joursActifs.length>0&&!tousConfirmes){
-      h+=`<div style="display:flex;justify-content:flex-end;margin-bottom:10px">
-        <button class="btn bs" id="btn-val-sem">✓ Valider toute la semaine (heures conformes)</button>
-      </div>`;
-    }
-
-    // Totaux semaine
-    h+=`<div style="display:grid;grid-template-columns:repeat(${canSvcSpecial?4:3},1fr);gap:8px;margin-bottom:14px">
-      <div class="sc"><div class="lbl">Théorique</div><div class="val" style="color:#5C6B3A;font-size:18px">${fH(totalTheo)}</div></div>
-      <div class="sc"><div class="lbl">Déclaré</div><div class="val" style="color:#1A6B9A;font-size:18px">${fH(totalReel)}</div></div>
-      <div class="sc"><div class="lbl">Récup générée</div><div class="val" style="color:#B8670A;font-size:18px">${fH(totalRecup)}</div></div>
-      ${canSvcSpecial?`<div class="sc"><div class="lbl">Services spéciaux</div><div class="val" style="color:#6A2A8A;font-size:18px">${fH(totalSvc)}h</div></div>`:""}
-    </div>`;
-
-    // Légende services spéciaux
-    if(canSvcSpecial){
-      h+=`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;padding:10px 14px;background:#F5EAF8;border:1px solid #A060C0;border-radius:10px">
-        <span style="font-size:13px;font-weight:700;color:#6A2A8A;width:100%;margin-bottom:4px">Services spéciaux disponibles pour votre poste :</span>
-        <span style="font-size:13px;color:#555">🍽️ Service midi (12h00–13h30 · 1h30)</span>
-        <span style="font-size:13px;color:#555;margin:0 8px">·</span>
-        <span style="font-size:13px;color:#555">🌆 Service soir (17h30–19h00 · 1h30)</span>
-        <span style="font-size:13px;color:#555;margin:0 8px">·</span>
-        <span style="font-size:13px;color:#555">🌙 Veillée (13h30–21h00 · remplace les horaires habituels)</span>
-      </div>`;
-    }
-
-    // Jours de la semaine
-    JK.forEach(jk=>{
-      const ds=getDJ(hLun,jk);
-      const jT=prof?.j[jk];
-      const hT=gHT(mb.id,jk);
-      const dc=heu.find(x=>x.mid===mb.id&&x.dt===ds);
-      const isPast=ds<=today2();
-      const isDim=new Date(ds+"T12:00:00").getDay()===0;
-
-      // Veillée active ce jour
-      const isVeillee=dc?.veillee||false;
-      const hTEffectif=isVeillee?CRENEAUX_SPECIAUX.veillee.duree:hT;
-
-      if(!jT&&!dc&&!isDim){
-        h+=`<div style="padding:10px 14px;background:#F8F6F0;border-radius:10px;opacity:.5;margin-bottom:7px;font-size:14px;color:#888">${JL[jk]} ${fD(ds)} — Repos</div>`;
-        return;
-      }
-
-      const ac=dc?(dc.dep>0?(dc.st===ST.APP?"#2E7D52":dc.st===ST.REF?"#C0392B":"#B8670A"):isVeillee?"#7050B0":dc.svcMidi||dc.svcSoir?"#A060C0":"#2E7D52"):"#DDD5B8";
-
-      h+=`<div class="card ca" style="border-left-color:${ac};margin-bottom:7px">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
-          <div style="flex:1">
-            <div style="font-weight:700;font-size:15px;color:#3A4425;margin-bottom:5px">
-              ${JL[jk]} <span style="font-size:13px;color:#888;font-weight:400">${fD(ds)}</span>
-              ${isDim?`<span style="background:#FEF3E2;color:#B8670A;border-radius:10px;padding:1px 8px;font-size:12px;font-weight:700;margin-left:6px">🌞 Dimanche ×1,5</span>`:""}
-              ${isVeillee?`<span style="background:#EAE0F8;color:#6A2A8A;border-radius:10px;padding:1px 8px;font-size:12px;font-weight:700;margin-left:6px">🌙 Veillée</span>`:""}
-            </div>
-
-            <!-- Horaires théoriques ou veillée -->
-            ${isVeillee
-              ?`<div style="font-size:14px;color:#6A2A8A;font-weight:600">🌙 Veillée : 13h30 → 21h00 = ${fH(CRENEAUX_SPECIAUX.veillee.duree)} <span style="font-size:12px;color:#888;font-weight:400">(remplace les horaires habituels)</span></div>`
-              :jT?`<div style="font-size:14px;color:#555">Théorique : <strong>${jT[0]||"—"}${jT[1]?` → ${jT[1]}`:""}</strong>${jT[2]||jT[3]?` / <strong>${jT[2]||"—"}${jT[3]?` → ${jT[3]}`:""}</strong>`:""} <span style="color:#5C6B3A;font-weight:600">(${fH(hT)})</span></div>`:""
-            }
-
-            <!-- Services spéciaux cochés -->
-            ${dc&&(dc.svcMidi||dc.svcSoir)?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
-              ${dc.svcMidi?`<span style="background:#F5EAF8;color:#6A2A8A;border:1px solid #A060C0;border-radius:8px;padding:2px 8px;font-size:12px;font-weight:700">🍽️ Service midi 12h00–13h30</span>`:""}
-              ${dc.svcSoir?`<span style="background:#F5EAF8;color:#6A2A8A;border:1px solid #A060C0;border-radius:8px;padding:2px 8px;font-size:12px;font-weight:700">🌆 Service soir 17h30–19h00</span>`:""}
-            </div>`:""}
-
-            <!-- Déclaration heures -->
-            ${dc?`<div style="font-size:14px;color:#555;margin-top:4px">
-              Déclaré : <strong>${dc.hd} → ${dc.hf}</strong> = <span style="color:#1A6B9A;font-weight:700">${fH(dc.hr)}</span>
-              ${dc.dep>0?`<span style="color:#B8670A;font-weight:600;margin-left:8px">+${fH(dc.dep)} supp.</span>`:""}
-              ${dc.rc>0?`<span style="color:#2E7D52;font-weight:600;margin-left:8px">→ ${fH(dc.rc)} récup${isDim?" (×1,5)":""}</span>`:""}
-            </div>
-            ${dc.dep>0&&dc.mo?`<div style="font-size:12px;color:#888;margin-top:2px">💬 ${dc.mo}</div>`:""}
-            <div style="margin-top:5px">${dc.dep>0?sBdg(dc.st):`<span style="background:#E8F5EE;color:#2E7D52;border:1.5px solid #5AAA80;border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700">✓ Confirmé</span>`}</div>`:""}
-          </div>
-
-          <!-- Boutons d'action -->
-          <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end">
-            ${isPast&&!dc&&(jT||isDim)?`
-              <div style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end">
-                <button class="btn bs bsm" data-conf="${jk}" data-cds="${ds}">✓ Conforme</button>
-                <button class="btn bw bsm" data-dpj="${jk}" data-dpd="${ds}">+ Heures sup.</button>
-              </div>
-              ${isDim&&!jT?`<button class="btn bw bsm" data-dpj="${jk}" data-dpd="${ds}" style="margin-top:2px">+ Heures dimanche</button>`:""}
-              ${canSvcSpecial?`<div style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;margin-top:4px">
-                <button class="btn" style="background:#F5EAF8;color:#6A2A8A;border:1.5px solid #A060C0;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600" data-svc="${jk}" data-sds="${ds}" data-stype="svc_midi">🍽️ Svc midi</button>
-                <button class="btn" style="background:#F5EAF8;color:#6A2A8A;border:1.5px solid #A060C0;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600" data-svc="${jk}" data-sds="${ds}" data-stype="svc_soir">🌆 Svc soir</button>
-                <button class="btn" style="background:#EAE0F8;color:#4A1A7A;border:1.5px solid #7050B0;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600" data-svc="${jk}" data-sds="${ds}" data-stype="veillee">🌙 Veillée</button>
-              </div>`:""}
-            `:""}
-            ${isPast&&dc&&canSvcSpecial&&!isVeillee?`
-              <div style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;margin-top:4px">
-                ${!dc.svcMidi?`<button class="btn" style="background:#F5EAF8;color:#6A2A8A;border:1.5px solid #A060C0;border-radius:8px;padding:4px 8px;font-size:11px;font-weight:600" data-add-svc="${dc.id}" data-add-type="svcMidi">+🍽️</button>`:`<button class="btn" style="background:#EEE;color:#888;border:1px solid #CCC;border-radius:8px;padding:4px 8px;font-size:11px" data-rm-svc="${dc.id}" data-rm-type="svcMidi">×🍽️</button>`}
-                ${!dc.svcSoir?`<button class="btn" style="background:#F5EAF8;color:#6A2A8A;border:1.5px solid #A060C0;border-radius:8px;padding:4px 8px;font-size:11px;font-weight:600" data-add-svc="${dc.id}" data-add-type="svcSoir">+🌆</button>`:`<button class="btn" style="background:#EEE;color:#888;border:1px solid #CCC;border-radius:8px;padding:4px 8px;font-size:11px" data-rm-svc="${dc.id}" data-rm-type="svcSoir">×🌆</button>`}
-              </div>
-            `:""}
-            ${dc&&dc.st===ST.ATT&&dc.dep>0?`<button class="btn bl bsm" data-anh="${dc.id}">Annuler</button>`:""}
-          </div>
-        </div>
-      </div>`;
-    });
-
-    // Solde récup
-    const rcTotal=Math.max(0,(mb.ra||0)-(mb.rp||0));
-    h+=`<div class="card" style="background:#EEF2E6;border-color:#5C6B3A33;margin-top:8px">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div><div style="font-size:14px;font-weight:700;color:#3A4425">Mon solde récupération total</div>
-        <div style="font-size:12px;color:#888;margin-top:2px">Heures supp. validées + veillées — récup posées</div></div>
-        <div style="font-size:26px;font-weight:800;color:#5C6B3A">${fH(rcTotal*7)}</div>
-      </div>
-    </div>`;
-
-    return h;
-  }
-
-  // ── Vue direction ─────────────────────────────────────────────
-  const deq=A.s.eq,dheu=A.s.heu;
-  const enAH=dheu.filter(x=>x.st===ST.ATT&&x.dep>0).length;
-
-  // Regrouper par semaine et par membre
-  const semaines={};
-  dheu.forEach(x=>{
-    const k=`${x.lun||getLun(x.dt)}_${x.mid}`;
-    if(!semaines[k])semaines[k]={lun:x.lun||getLun(x.dt),mid:x.mid,nm:x.nm,sv:x.sv,jours:[]};
-    semaines[k].jours.push(x);
-  });
-  const semsArr=Object.values(semaines).sort((a,b)=>b.lun.localeCompare(a.lun));
-
-  let lH="";
-  if(!semsArr.length)lH=`<div class="card" style="text-align:center;padding:40px"><p style="color:#888">Aucune déclaration</p></div>`;
-  else semsArr.forEach(sem=>{
-    const totalH=sem.jours.reduce((s,j)=>s+(j.hr||0),0);
-    const totalT=sem.jours.reduce((s,j)=>s+(j.ht||0),0);
-    const totalDep=sem.jours.reduce((s,j)=>s+(j.dep||0),0);
-    const totalRec=sem.jours.reduce((s,j)=>s+(j.rc||0),0);
-    const nbMidi=sem.jours.filter(j=>j.svcMidi).length;
-    const nbSoir=sem.jours.filter(j=>j.svcSoir).length;
-    const nbVeillee=sem.jours.filter(j=>j.veillee).length;
-    const hasAtt=sem.jours.some(j=>j.st===ST.ATT&&j.dep>0);
-
-    lH+=`<div class="card ca" style="border-left-color:${totalDep>0?"#B8670A":"#2E7D52"}">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
-        <div style="flex:1">
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
-            <span style="font-weight:800;font-size:15px;color:#3A4425">${sem.nm}</span>
-            <span class="tsv">${sem.sv||""}</span>
-            <span style="font-size:13px;color:#888">Sem. du ${fD(sem.lun)}</span>
-          </div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px;margin-bottom:8px">
-            <div style="background:#FAF7F0;border-radius:7px;padding:5px 8px;font-size:13px"><div style="color:#888;font-size:10px">THÉORIQUE</div><strong>${fH(totalT)}</strong></div>
-            <div style="background:#E3F1FA;border-radius:7px;padding:5px 8px;font-size:13px"><div style="color:#888;font-size:10px">DÉCLARÉ</div><strong>${fH(totalH)}</strong></div>
-            ${totalDep>0?`<div style="background:#FEF3E2;border-radius:7px;padding:5px 8px;font-size:13px"><div style="color:#888;font-size:10px">DÉPASS.</div><strong style="color:#B8670A">+${fH(totalDep)}</strong></div>`:""}
-            ${totalRec>0?`<div style="background:#E8F5EE;border-radius:7px;padding:5px 8px;font-size:13px"><div style="color:#888;font-size:10px">RÉCUP</div><strong style="color:#2E7D52">${fH(totalRec)}</strong></div>`:""}
-            ${nbMidi>0?`<div style="background:#F5EAF8;border-radius:7px;padding:5px 8px;font-size:13px"><div style="color:#888;font-size:10px">SVC MIDI</div><strong style="color:#6A2A8A">×${nbMidi}</strong></div>`:""}
-            ${nbSoir>0?`<div style="background:#F5EAF8;border-radius:7px;padding:5px 8px;font-size:13px"><div style="color:#888;font-size:10px">SVC SOIR</div><strong style="color:#6A2A8A">×${nbSoir}</strong></div>`:""}
-            ${nbVeillee>0?`<div style="background:#EAE0F8;border-radius:7px;padding:5px 8px;font-size:13px"><div style="color:#888;font-size:10px">VEILLÉES</div><strong style="color:#4A1A7A">×${nbVeillee}</strong></div>`:""}
-          </div>
-          <div style="display:flex;flex-wrap:wrap;gap:5px">
-            ${sem.jours.map(j=>{
-              const c=j.dep>0?(j.st===ST.APP?"#2E7D52":j.st===ST.REF?"#C0392B":j.st===ST.ATT?"#B8670A":"#888"):j.veillee?"#7050B0":j.svcMidi||j.svcSoir?"#A060C0":"#5C6B3A";
-              const extras=(j.svcMidi?"🍽️":"")+(j.svcSoir?"🌆":"")+(j.veillee?"🌙":"");
-              return`<span style="font-size:11px;background:#F5F5F5;border:1px solid #DDD;border-radius:6px;padding:2px 8px;color:${c}">${["D","L","M","M","J","V","S"][new Date(j.dt+"T12:00:00").getDay()]}${extras} ${j.dep>0?`+${fH(j.dep)}`:fH(j.hr)}</span>`;
-            }).join("")}
-          </div>
-        </div>
-        ${hasAtt?`<div style="display:flex;flex-direction:column;gap:5px">
-          <button class="btn bs bsm" data-val-sem="${sem.mid}_${sem.lun}">✓ Valider récup</button>
-          <button class="btn bd bsm" data-ref-sem="${sem.mid}_${sem.lun}">✗ Refuser</button>
-        </div>`:""}
-      </div>
-    </div>`;
-  });
-
-  return`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
-    <h2 style="color:#3A4425;font-size:22px;font-weight:800">⏱ Déclarations horaires</h2>
-    ${enAH>0?`<span style="background:#FEF3E2;color:#B8670A;border:1.5px solid #E8A030;border-radius:20px;padding:3px 12px;font-size:13px;font-weight:700">${enAH} dépassement${enAH>1?"s":""} à valider</span>`:""}
-  </div>${lH}`;
-}
-
-function bHR(){
-  const pv=document.getElementById("hpv");
-  if(pv)pv.onclick=()=>{const d=new Date(hLun+"T12:00:00");d.setDate(d.getDate()-7);hLun=d.toISOString().split("T")[0];A.r();};
-  const nx=document.getElementById("hnx");
-  if(nx)nx.onclick=()=>{const d=new Date(hLun+"T12:00:00");d.setDate(d.getDate()+7);hLun=d.toISOString().split("T")[0];A.r();};
-
-  const mb=A.s.eq.find(m=>m.id===A.s.user?.id);
-
-  // Confirmer journée conforme
-  document.querySelectorAll("[data-conf]").forEach(b=>{
-    b.onclick=()=>{
-      const jk=b.dataset.conf,ds=b.dataset.cds;if(!mb)return;
-      const ht=gHT(mb.id,jk);const jT=HOR[mb.id]?.j[jk];if(!jT)return;
-      const e={id:uid(),mid:mb.id,nm:`${mb.pr} ${mb.nom}`,sv:mb.sv,dt:ds,jk,
-        hd:jT[0]||"",hf:jT[3]||jT[1]||"",ht,hr:ht,dep:0,rc:0,mo:"",
-        st:ST.APP,cr:today2(),lun:hLun,conf:true,svcMidi:false,svcSoir:false,veillee:false};
-      const l=[...A.s.heu.filter(x=>!(x.mid===mb.id&&x.dt===ds)),e];
-      A.save("heu",l);A.toast("Journée confirmée ✓","success");
-    };
-  });
-
-  // Valider toute la semaine
-  const bvs=document.getElementById("btn-val-sem");
-  if(bvs&&mb){
-    bvs.onclick=()=>{
-      const prof=HOR[mb.id];let newH=[...A.s.heu];
-      JK.forEach(jk=>{
-        const ds=getDJ(hLun,jk);if(ds>today2())return;
-        const jT=prof?.j[jk];if(!jT)return;
-        if(newH.find(x=>x.mid===mb.id&&x.dt===ds))return;
-        const ht=gHT(mb.id,jk);
-        const e={id:uid(),mid:mb.id,nm:`${mb.pr} ${mb.nom}`,sv:mb.sv,dt:ds,jk,
-          hd:jT[0]||"",hf:jT[3]||jT[1]||"",ht,hr:ht,dep:0,rc:0,mo:"",
-          st:ST.APP,cr:today2(),lun:hLun,conf:true,svcMidi:false,svcSoir:false,veillee:false};
-        newH=[...newH.filter(x=>!(x.mid===mb.id&&x.dt===ds)),e];
-      });
-      A.save("heu",newH);A.toast("Semaine confirmée ✓","success");
-    };
-  }
-
-  // Déclarer service spécial (svc_midi, svc_soir, veillee) sur journée non déclarée
-  document.querySelectorAll("[data-svc]").forEach(b=>{
-    b.onclick=()=>{
-      if(!mb)return;
-      const jk=b.dataset.svc,ds=b.dataset.sds,stype=b.dataset.stype;
-      const cr=CRENEAUX_SPECIAUX[stype];
-      const jT=HOR[mb.id]?.j[jk];
-      const ht=cr.remplace?cr.duree:gHT(mb.id,jk);
-      // Créer ou mettre à jour la déclaration du jour
-      const existing=A.s.heu.find(x=>x.mid===mb.id&&x.dt===ds);
-      if(existing){
-        // Ajouter le service à une déclaration existante
-        const updated={...existing,[stype==="veillee"?"veillee":stype==="svc_midi"?"svcMidi":"svcSoir"]:true};
-        if(cr.remplace){updated.hd="13:30";updated.hf="21:00";updated.hr=cr.duree;updated.ht=ht;}
-        const l=[...A.s.heu.filter(x=>!(x.mid===mb.id&&x.dt===ds)),updated];
-        A.save("heu",l);
-      } else {
-        // Créer nouvelle déclaration
-        const hd=cr.remplace?"13:30":(jT?jT[0]||"":"08:00");
-        const hf=cr.remplace?"21:00":(jT?jT[3]||jT[1]||"":"17:30");
-        const e={id:uid(),mid:mb.id,nm:`${mb.pr} ${mb.nom}`,sv:mb.sv,dt:ds,jk,
-          hd,hf,ht,hr:cr.remplace?cr.duree:gHT(mb.id,jk),dep:0,rc:0,mo:"",
-          st:ST.APP,cr:today2(),lun:hLun,conf:true,
-          svcMidi:stype==="svc_midi",svcSoir:stype==="svc_soir",veillee:cr.remplace};
-        const l=[...A.s.heu.filter(x=>!(x.mid===mb.id&&x.dt===ds)),e];
-        A.save("heu",l);
-      }
-      A.toast(`${cr.emoji} ${cr.label} enregistré ✓`,"success");
-    };
-  });
-
-  // Ajouter service à une déclaration existante
-  document.querySelectorAll("[data-add-svc]").forEach(b=>{
-    b.onclick=()=>{
-      const id=b.dataset.addSvc,field=b.dataset.addType;
-      const l=A.s.heu.map(x=>x.id===id?{...x,[field]:true}:x);
-      A.save("heu",l);A.toast("Service ajouté ✓","success");
-    };
-  });
-
-  // Retirer service d'une déclaration existante
-  document.querySelectorAll("[data-rm-svc]").forEach(b=>{
-    b.onclick=()=>{
-      const id=b.dataset.rmSvc,field=b.dataset.rmType;
-      const l=A.s.heu.map(x=>x.id===id?{...x,[field]:false}:x);
-      A.save("heu",l);A.toast("Service retiré","warn");
-    };
-  });
-
-  // Déclarer dépassement
-  document.querySelectorAll("[data-dpj]").forEach(b=>{
-    b.onclick=()=>{
-      if(!mb)return;
-      const jk=b.dataset.dpj,ds=b.dataset.dpd;
-      const jT=HOR[mb.id]?.j[jk];
-      A.set({modal:{ty:"dp",data:{mb,jk,ds,jT,ht:gHT(mb.id,jk),isDim:new Date(ds+"T12:00:00").getDay()===0}}});
-    };
-  });
-
-  // Annuler déclaration
-  document.querySelectorAll("[data-anh]").forEach(b=>{
-    b.onclick=()=>{const l=A.s.heu.filter(h=>h.id!==b.dataset.anh);A.save("heu",l);A.toast("Déclaration annulée","warn");};
-  });
-
-  // Direction : valider/refuser par semaine
-  document.querySelectorAll("[data-val-sem]").forEach(b=>{
-    b.onclick=()=>{
-      const[mid,lun]=b.dataset.valSem.split("_");
-      let neq=[...A.s.eq];
-      const l=A.s.heu.map(x=>{
-        if(x.mid!==mid||x.lun!==lun||x.st!==ST.ATT||x.dep<=0)return x;
-        neq=neq.map(m=>{if(m.id!==mid)return m;return{...m,ra:(m.ra||0)+(x.rc||0)/7};});
-        return{...x,st:ST.APP};
-      });
-      K.s("eq",neq);A.s.eq=neq;
-      A.save("heu",l);A.toast("Récupérations créditées ✓","success");
-    };
-  });
-  document.querySelectorAll("[data-ref-sem]").forEach(b=>{
-    b.onclick=()=>{
-      const[mid,lun]=b.dataset.refSem.split("_");
-      const l=A.s.heu.map(x=>x.mid===mid&&x.lun===lun&&x.st===ST.ATT&&x.dep>0?{...x,st:ST.REF}:x);
-      A.save("heu",l);A.toast("Dépassements refusés","error");
-    };
-  });
-}
-
-// ── Modal dépassement ────────────────────────────────────────────
-function rMdlDP(){
-  const {mb,jk,ds,jT,ht,isDim}=A.s.modal.data;
-  const coef=isDim?1.5:1.0;
-  // Pause méridienne théorique (entre fin matin et début après-midi)
-  const pauseDeb=jT?jT[1]||"":""
-  const pauseFin=jT?jT[2]||"":""
-  return mdl(isDim?"🌞 Déclarer des heures dimanche":"⏱ Rectification d'horaire",`
-    ${!isDim?`<div class="wbox">⚠️ Toute heure supplémentaire doit être validée en amont par la direction sauf urgence.</div>`:""}
-    ${isDim?`<div style="background:#FEF3E2;border:1.5px solid #E8A030;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:14px;color:#7A4A00;font-weight:600">🌞 Heures travaillées le dimanche — récupérées à <strong>×1,5</strong> après validation direction.</div>`:""}
-    <div style="background:#FAF7F0;border:1px solid #DDD5B8;border-radius:9px;padding:10px 14px;margin-bottom:12px">
-      <div style="font-weight:700;font-size:15px">${JL[jk]} ${fD(ds)}</div>
-      ${ht>0?`<div style="font-size:13px;color:#555;margin-top:2px">Horaire théorique : ${fH(ht)}</div>`:""}
-    </div>
-
-    <p style="font-size:13px;font-weight:700;color:#3A4425;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">🌅 Matin</p>
-    <div class="g2">
-      ${fld("Début de journée",`<input type="time" id="dphd" value="${jT?jT[0]||"":""}">`)}
-      ${fld("Fin de matinée",`<input type="time" id="dpfm" value="${pauseDeb}">`)}
-    </div>
-
-    <p style="font-size:13px;font-weight:700;color:#3A4425;text-transform:uppercase;letter-spacing:.5px;margin:8px 0">☀️ Pause méridienne</p>
-    <div class="g2">
-      ${fld("Début de pause",`<input type="time" id="dpdp" value="${pauseDeb}" placeholder="ex: 12:00">`)}
-      ${fld("Fin de pause",`<input type="time" id="dpfp" value="${pauseFin}" placeholder="ex: 13:30">`)}
-    </div>
-    <div id="pause-info" style="font-size:13px;color:#888;margin-bottom:8px"></div>
-
-    <p style="font-size:13px;font-weight:700;color:#3A4425;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">🌇 Après-midi</p>
-    <div class="g2">
-      ${fld("Reprise après-midi",`<input type="time" id="dpda" value="${pauseFin}">`)}
-      ${fld("Fin de journée",`<input type="time" id="dphf" value="${jT?jT[3]||jT[1]||"":""}">`)}
-    </div>
-
-    <div id="dpnfo" style="background:#E8F5EE;border-radius:8px;padding:10px 14px;font-size:14px;color:#2E7D52;font-weight:600;margin-bottom:10px;display:none"></div>
-
-    ${fld("Motif (obligatoire)",'<textarea id="dpmo" rows="2" placeholder="Décrivez la raison du dépassement ou de la modification…"></textarea>',"Obligatoire pour tout dépassement")}
-    <div class="dvd"></div>
-    <div style="display:flex;gap:10px;justify-content:flex-end">
-      <button class="btn bl" id="dpcn">Annuler</button>
-      <button class="btn bw" id="dpsb">Envoyer la déclaration</button>
-    </div>`);
-}
-function bMdlDP(){
-  const {mb,jk,ds,ht,isDim}=A.s.modal.data;
-  const coef=isDim?1.5:1.0;
-
-  // Calcul total heures réelles (matin + après-midi - pause)
-  const calcTotal=()=>{
-    const hd=document.getElementById("dphd").value;   // début journée
-    const fm=document.getElementById("dpfm").value;   // fin matin
-    const dp=document.getElementById("dpdp").value;   // début pause
-    const fp=document.getElementById("dpfp").value;   // fin pause
-    const da=document.getElementById("dpda").value;   // début après-midi
-    const hf=document.getElementById("dphf").value;   // fin journée
-    // Pause méridienne
-    const pauseDuree=dp&&fp?cH(dp,fp):0;
-    // Info pause
-    const pi=document.getElementById("pause-info");
-    if(pi&&dp&&fp) pi.textContent=`Pause méridienne : ${fH(pauseDuree)} (${dp} → ${fp})`;
-    else if(pi) pi.textContent="";
-    // Total : (début → fin) - pause
-    if(!hd||!hf) return{r:0,dep:0,rc:0,pauseDuree,hd,hf,fm,dp,fp,da};
-    const brut=cH(hd,hf);
-    const r=Math.max(0,brut-pauseDuree);
-    const dep=Math.max(0,r-ht);
-    const rc=dep*coef;
-    const nfo=document.getElementById("dpnfo");
-    if(nfo){
-      nfo.style.display="block";
-      nfo.innerHTML=`Temps réel : <strong>${fH(r)}</strong>${pauseDuree>0?` (pause ${fH(pauseDuree)} déduite)`:""}${dep>0?` · Dépassement : <strong style="color:#B8670A">+${fH(dep)}</strong> · Récup : <strong>${fH(rc)}</strong>${isDim?" (×1,5)":""}`:` · <span style="color:#2E7D52">Conforme</span>`}`;
-    }
-    return{r,dep,rc,pauseDuree,hd,hf,fm,dp,fp,da};
-  };
-
-  ["dphd","dpfm","dpdp","dpfp","dpda","dphf"].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el) el.oninput=calcTotal;
-  });
-  calcTotal();
-
-  document.getElementById("dpcn").onclick=()=>A.set({modal:null});
-  document.getElementById("dpsb").onclick=()=>{
-    const mo=document.getElementById("dpmo").value;
-    const {r,dep,rc,pauseDuree,hd,hf,fm,dp,fp,da}=calcTotal();
-    if(!hd||!hf||(!mo&&dep>0)){
-      if(!mo&&dep>0){alert("Le motif est obligatoire pour tout dépassement.");return;}
-      if(!hd||!hf){alert("Renseignez au minimum l'heure de début et de fin.");return;}
-    }
-    const e={id:uid(),mid:mb.id,nm:`${mb.pr} ${mb.nom}`,sv:mb.sv,dt:ds,jk,
-      hd,hf,fm:fm||"",dp:dp||"",fp:fp||"",da:da||"",
-      pauseDuree,ht,hr:r,dep,rc,coef,mo:mo||"",isDim:isDim||false,
-      st:dep>0?ST.ATT:ST.APP,cr:today2(),lun:hLun,
-      svcMidi:false,svcSoir:false,veillee:false};
-    const l=[...A.s.heu.filter(x=>!(x.mid===mb.id&&x.dt===ds)),e];
-    A.save("heu",l);A.set({modal:null});
-    if(dep>0) A.toast("Déclaration envoyée ✓ — dépassement en attente de validation");
-    else A.toast("Horaires enregistrés ✓","success");
-  };
-}
-</script>
-<script>
-// ══ ORDRES DE MISSION ════════════════════════════════════════════
 let omD=[{dest:"",jeu:""}];
 function rOM(){
   const {role,user,eq,ord}=A.s;const vis=(role==="salarie"?ord.filter(o=>o.mid===user?.id):ord).sort((a,b)=>(b.cr||"").localeCompare(a.cr||""));const enOM=ord.filter(o=>o.st===ST.ATT).length;
@@ -1035,9 +294,9 @@ function pdfOM(o){const w=window.open("","_blank","width=800,height=700");w.docu
 
 
 
-// ══ DONNÉES PLANNING CLASSES ══════════════════════════════════════
 
-// Filières et classes
+
+
 const FILIERES = {
   "Orientation": {color:"#1A6B9A", bg:"#E3F1FA", classes:["4A","4B","3A","3B","3C"]},
   "SAPAT":       {color:"#2E7D52", bg:"#E8F5EE", classes:["2SAPAT","1SAPAT","TSAPAT"]},
@@ -1057,8 +316,8 @@ const CLASSES_META = {
 };
 const CLASSES_ORDER = ["4A","4B","3A","3B","3C","2SAPAT","1SAPAT","TSAPAT","EPC1","EPC2"];
 
-// Plannings par semaine : [semNum, debut, fin, 4A, 4B, 3A, 3B, 3C, 2SAPAT, 1SAPAT, TSAPAT, EPC1, EPC2]
-// Statuts: "P"=présent, "S"=stage, "V"=vacances, "E"=entreprise
+
+
 const normalise = v => {
   if(!v||v==="Vac")return"V";
   if(v==="Stage"||v==="Ent")return"S";
@@ -1161,7 +420,7 @@ const PLANNING_RAW = {
   ]
 };
 
-// Jours fériés 2025-2035 (pré-calculés)
+
 const JOURS_FERIES = {
   "2025-01-01":"Jour de l'An","2025-04-21":"Lundi de Pâques","2025-05-01":"Fête du Travail",
   "2025-05-08":"Victoire 1945","2025-05-29":"Ascension","2025-06-09":"Lundi de Pentecôte",
@@ -1209,35 +468,35 @@ const JOURS_FERIES = {
   "2035-11-11":"Armistice","2035-12-25":"Noël"
 };
 
-// Ponts possibles (jeudi→vendredi, mardi→lundi)
+
 const PONTS_POSSIBLES = {};
 Object.entries(JOURS_FERIES).forEach(([ds,nom])=>{
   const d=new Date(ds+"T12:00:00"),dow=d.getDay();
-  if(dow===4){// jeudi → pont vendredi
+  if(dow===4){
     const v=new Date(d);v.setDate(v.getDate()+1);
     PONTS_POSSIBLES[v.toISOString().split("T")[0]]={nom:`Pont après ${nom}`,type:"pont"};
-  } else if(dow===2){// mardi → pont lundi
+  } else if(dow===2){
     const l=new Date(d);l.setDate(l.getDate()-1);
     PONTS_POSSIBLES[l.toISOString().split("T")[0]]={nom:`Pont avant ${nom}`,type:"pont"};
   }
 });
 
-// Seuils Qualiopi
-const SEUILS = {OK:80, WARN:60}; // >80% vert, 60-80% orange, <60% rouge
+
+const SEUILS = {OK:80, WARN:60}; 
 function getSeuilColor(pct){
   if(pct>=SEUILS.OK) return{bg:"#E8F5EE",c:"#2E7D52",b:"#5AAA80",label:"✅ Conforme"};
   if(pct>=SEUILS.WARN) return{bg:"#FEF3E2",c:"#B8670A",b:"#E8A030",label:"⚠️ Vigilance"};
   return{bg:"#FDECEA",c:"#C0392B",b:"#E08080",label:"🚨 Alerte"};
 }
 
-// Parser date dd/mm/yyyy → ISO
+
 function parseDDMMYYYY(s){
   if(!s)return null;
   const[d,m,y]=s.split("/");
   return`${y}-${m.padStart(2,"0")}-${d.padStart(2,"0")}`;
 }
 
-// Obtenir le planning de la semaine qui contient une date
+
 function getPlanningForDate(dateStr, annee){
   const data=PLANNING_RAW[annee]||[];
   return data.find(row=>{
@@ -1247,24 +506,24 @@ function getPlanningForDate(dateStr, annee){
   })||null;
 }
 
-// Obtenir l'année scolaire courante
+
 function getAnneeScolaireFromDate(dateStr){
   const y=parseInt(dateStr.split("-")[0]);
   const m=parseInt(dateStr.split("-")[1]);
   return m>=8?`${y}-${y+1}`:`${y-1}-${y}`;
 }
 
-// Calculer le nombre de classes présentes une semaine
+
 function nbClassesPresentesSemaine(row){
   if(!row)return 0;
   const vals=row.slice(3,13);
   return vals.filter(v=>v&&v!=="Vac"&&v!=="Stage"&&v!=="Ent").length;
 }
 
-// Calculer le taux de présence enseignants par filière
+
 function tauxPresenceFiliere(equipe,absences,dateStr,filiere){
   const fili=FILIERES[filiere];if(!fili)return null;
-  // Récupérer les membres de cette filière (Pédagogie + filière attribuée)
+  
   const membres=equipe.filter(m=>m.sv==="Pédagogie"&&m.filiere===filiere&&!m.archive);
   if(!membres.length)return{pct:100,present:0,absent:0,total:0};
   const absJour=absences.filter(a=>{
@@ -1277,8 +536,8 @@ function tauxPresenceFiliere(equipe,absences,dateStr,filiere){
   return{pct,present,absent:absJour.length,total:membres.length};
 }
 
-// ── VUE DASHBOARD ENRICHI ────────────────────────────────────────
-// Remplacement du rDB pour y intégrer la navigation semaine et le planning
+
+
 
 let dbSemaineLundi = getLun(today2());
 
@@ -1291,7 +550,7 @@ function rDB(){
   const mesD=role==="salarie"?dem.filter(d=>d.mid===user?.id).slice(0,4):[];
 
   if(role==="direction"){
-    // Semaine courante
+    
     const semLundi=dbSemaineLundi;
     const semVendredi=new Date(semLundi+"T12:00:00");semVendredi.setDate(semVendredi.getDate()+4);
     const semVendrediStr=semVendredi.toISOString().split("T")[0];
@@ -1300,7 +559,7 @@ function rDB(){
     const classesPresentes=planRow?nbClassesPresentesSemaine(planRow):0;
     const totalClasses=CLASSES_ORDER.length;
 
-    // Jours fériés cette semaine
+    
     const feriesSemaine=[];
     for(let i=0;i<7;i++){
       const d=new Date(semLundi+"T12:00:00");d.setDate(d.getDate()+i);
@@ -1309,7 +568,7 @@ function rDB(){
       if(PONTS_POSSIBLES[ds]) feriesSemaine.push({ds,nom:PONTS_POSSIBLES[ds].nom,pont:true});
     }
 
-    // Navigation semaine
+    
     let navH=`<div style="background:#3A4425;border-radius:12px;padding:12px 16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
       <div style="display:flex;align-items:center;gap:10px">
         <button class="btn bgo bsm" id="db-sem-prev">← Sem.</button>
@@ -1325,7 +584,7 @@ function rDB(){
       </div>
     </div>`;
 
-    // Alertes jours fériés / ponts
+    
     let feriesH="";
     if(feriesSemaine.length>0){
       feriesH=`<div style="background:#FEF3E2;border:1.5px solid #E8A030;border-radius:10px;padding:10px 14px;margin-bottom:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center">
@@ -1334,7 +593,7 @@ function rDB(){
       </div>`;
     }
 
-    // KPIs
+    
     let kpiH=`<div class="kgrd">
       <div class="kpi" style="background:${enAtt.length>0?"#FEF3E2":"#E8F5EE"};cursor:pointer" data-nav="dm">
         <div class="val" style="font-size:30px;font-weight:800;color:${enAtt.length>0?"#B8670A":"#2E7D52"}">${enAtt.length}</div>
@@ -1350,12 +609,12 @@ function rDB(){
         <div style="font-size:13px;font-weight:600;color:#555">Classes présentes</div></div>
     </div>`;
 
-    // Planning des classes cette semaine
+    
     let planH="";
     if(planRow){
       const classesK=CLASSES_ORDER;
       planH=`<div class="card" style="margin-bottom:12px"><h3 style="font-size:16px;color:#3A4425;margin-bottom:12px">🎓 Présence des classes — Sem. ${planRow[0]}</h3>`;
-      // Par filière
+      
       Object.entries(FILIERES).forEach(([filiere,fmeta])=>{
         const clsFil=fmeta.classes;
         planH+=`<div style="margin-bottom:10px"><div style="font-size:13px;font-weight:700;color:${fmeta.color};text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:${fmeta.color};display:inline-block"></span>${filiere}</div>
@@ -1374,17 +633,17 @@ function rDB(){
       planH+=`</div>`;
     }
 
-    // Absentéisme par filière (Qualiopi)
-    let absFilH=`<div class="card" style="margin-bottom:12px"><h3 style="font-size:16px;color:#3A4425;margin-bottom:12px">📊 Absentéisme formateurs — ${MOIS[parseInt(ms.split("-")[1])-1]}</h3>`;
+    
+    let absFilH=`<div class="card" style="margin-bottom:12px"><h3 style="font-size:16px;color:#3A4425;margin-bottom:12px">📊 Absentéisme formateurs — ${MNS[parseInt(ms.split("-")[1])-1]}</h3>`;
     const pres=calcPres(eq,abs,ms);
-    // Par filière pédagogique
+    
     Object.entries(FILIERES).forEach(([filiere,fmeta])=>{
       const mbrsFil=eq.filter(m=>m.sv==="Pédagogie"&&m.filiere===filiere&&!m.archive);
       if(!mbrsFil.length){
         absFilH+=`<div style="margin-bottom:8px;opacity:.5"><div style="font-size:13px;font-weight:700;color:${fmeta.color};margin-bottom:3px">${filiere} — <span style="font-size:12px;font-weight:400">Aucun formateur assigné</span></div></div>`;
         return;
       }
-      // Calculer absentéisme du mois pour cette filière
+      
       const[y,mo]=ms.split("-").map(Number);
       const dernJ=new Date(y,mo,0);let jo=0;
       for(let d=new Date(y,mo-1,1);d<=dernJ;d.setDate(d.getDate()+1)){if(d.getDay()!==0&&d.getDay()!==6)jo++;}
@@ -1417,7 +676,7 @@ function rDB(){
         </div>
       </div>`;
     });
-    // Services non pédago
+    
     const autresSvc=["Administratif","Vie résidentielle","Direction","AESH"];
     autresSvc.forEach(sv=>{
       const d=pres[sv];if(!d)return;
@@ -1432,7 +691,7 @@ function rDB(){
     });
     absFilH+=`</div>`;
 
-    // Absents aujourd'hui
+    
     let absAujH="";
     if(absAuj.length>0){
       absAujH=`<div class="card" style="margin-bottom:12px"><h3 style="font-size:16px;color:#3A4425;margin-bottom:10px">Absents aujourd'hui (${absAuj.length})</h3>
@@ -1448,12 +707,12 @@ function rDB(){
       absAujH+=`</div></div>`;
     }
 
-    // Prochaines semaines (anticipation)
+    
     let anticipH=`<div class="card"><h3 style="font-size:16px;color:#3A4425;margin-bottom:12px">📅 Prochaines semaines — Classes présentes</h3>`;
     for(let s=0;s<4;s++){
       const futLundi=new Date(semLundi+"T12:00:00");futLundi.setDate(futLundi.getDate()+s*7);
       const futStr=futLundi.toISOString().split("T")[0];
-      if(s===0){anticipH+=``;continue;} // semaine courante déjà affichée
+      if(s===0){anticipH+=``;continue;} 
       const futAS=getAnneeScolaireFromDate(futStr);
       const futRow=getPlanningForDate(futStr,futAS);
       const futN=futRow?nbClassesPresentesSemaine(futRow):0;
@@ -1474,7 +733,7 @@ function rDB(){
       ${planH}${absFilH}${absAujH}${anticipH}`;
   }
 
-  // ── Vue salarié ────────────────────────────────────────────────
+  
   const cp=Math.max(0,(mb?.cp||0)-(mb?.cpp||0));
   const rc=Math.max(0,(mb?.ra||0)-(mb?.rp||0));
   const tt=Math.max(0,(mb?.ttp||0)-(mb?.ttu||0));
@@ -1501,18 +760,18 @@ function bDB(){
   if(td)td.onclick=()=>{dbSemaineLundi=getLun(today2());A.r();};
 }
 
-// ── VUE PLANNING CLASSES ─────────────────────────────────────────
+
 function rPLANNING_CLASSES(){
   const anneeSco=A.s.planAnneeSco||getAS()||"2025-2026";
   const data=PLANNING_RAW[anneeSco]||[];
   if(!data.length) return`<p style="color:#888">Aucune donnée pour ${anneeSco}</p>`;
 
-  // Sélecteur année
+  
   let selH=`<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
     ${["2025-2026","2026-2027"].map(a=>`<button class="btn ${a===anneeSco?"bp":"bl"} bsm" data-plan-annee="${a}">${a}</button>`).join("")}
   </div>`;
 
-  // Tableau planning
+  
   let tH=`<div style="overflow-x:auto;border-radius:12px;border:1px solid #DDD5B8;background:#fff">
     <table style="border-collapse:collapse;min-width:100%;font-size:13px">
       <thead>
@@ -1520,7 +779,7 @@ function rPLANNING_CLASSES(){
           <th style="padding:9px 12px;color:#fff;text-align:left;font-size:12px;position:sticky;left:0;background:#3A4425;z-index:2;min-width:120px">Semaine</th>
           <th style="padding:9px 8px;color:#fff;font-size:12px;min-width:100px">Dates</th>`;
 
-  // En-têtes classes par filière
+  
   Object.entries(FILIERES).forEach(([fil,fmeta])=>{
     fmeta.classes.forEach(clsKey=>{
       tH+=`<th style="padding:9px 5px;font-size:11px;font-weight:700;color:#fff;text-align:center;min-width:70px;border-left:1px solid rgba(255,255,255,.2)" title="${CLASSES_META[clsKey].label}">${CLASSES_META[clsKey].label}</th>`;
@@ -1535,13 +794,13 @@ function rPLANNING_CLASSES(){
   });
   tH+=`<td></td></tr></thead><tbody>`;
 
-  // Lignes semaines
+  
   data.forEach((row,ri)=>{
     const semNum=row[0],debut=row[1],fin=row[2];
     const debutISO=parseDDMMYYYY(debut);
     const isCurrentWeek=debutISO&&debutISO<=today2()&&parseDDMMYYYY(fin)>=today2();
     const isFuture=debutISO&&debutISO>today2();
-    // Jours fériés cette semaine
+    
     const hasFeries=debutISO&&Object.keys(JOURS_FERIES).some(f=>f>=debutISO&&f<=parseDDMMYYYY(fin));
     const bgRow=isCurrentWeek?"#FBF5E0":ri%2===0?"#fff":"#FAF7F0";
 
@@ -1573,7 +832,7 @@ function rPLANNING_CLASSES(){
 
   tH+=`</tbody></table></div>`;
 
-  // Légende
+  
   let legendH=`<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">
     <span style="font-size:13px;color:#555">Légende :</span>
     <span style="font-size:12px;background:#EEF2E6;color:#3A4425;border-radius:6px;padding:2px 8px">✅ Présente en MFR</span>
@@ -1595,16 +854,16 @@ function bPLANNING_CLASSES(){
 }
 
 
-// ══ CLASSIFICATION FILIÈRES ══════════════════════════════════════
 
-// Vue classification des formateurs par filière
+
+
 function rFILIERES(){
   const {eq}=A.s;
   const pedago=eq.filter(m=>m.sv==="Pédagogie"&&!m.archive);
   const nonClasses=pedago.filter(m=>!m.filiere);
   const classes=pedago.filter(m=>m.filiere);
 
-  // Résumé par filière
+  
   let resumeH=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-bottom:16px">`;
   Object.entries(FILIERES).forEach(([fil,fmeta])=>{
     const mbs=pedago.filter(m=>m.filiere===fil);
@@ -1614,20 +873,20 @@ function rFILIERES(){
       <div style="font-size:12px;color:#555">formateur${mbs.length>1?"s":""}${mbs.length>0?` · ${mbs.map(m=>`${m.pr} ${m.nom}`).join(", ").substring(0,40)}${mbs.map(m=>m.pr).join("").length>20?"…":""}`:""}</div>
     </div>`;
   });
-  // Non classés
+  
   resumeH+=`<div style="background:${nonClasses.length>0?"#FDECEA":"#F5F5F5"};border:2px solid ${nonClasses.length>0?"#C0392B":"#DDD"};border-radius:12px;padding:13px">
     <div style="font-size:16px;font-weight:800;color:${nonClasses.length>0?"#C0392B":"#888"}">Non classés</div>
     <div style="font-size:24px;font-weight:800;color:${nonClasses.length>0?"#C0392B":"#888"};margin:4px 0">${nonClasses.length}</div>
     <div style="font-size:12px;color:#555">${nonClasses.length>0?"⚠ À classer":""}</div>
   </div></div>`;
 
-  // Alerte si non classés
+  
   let alertH="";
   if(nonClasses.length>0){
     alertH=`<div class="wbox" style="margin-bottom:14px">⚠ ${nonClasses.length} formateur${nonClasses.length>1?"s":" "}non classé${nonClasses.length>1?"s":""} — cliquez sur 🎯 Lancer le classement pour les affecter à une filière.</div>`;
   }
 
-  // Tableau des formateurs avec leur filière
+  
   let tabH=`<div class="card"><h3 style="font-size:16px;color:#3A4425;margin-bottom:12px">Formateurs pédagogiques (${pedago.length})</h3>`;
   if(!pedago.length){
     tabH+=`<p style="color:#888">Aucun formateur en service Pédagogie.</p>`;
@@ -1656,7 +915,7 @@ function rFILIERES(){
   }
   tabH+=`</div>`;
 
-  // Bouton lancer classement
+  
   let btnH="";
   if(nonClasses.length>0){
     btnH=`<div style="margin-bottom:14px"><button class="btn bp" id="btn-lancer-classement">🎯 Lancer le classement (${nonClasses.length} à classer)</button></div>`;
@@ -1669,7 +928,7 @@ function rFILIERES(){
 }
 
 function bFILIERES(){
-  // Changement direct par select
+  
   document.querySelectorAll("[data-assign-filiere]").forEach(sel=>{
     sel.onchange=()=>{
       const mid=sel.dataset.assignFiliere;
@@ -1681,12 +940,12 @@ function bFILIERES(){
     };
   });
 
-  // Filtre par filière
+  
   document.querySelectorAll("[data-fil-filter]").forEach(b=>{
     b.onclick=()=>{A.s.filFilter=b.dataset.filFilter;A.r();};
   });
 
-  // Lancer le classement (jeu de questions)
+  
   const bc=document.getElementById("btn-lancer-classement");
   if(bc) bc.onclick=()=>{
     const nonClasses=A.s.eq.filter(m=>m.sv==="Pédagogie"&&!m.archive&&!m.filiere);
@@ -1697,7 +956,7 @@ function bFILIERES(){
   };
 }
 
-// Modal classement par filière (jeu de questions)
+
 function rMdlClassFiliere(){
   const queue=A.s._classQueue||[];
   const idx=A.s._classIdx||0;
@@ -1760,16 +1019,22 @@ function bMdlClassFiliere(){
 }
 
 
-// ══ FRAIS DE REMBOURSEMENT ══════════════════════════════════════
-const TAUX_KM = 0.48; // €/km
 
-// Types de frais divers
+const TAUX_KM = 0.48; 
+
+
 const TYPES_FRAIS = ["Repas","Hébergement","Péage","Parking","Fournitures","Autre"];
+const TYPES_AVANCES = ["Avance de frais","Remboursement kilométrique","Frais divers"];
+const ST_FR = {
+  BROUILLON:"Brouillon",SOUMISE:"Soumise",ATT_DIR:"En attente Direction",
+  VALIDEE:"Validée Direction",REFUSEE:"Refusée",COMPTA:"Transmise Comptabilité",
+  PAYEE:"Payée",ARCHIVEE:"Archivée"
+};
 
-// ── Calcul distance via ViaMichelin (OSRM fallback) ──────────────
+
 async function calcDistance(depart, arrivee){
-  // On utilise l'API Nominatim (OpenStreetMap) pour géocoder
-  // puis OSRM pour la distance routière — gratuit, sans clé API
+  
+  
   try {
     const geo = async (addr) => {
       const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(addr+", France")}&format=json&limit=1`, {headers:{"User-Agent":"MFR-Neracais-RH/1.0"}});
@@ -1778,7 +1043,7 @@ async function calcDistance(depart, arrivee){
       return {lat:parseFloat(d[0].lat), lon:parseFloat(d[0].lon), label:d[0].display_name};
     };
     const [dep, arr] = await Promise.all([geo(depart), geo(arrivee)]);
-    // OSRM routing
+    
     const url = `https://router.project-osrm.org/route/v1/driving/${dep.lon},${dep.lat};${arr.lon},${arr.lat}?overview=false`;
     const r2 = await fetch(url);
     const d2 = await r2.json();
@@ -1790,25 +1055,43 @@ async function calcDistance(depart, arrivee){
   }
 }
 
-// ── Vue Frais ────────────────────────────────────────────────────
+
+// Historique des actions
+function logAction(ficheId, action, user){
+  const fr=A.s.fr||[];
+  const l=fr.map(f=>{
+    if(f.id!==ficheId)return f;
+    const hist=[...(f.historique||[]),{date:today2(),user:user||"Système",action}];
+    return{...f,historique:hist};
+  });
+  A.s.fr=l;K.s("fr",l);
+}
+
 function rFR(){
   const {role,user,eq,fr=[]}=A.s;
   const mb=role==="salarie"?eq.find(m=>m.id===user?.id):null;
   const visFr=(role==="salarie"?fr.filter(f=>f.mid===user?.id):fr).sort((a,b)=>(b.cr||"").localeCompare(a.cr||""));
   const enAttFr=fr.filter(f=>f.st===ST.ATT).length;
-  const enPaiFr=fr.filter(f=>f.st==="Validée").length; // Validée direction, en attente paiement
+  const enPaiFr=fr.filter(f=>f.st==="Validée").length; 
 
   let lH="";
   if(!visFr.length) lH=`<div class="card" style="text-align:center;padding:40px"><p style="color:#888">Aucune fiche de remboursement${role==="salarie"?" — cliquez sur '+ Nouvelle fiche'":""}</p></div>`;
   else visFr.forEach(f=>{
     const total=calcTotalFiche(f);
     const stCfg={
-      [ST.ATT]:{bg:"#FEF3E2",c:"#B8670A",b:"#E8A030",l:"En attente"},
-      [ST.APP]:{bg:"#E8F5EE",c:"#2E7D52",b:"#5AAA80",l:"Approuvée"},
-      [ST.REF]:{bg:"#FDECEA",c:"#C0392B",b:"#E08080",l:"Refusée"},
+      "Brouillon":{bg:"#F5F5F5",c:"#888",b:"#CCC",l:"📝 Brouillon"},
+      "Soumise":{bg:"#FEF3E2",c:"#B8670A",b:"#E8A030",l:"📤 Soumise"},
+      "En attente Direction":{bg:"#FEF3E2",c:"#B8670A",b:"#E8A030",l:"⏳ En attente Direction"},
+      [ST.ATT]:{bg:"#FEF3E2",c:"#B8670A",b:"#E8A030",l:"⏳ En attente"},
+      "Validée Direction":{bg:"#E3F1FA",c:"#1A6B9A",b:"#4A85B0",l:"✓ Validée Direction"},
+      [ST.APP]:{bg:"#E3F1FA",c:"#1A6B9A",b:"#4A85B0",l:"✓ Validée"},
+      [ST.REF]:{bg:"#FDECEA",c:"#C0392B",b:"#E08080",l:"✗ Refusée"},
+      "Refusée":{bg:"#FDECEA",c:"#C0392B",b:"#E08080",l:"✗ Refusée"},
       [ST.ANN]:{bg:"#F0F0F0",c:"#888",b:"#CCC",l:"Annulée"},
-      "Validée":{bg:"#E3F1FA",c:"#1A6B9A",b:"#4A85B0",l:"Validée — En attente paiement"},
+      "Transmise Comptabilité":{bg:"#F0E8F5",c:"#6A2A8A",b:"#A060C0",l:"📨 Transmise Comptabilité"},
+      "Validée":{bg:"#E3F1FA",c:"#1A6B9A",b:"#4A85B0",l:"📨 En attente paiement"},
       "Payée":{bg:"#E8F5EE",c:"#2E7D52",b:"#2E7D52",l:"✅ Payée"},
+      "Archivée":{bg:"#EFEFEF",c:"#999",b:"#CCC",l:"📦 Archivée"},
     }[f.st]||{bg:"#EEE",c:"#666",b:"#CCC",l:f.st};
 
     lH+=`<div class="card ca" style="border-left-color:${stCfg.b}">
@@ -1839,14 +1122,39 @@ function rFR(){
     </div>`;
   });
 
+  const filSt=A.s.frFilSt||"";
+  const filNm=A.s.frFilNm||"";
+  let visFr2=visFr.filter(f=>{
+    if(filSt&&f.st!==filSt)return false;
+    if(filNm&&f.mid!==filNm)return false;
+    return true;
+  });
+  const lH2=visFr2.length===0?`<div class="card" style="text-align:center;padding:40px"><p style="color:#888">Aucune fiche${filSt||filNm?" pour ces filtres":""}</p></div>`:lH.split('').filter((_,i)=>{
+    // recalcul nécessaire pour filtré — on réutilise visFr2
+    return true;
+  }).join('');
+  // Recalculer lH avec visFr2
+  let lHf="";
+  if(!visFr2.length)lHf=`<div class="card" style="text-align:center;padding:40px"><p style="color:#888">Aucune fiche${filSt||filNm?" pour ces filtres":""}</p></div>`;
+  else visFr2.forEach(f=>{
+    const total=calcTotalFiche(f);
+    const stCfg2={"Brouillon":{bg:"#F5F5F5",c:"#888",b:"#CCC"},"Soumise":{bg:"#FEF3E2",c:"#B8670A",b:"#E8A030"},"En attente Direction":{bg:"#FEF3E2",c:"#B8670A",b:"#E8A030"},[ST.ATT]:{bg:"#FEF3E2",c:"#B8670A",b:"#E8A030"},"Validée Direction":{bg:"#E3F1FA",c:"#1A6B9A",b:"#4A85B0"},[ST.APP]:{bg:"#E3F1FA",c:"#1A6B9A",b:"#4A85B0"},[ST.REF]:{bg:"#FDECEA",c:"#C0392B",b:"#E08080"},"Refusée":{bg:"#FDECEA",c:"#C0392B",b:"#E08080"},"Transmise Comptabilité":{bg:"#F0E8F5",c:"#6A2A8A",b:"#A060C0"},"Validée":{bg:"#E3F1FA",c:"#1A6B9A",b:"#4A85B0"},"Payée":{bg:"#E8F5EE",c:"#2E7D52",b:"#2E7D52"},"Archivée":{bg:"#EFEFEF",c:"#999",b:"#CCC"}}[f.st]||{bg:"#EEE",c:"#666",b:"#CCC"};
+    lHf+=`<div class="card ca" style="border-left-color:${stCfg2.b}"><div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px"><div style="flex:1"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">${role==="direction"?`<span style="font-weight:800;font-size:16px;color:#3A4425">${f.nm}</span>`:""}<span class="tsv">${f.sv||""}</span><span style="background:${stCfg2.bg};color:${stCfg2.c};border:1.5px solid ${stCfg2.b};border-radius:20px;padding:2px 10px;font-size:13px;font-weight:700">${f.st||"—"}</span></div><div style="font-size:15px;font-weight:700;color:#2A2A2A;margin-bottom:4px">📋 ${f.objet||"—"}</div><div style="font-size:14px;color:#555">📅 ${fD(f.date)} · ${f.lignesKm?.length||0} trajet(s) · ${f.lignesFrais?.length||0} frais divers</div><div style="font-size:16px;font-weight:800;color:#3A4425;margin-top:6px">💶 ${total.toFixed(2)} €</div>${f.commentaire?`<div style="font-size:13px;color:#888;margin-top:3px">💬 ${f.commentaire}</div>`:""} ${f.reponse?`<div style="font-size:13px;margin-top:5px;padding:5px 10px;border-radius:6px;background:${f.st==="Payée"||f.st==="Transmise Comptabilité"?"#E8F5EE":"#FDECEA"};color:${f.st==="Payée"||f.st==="Transmise Comptabilité"?"#2E7D52":"#C0392B"}">📩 ${f.reponse}</div>`:""} ${f.datePaiement?`<div style="font-size:13px;color:#2E7D52;margin-top:3px;font-weight:600">💳 Payé le ${fD(f.datePaiement)}</div>`:""}<div style="font-size:12px;color:#888;margin-top:3px">Soumis le ${fD(f.cr)}</div>${(f.historique||[]).length>0?`<details style="margin-top:5px"><summary style="font-size:12px;color:#888;cursor:pointer">🕐 Historique (${f.historique.length})</summary><div style="background:#FAF7F0;border-radius:6px;padding:6px;margin-top:4px">${f.historique.map(h2=>`<div style="font-size:11px;color:#555;padding:2px 0">${fD(h2.date)} · <strong>${h2.user}</strong> → ${h2.action}</div>`).join("")}</div></details>`:""}</div><div style="display:flex;gap:6px;flex-wrap:wrap;flex-direction:column;align-items:flex-end"><button class="btn bl bsm" data-detail-fr="${f.id}">👁 Détail</button>${f.st==="Payée"||f.st===ST.APP||f.st==="Validée"||f.st==="Transmise Comptabilité"||f.st==="Validée Direction"?`<button class="btn bg bsm" data-pdf-fr="${f.id}">🖨 PDF</button>`:""} ${role==="direction"&&(f.st===ST.ATT||f.st==="Soumise"||f.st==="En attente Direction")?`<button class="btn bs bsm" data-val-fr="${f.id}" data-vst-fr="Validée Direction">✓ Valider</button><button class="btn bd bsm" data-val-fr="${f.id}" data-vst-fr="Refusée">✗ Refuser</button>`:""} ${role==="direction"&&(f.st==="Validée Direction"||f.st===ST.APP)?`<button class="btn" style="background:#F0E8F5;color:#6A2A8A;border:1.5px solid #A060C0;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600" data-val-fr="${f.id}" data-vst-fr="Transmise Comptabilité">📨 → Comptabilité</button>`:""} ${(f.mid==="mfr015"||f.mid==="mfr017"||role==="direction")&&f.st==="Transmise Comptabilité"?`<button class="btn bs bsm" data-pay-fr="${f.id}">💳 Payée</button>`:""} ${role==="direction"&&f.st==="Payée"?`<button class="btn bl bsm" data-arch-fr="${f.id}">📦 Archiver</button>`:""} ${(role==="salarie"&&f.st===ST.ATT||role==="salarie"&&f.st==="Soumise"||role==="salarie"&&f.st==="Brouillon")?`<button class="btn bw bsm" data-ann-fr="${f.id}">Annuler</button>`:""}</div></div></div>`;
+  });
+
   return`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
     <h2 style="color:#3A4425;font-size:22px;font-weight:800">💶 Frais de remboursement</h2>
     <div style="display:flex;gap:8px;align-items:center">
       ${role==="direction"&&enAttFr>0?`<span style="background:#FEF3E2;color:#B8670A;border:1.5px solid #E8A030;border-radius:20px;padding:3px 12px;font-size:13px;font-weight:700">${enAttFr} en attente</span>`:""}
       ${role==="direction"&&enPaiFr>0?`<span style="background:#E3F1FA;color:#1A6B9A;border:1.5px solid #4A85B0;border-radius:20px;padding:3px 12px;font-size:13px;font-weight:700">${enPaiFr} à payer</span>`:""}
-      ${role==="salarie"?`<button class="btn bp" id="btn-new-fr">+ Nouvelle fiche</button>`:""}
+      ${role==="salarie"?`<button class="btn bp" id="btn-new-fr">+ Nouvelle fiche</button><button class="btn bg bsm" id="btn-brouillon-fr">📝 Brouillon</button>`:""}
     </div>
-  </div>${lH}`;
+  </div>
+  ${role==="direction"?`<div class="flt">
+    ${sel("fr-fil-st",Object.values(ST_FR||{BROUILLON:"Brouillon",SOUMISE:"Soumise",COMPTA:"Transmise Comptabilité",PAYEE:"Payée",ARCHIVEE:"Archivée"}),"","Tous les statuts")}
+    ${sel("fr-fil-nm",sortEq(eq.filter(m=>!m.archive)).map(m=>({v:m.id,l:`${m.nom} ${m.pr}`})),"","Tous les salariés")}
+  </div>`:""}
+  ${lHf}`;
 }
 
 function calcTotalFiche(f){
@@ -1868,11 +1176,23 @@ function bFR(){
   document.querySelectorAll("[data-val-fr]").forEach(b=>{
     b.onclick=()=>{
       const id=b.dataset.valFr,st=b.dataset.vstFr;
-      const rep=st===ST.REF?prompt("Motif du refus (optionnel) :"):"";
-      const list=(A.s.fr||[]).map(f=>f.id===id?{...f,st,reponse:rep||"",dateValidation:today2()}:f);
+      const rep=st==="Refusée"||st===ST.REF?prompt("Motif du refus (optionnel) :"):"";
+      const user=A.s.user?`${A.s.user.pr} ${A.s.user.nom}`:"Direction";
+      const actionLabel={
+        "Validée Direction":"Validée par la direction",
+        "Refusée":"Refusée par la direction"+(rep?` : ${rep}`:""),
+        "Transmise Comptabilité":"Transmise à la comptabilité (Sandrine GRODECOEUR + Gabriel VICH)",
+        [ST.APP]:"Approuvée",[ST.REF]:"Refusée"
+      }[st]||st;
+      const list=(A.s.fr||[]).map(f=>{
+        if(f.id!==id)return f;
+        const hist=[...(f.historique||[]),{date:today2(),user,action:actionLabel}];
+        return{...f,st,reponse:rep||"",dateValidation:today2(),historique:hist};
+      });
       A.save("fr",list);
-      A.toast(st===ST.APP?"Fiche approuvée ✓":st===ST.REF?"Fiche refusée":st==="Validée"?"Transmis à Sandrine pour paiement ✓":"",
-        st===ST.APP||st==="Validée"?"success":"error");
+      const msgs={"Validée Direction":"✓ Fiche validée — en attente transmission comptabilité",
+        "Refusée":"✗ Fiche refusée","Transmise Comptabilité":"📨 Transmis à Sandrine GRODECOEUR et Gabriel VICH ✓"};
+      A.toast(msgs[st]||"Mis à jour",st==="Refusée"||st===ST.REF?"error":"success");
     };
   });
   document.querySelectorAll("[data-pay-fr]").forEach(b=>{
@@ -1880,25 +1200,46 @@ function bFR(){
       const id=b.dataset.payFr;
       const f=(A.s.fr||[]).find(x=>x.id===id);
       if(!f)return;
-      if(!confirm(`Confirmer le paiement de ${calcTotalFiche(f).toFixed(2)} € à ${f.nm} ?`))return;
-      const list=(A.s.fr||[]).map(x=>x.id===id?{...x,st:"Payée",datePaiement:today2(),reponse:`Paiement effectué le ${fD(today2())} par Sandrine GRODECOEUR`}:x);
+      if(!confirm(`Confirmer le paiement de ${calcTotalFiche(f).toFixed(2)} € à ${f.nm} ?
+Sandrine GRODECOEUR sera notifiée.`))return;
+      const user=A.s.user?`${A.s.user.pr} ${A.s.user.nom}`:"Comptabilité";
+      const hist=[...(f.historique||[]),{date:today2(),user,action:`Paiement de ${calcTotalFiche(f).toFixed(2)} € effectué`}];
+      const list=(A.s.fr||[]).map(x=>x.id===id?{...x,st:"Payée",datePaiement:today2(),reponse:`Paiement effectué le ${fD(today2())} — mis en paiement par ${user}`,historique:hist}:x);
       A.save("fr",list);
-      A.toast(`Paiement enregistré — notification envoyée à ${f.nm} ✓`,"success");
+      A.toast(`✅ Paiement de ${calcTotalFiche(f).toFixed(2)} € enregistré — ${f.nm} notifié(e) ✓`,"success");
     };
   });
+  // Archivage
+  document.querySelectorAll("[data-arch-fr]").forEach(b=>{
+    b.onclick=()=>{
+      const id=b.dataset.archFr;
+      const f=(A.s.fr||[]).find(x=>x.id===id);
+      if(!f)return;
+      const user=A.s.user?`${A.s.user.pr} ${A.s.user.nom}`:"Direction";
+      const hist=[...(f.historique||[]),{date:today2(),user,action:"Demande archivée"}];
+      const list=(A.s.fr||[]).map(x=>x.id===id?{...x,st:"Archivée",historique:hist}:x);
+      A.save("fr",list);A.toast("Fiche archivée 📦","success");
+    };
+  });
+  // Filtres direction
+  const ffs=document.getElementById("fr-fil-st");if(ffs)ffs.onchange=()=>{A.s.frFilSt=ffs.value;A.r();};
+  const ffn=document.getElementById("fr-fil-nm");if(ffn)ffn.onchange=()=>{A.s.frFilNm=ffn.value;A.r();};
+  // Brouillon
+  const bbd=document.getElementById("btn-brouillon-fr");
+  if(bbd)bbd.onclick=()=>A.set({modal:{ty:"nf",data:{brouillon:true}}});
   document.querySelectorAll("[data-ann-fr]").forEach(b=>{
     b.onclick=()=>{const list=(A.s.fr||[]).map(f=>f.id===b.dataset.annFr?{...f,st:ST.ANN}:f);A.save("fr",list);A.toast("Annulée","warn");};
   });
 }
 
-// ── Modal nouvelle fiche ─────────────────────────────────────────
+
 function rMdlNF(){
   const d=A.s.modal.data||{};
   const lignesKm=d.lignesKm||[{depart:"MFR Barbaste",arrivee:"",km:0,ar:false,calcEnCours:false}];
   const lignesFrais=d.lignesFrais||[];
   const pj=d.pj||[];
 
-  // Lignes kilométriques
+  
   let kmH=lignesKm.map((l,i)=>`
     <div style="background:#FAF7F0;border:1px solid #DDD5B8;border-radius:10px;padding:10px 12px;margin-bottom:8px">
       <div class="g2" style="margin-bottom:8px">
@@ -1917,7 +1258,7 @@ function rMdlNF(){
       </div>
     </div>`).join("");
 
-  // Lignes frais divers
+  
   let frH=lignesFrais.map((l,i)=>`
     <div style="display:grid;grid-template-columns:1fr 1.5fr auto auto;gap:8px;align-items:end;margin-bottom:6px">
       <div class="fld" style="margin:0"><label style="font-size:11px">Type</label>
@@ -1934,7 +1275,7 @@ function rMdlNF(){
       <button class="btn bd bsm" data-rm-fr="${i}" style="margin-bottom:0">✕</button>
     </div>`).join("");
 
-  // Justificatifs
+  
   let pjH=pj.map((p,i)=>`
     <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#FAF7F0;border:1px solid #DDD5B8;border-radius:8px;margin-bottom:5px">
       <span style="font-size:13px;flex:1">${p.name} (${(p.size/1024).toFixed(0)} Ko)</span>
@@ -1977,9 +1318,10 @@ function rMdlNF(){
       <span>TOTAL ESTIMÉ</span><span id="fr-total-val">0,00 €</span>
     </div>
 
-    <div style="display:flex;gap:10px;justify-content:flex-end">
+    <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
       <button class="btn bl" id="fr-cancel">Annuler</button>
-      <button class="btn bp" id="fr-submit">Soumettre pour validation ✉</button>
+      <button class="btn bl" id="fr-brouillon">📝 Sauver brouillon</button>
+      <button class="btn bp" id="fr-submit">📤 Soumettre pour validation</button>
     </div>`,620);
 }
 
@@ -2010,7 +1352,7 @@ function bMdlNF(){
     calcTotal();
   };
 
-  // Calculer km
+  
   const calcKm=async(i)=>{
     syncKm(i);
     const l=lignesKm[i];
@@ -2037,18 +1379,18 @@ function bMdlNF(){
 
   document.querySelectorAll("[data-preview]").forEach(b=>{b.onclick=()=>{const p=pj[parseInt(b.dataset.preview)];if(p){const w=window.open();w.document.write(`<img src="${p.data}" style="max-width:100%">`);w.document.close();}};});
 
-  // AR checkbox
+  
   document.querySelectorAll("[id^='km-ar-']").forEach(cb=>{cb.onchange=()=>{const i=parseInt(cb.id.split("-")[2]);syncKm(i);calcTotal();};});
 
-  // Ajouter trajet
+  
   const bak=document.getElementById("fr-add-km");
   if(bak) bak.onclick=()=>{lignesKm.push({depart:"MFR Barbaste",arrivee:"",km:0,ar:false});A.set({modal:{ty:"nf",data:{lignesKm,lignesFrais,pj}}});};
 
-  // Ajouter frais
+  
   const baf=document.getElementById("fr-add-frais");
   if(baf) baf.onclick=()=>{lignesFrais.push({type:"Repas",desc:"",montant:""});A.set({modal:{ty:"nf",data:{lignesKm,lignesFrais,pj}}});};
 
-  // Upload justificatifs
+  
   const inp=document.getElementById("fr-pj-input");
   if(inp) inp.onchange=async(e)=>{
     const files=Array.from(e.target.files);
@@ -2060,7 +1402,7 @@ function bMdlNF(){
     A.set({modal:{ty:"nf",data:{lignesKm,lignesFrais,pj}}});
   };
 
-  // Frais inputs sync
+  
   for(let i=0;i<lignesFrais.length;i++){
     ["ty","ds","mt"].forEach(p=>{const el=document.getElementById(`fr-${p}-${i}`);if(el)el.oninput=()=>syncFrais(i);});
   }
@@ -2068,27 +1410,42 @@ function bMdlNF(){
   calcTotal();
 
   document.getElementById("fr-cancel").onclick=()=>A.set({modal:null});
+  // Bouton brouillon
+  const bbrouil=document.getElementById("fr-brouillon");
+  if(bbrouil)bbrouil.onclick=()=>{
+    const ob=document.getElementById("fr-ob")?.value||"(sans titre)";
+    const dt=document.getElementById("fr-dt")?.value||today2();
+    const mb=A.s.eq.find(m=>m.id===A.s.user?.id);
+    if(!mb)return;
+    const fiche={id:uid(),cr:today2(),st:"Brouillon",mid:mb.id,nm:`${mb.pr} ${mb.nom}`,sv:mb.sv,em:mb.em||"",
+      objet:ob,date:dt,lignesKm:[...lignesKm],lignesFrais:[...lignesFrais],pj:[...pj],
+      commentaire:document.getElementById("fr-co")?.value||"",total:0,tauxKm:TAUX_KM,
+      historique:[{date:today2(),user:`${mb.pr} ${mb.nom}`,action:"Brouillon créé"}]};
+    A.save("fr",[...(A.s.fr||[]),fiche]);A.set({modal:null});
+    A.toast("Brouillon sauvegardé 📝","success");
+  };
   document.getElementById("fr-submit").onclick=()=>{
     const ob=document.getElementById("fr-ob").value;
     const dt=document.getElementById("fr-dt").value;
     const co=document.getElementById("fr-co").value;
     if(!ob||!dt){alert("Renseignez l'objet et la date.");return;}
-    // Sync final
+    
     for(let i=0;i<lignesKm.length;i++) syncKm(i);
     for(let i=0;i<lignesFrais.length;i++) syncFrais(i);
     const mb=A.s.eq.find(m=>m.id===A.s.user?.id);
     const km=lignesKm.reduce((s,l)=>s+(l.km||0)*(l.ar?2:1)*TAUX_KM,0);
     const frais=lignesFrais.reduce((s,l)=>s+(parseFloat(l.montant)||0),0);
     const total=km+frais;
-    const fiche={id:uid(),cr:today2(),st:ST.ATT,mid:mb.id,nm:`${mb.pr} ${mb.nom}`,sv:mb.sv,em:mb.em,
-      objet:ob,date:dt,lignesKm,lignesFrais,pj,commentaire:co,total,tauxKm:TAUX_KM};
+    const fiche={id:uid(),cr:today2(),st:"En attente Direction",mid:mb.id,nm:`${mb.pr} ${mb.nom}`,sv:mb.sv,em:mb.em||"",
+      objet:ob,date:dt,lignesKm,lignesFrais,pj,commentaire:co,total,tauxKm:TAUX_KM,
+      historique:[{date:today2(),user:`${mb.pr} ${mb.nom}`,action:"Demande soumise à la direction"}]};
     A.save("fr",[...(A.s.fr||[]),fiche]);
     A.set({modal:null});
     A.toast("Fiche soumise ✓ — en attente de validation direction");
   };
 }
 
-// ── Modal détail fiche ───────────────────────────────────────────
+
 function rMdlDF(){
   const {f}=A.s.modal.data;
   const total=calcTotalFiche(f);
@@ -2144,7 +1501,7 @@ function bMdlDF(){
   const dr=document.getElementById("df-ref");if(dr)dr.onclick=()=>{const rep=prompt("Motif du refus :")||"";const l=(A.s.fr||[]).map(x=>x.id===f.id?{...x,st:ST.REF,reponse:rep}:x);A.save("fr",l);A.set({modal:null});A.toast("Fiche refusée","error");};
 }
 
-// ── Génération PDF remboursement ─────────────────────────────────
+
 function pdfFrais(f){
   const total=calcTotalFiche(f);
   const kmTotal=(f.lignesKm||[]).reduce((s,l)=>s+(l.km||0)*(l.ar?2:1)*TAUX_KM,0);
@@ -2154,7 +1511,7 @@ function pdfFrais(f){
 
   let fraisRows=(f.lignesFrais||[]).map(l=>`<tr><td>${l.type||"—"}</td><td colspan="4">${l.desc||"—"}</td><td style="text-align:right;font-weight:700">${parseFloat(l.montant||0).toFixed(2)} €</td></tr>`).join("");
 
-  // Images justificatifs
+  
   let pjImgs=(f.pj||[]).filter(p=>p.type.startsWith("image/")).map(p=>`<div style="display:inline-block;margin:5px;text-align:center"><img src="${p.data}" style="max-width:180px;max-height:140px;border:1px solid #ddd;border-radius:4px"><div style="font-size:10px;color:#888;margin-top:3px">${p.name}</div></div>`).join("");
   let pjPdfs=(f.pj||[]).filter(p=>!p.type.startsWith("image/")).map(p=>`<div style="display:inline-block;margin:5px;padding:8px 14px;background:#EEF2E6;border-radius:6px;font-size:12px">📄 ${p.name}</div>`).join("");
 
@@ -2228,7 +1585,7 @@ function pdfFrais(f){
 }
 
 
-// ══ IMPRESSIONS ══════════════════════════════════════════════════
+
 function rIM(){
   const {eq,abs,dem,heu,ord}=A.s;
   const actifs=eq.filter(m=>!m.archive);
@@ -2240,7 +1597,7 @@ function rIM(){
     <h3 style="font-size:17px;color:#3A4425;margin-bottom:12px">📋 Récapitulatif individuel salarié</h3>
     <p style="font-size:14px;color:#555;margin-bottom:12px">Génère une fiche complète par salarié : soldes, absences, heures, ordres de mission.</p>
     <div class="fld"><label>Sélectionner le salarié</label>
-      ${sel("imp-mb",[...actifs.map(m=>({v:m.id,l:`${m.pr} ${m.nom} — ${m.sv||""}`}))],"","-- Choisir un membre --")}
+      ${sel("imp-mb",[...sortEq(actifs).map(m=>({v:m.id,l:`${m.pr} ${m.nom} — ${m.sv||""}`}))],"","-- Choisir un membre --")}
     </div>
     <div class="fld"><label>Période</label>
       <div class="g2">
@@ -2314,7 +1671,7 @@ function bIM(){
   };
 }
 
-// ── CSS commun aux impressions ────────────────────────────────────
+
 function cssImpression(){
   return`<style>
     *{box-sizing:border-box;margin:0;padding:0}
@@ -2355,14 +1712,14 @@ function entete(titre,periode,info=""){
   </div>`;
 }
 
-// ── Fiche salarié individuelle ────────────────────────────────────
+
 function imprimerSalarie(mb, dd, df){
   const {abs,dem,heu,ord}=A.s;
   const cp=Math.max(0,(mb.cp||0)-(mb.cpp||0));
   const rc=Math.max(0,(mb.ra||0)-(mb.rp||0));
   const tt=Math.max(0,(mb.ttp||0)-(mb.ttu||0));
 
-  // Filtrer par période
+  
   const absMb=abs.filter(a=>a.mid===mb.id&&a.ty!=="Annulée"&&a.dd>=dd&&a.dd<=df);
   const demMb=dem.filter(d=>d.mid===mb.id&&d.dd>=dd&&d.dd<=df);
   const heuMb=heu.filter(h=>h.mid===mb.id&&h.dt>=dd&&h.dt<=df);
@@ -2374,7 +1731,7 @@ function imprimerSalarie(mb, dd, df){
   let html=`<!`+`DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Fiche ${mb.pr} ${mb.nom}</title>${cssImpression()}</head><body>`;
   html+=entete(`Fiche individuelle — ${mb.pr} ${mb.nom}`,`${fD(dd)} au ${fD(df)}`,`${mb.po||""} · ${mb.sv||""} · Entrée le ${mb.de||"—"}`);
 
-  // Soldes
+  
   html+=`<div class="section"><h2>Soldes à ce jour</h2>
     <div class="kpi-grid">
       <div class="kpi"><div class="val">${cp}j</div><div class="lbl">Congés payés restants</div></div>
@@ -2384,7 +1741,7 @@ function imprimerSalarie(mb, dd, df){
     </div>
   </div>`;
 
-  // Absences
+  
   html+=`<div class="section"><h2>Absences (${absMb.length})</h2>`;
   if(!absMb.length)html+=`<p style="color:#888;font-size:12px">Aucune absence sur la période.</p>`;
   else{
@@ -2394,7 +1751,7 @@ function imprimerSalarie(mb, dd, df){
   }
   html+=`</div>`;
 
-  // Demandes
+  
   html+=`<div class="section"><h2>Demandes de congés (${demMb.length})</h2>`;
   if(!demMb.length)html+=`<p style="color:#888;font-size:12px">Aucune demande sur la période.</p>`;
   else{
@@ -2404,9 +1761,9 @@ function imprimerSalarie(mb, dd, df){
   }
   html+=`</div>`;
 
-  // Heures supplémentaires
+  
   if(heuMb.length>0){
-    // Extraire services spéciaux
+    
     const avecSvc=heuMb.filter(h=>h.svcMidi||h.svcSoir||h.veillee);
     if(avecSvc.length>0){
       html+=`<div class="section"><h2>Services spéciaux déclarés</h2>
@@ -2433,7 +1790,7 @@ function imprimerSalarie(mb, dd, df){
     html+=`</div>`;
   }
 
-  // Ordres de mission
+  
   if(ordMb.length>0){
     html+=`<div class="section"><h2>Ordres de mission (${ordMb.length})</h2>
       <table><thead><tr><th>Date</th><th>Objet</th><th>Départ</th><th>Véhicule</th><th>Statut</th></tr></thead><tbody>`;
@@ -2449,7 +1806,7 @@ function imprimerSalarie(mb, dd, df){
   w.document.write(html);w.document.close();setTimeout(()=>w.print(),600);
 }
 
-// ── Tableau équipe ────────────────────────────────────────────────
+
 function imprimerEquipe(){
   const {eq}=A.s;
   const actifs=eq.filter(m=>!m.archive);
@@ -2460,7 +1817,7 @@ function imprimerEquipe(){
     <th style="text-align:center">CP restants</th><th style="text-align:center">Récup. dispo</th>
     <th style="text-align:center">TT restant</th><th>Entrée</th></tr></thead><tbody>`;
   
-  // Grouper par service
+  
   SVC.forEach(sv=>{
     const mbs=actifs.filter(m=>m.sv===sv);
     if(!mbs.length)return;
@@ -2479,7 +1836,7 @@ function imprimerEquipe(){
   });
   html+=`</tbody></table>`;
 
-  // Légende
+  
   html+=`<p style="font-size:11px;color:#888;margin-top:8px">
     <span style="color:#2E7D52;font-weight:700">■</span> CP > 5j · 
     <span style="color:#B8670A;font-weight:700">■</span> CP entre 1 et 5j · 
@@ -2491,7 +1848,7 @@ function imprimerEquipe(){
   w.document.write(html);w.document.close();setTimeout(()=>w.print(),600);
 }
 
-// ── Récap demandes ────────────────────────────────────────────────
+
 function imprimerDemandes(sv,st,dd,df){
   const {dem,eq}=A.s;
   let vis=dem.filter(d=>d.dd>=dd&&d.dd<=df);
@@ -2502,7 +1859,7 @@ function imprimerDemandes(sv,st,dd,df){
   let html=`<!`+`DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Récap demandes</title>${cssImpression()}</head><body>`;
   html+=entete("Récapitulatif des demandes",`${fD(dd)} au ${fD(df)}`,`${sv||"Tous services"} · ${st||"Tous statuts"} · ${vis.length} demande${vis.length>1?"s":""}`);
 
-  // Stats rapides
+  
   const byType={};vis.forEach(d=>{byType[d.ty]=(byType[d.ty]||0)+1;});
   const byStatut={};vis.forEach(d=>{byStatut[d.st]=(byStatut[d.st]||0)+1;});
   html+=`<div class="section"><h2>Synthèse</h2>
@@ -2533,7 +1890,7 @@ function imprimerDemandes(sv,st,dd,df){
   w.document.write(html);w.document.close();setTimeout(()=>w.print(),600);
 }
 
-// ── Récap absences ────────────────────────────────────────────────
+
 function imprimerAbsences(as,sv){
   const {abs,eq}=A.s;
   const[y1,y2]=as.split("-").map(Number);
@@ -2541,9 +1898,9 @@ function imprimerAbsences(as,sv){
   if(sv)vis=vis.filter(a=>a.sv===sv);
   vis.sort((a,b)=>a.dd.localeCompare(b.dd));
 
-  // Stats par type
+  
   const byType={};vis.forEach(a=>{byType[a.ty]=(byType[a.ty]||0)+(a.nj||0);});
-  // Stats par service
+  
   const bySv={};vis.forEach(a=>{const s=a.sv||"Non défini";bySv[s]=(bySv[s]||0)+(a.nj||0);});
 
   let html=`<!`+`DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Récap absences</title>${cssImpression()}</head><body>`;
@@ -2572,7 +1929,7 @@ function imprimerAbsences(as,sv){
 }
 
 
-// ══ ÉQUIPE ══════════════════════════════════════════════════════
+
 function rEQ(){
   const {eq,abs}=A.s;let lH="";
   const eqVis=(A.s.eqFiltreArch?eq.filter(m=>m.archive):eq.filter(m=>!m.archive));
@@ -2632,7 +1989,7 @@ function bMdlSM(){
   };
 }
 
-// ══ PARAMÈTRES ══════════════════════════════════════════════════
+
 function rPR(){
   return`<h2 style="color:#3A4425;font-size:22px;font-weight:800;margin-bottom:16px">Paramètres</h2>
 
@@ -2705,8 +2062,753 @@ Cette action est irréversible.`))return;
   };
 }
 
-// ══ DÉMARRAGE ════════════════════════════════════════════════════
+
 document.addEventListener("DOMContentLoaded",()=>A.init());
+
+
+const A={
+  s:{role:null,user:null,vue:"db",toast:null,tT:null,modal:null,eq:[],abs:[],dem:[],heu:[],ord:[],fr:[],eqFiltreArch:false,planAnneeSco:null},
+  set(p){Object.assign(A.s,p);A.r();},
+  toast(msg,ty="success"){if(A.s.tT)clearTimeout(A.s.tT);const t=setTimeout(()=>A.set({toast:null,tT:null}),3200);A.set({toast:{msg,ty},tT:t});},
+  save(k,v){K.s(k,v);A.set({[k]:v});},
+  init(){
+    
+    initPwdHashes();
+    
+    const VER="v12";
+    if(K.g("ver")!==VER){K.s("ver",VER);K.s("eq",null);K.s("abs",null);K.s("dem",null);K.s("heu",null);K.s("ord",null);K.s("ses",null);}
+    const eq=K.g("eq");A.s.eq=eq&&eq.length>0?eq:JSON.parse(JSON.stringify(EQ0));if(!eq||!eq.length)K.s("eq",A.s.eq);
+    const ab=K.g("abs");A.s.abs=ab&&ab.length>0?ab:JSON.parse(JSON.stringify(AB0));if(!ab||!ab.length)K.s("abs",A.s.abs);
+    const dm=K.g("dem");if(dm)A.s.dem=dm;
+    const hr=K.g("heu");if(hr)A.s.heu=hr;
+    const or=K.g("ord");if(or)A.s.ord=or;
+    const frr=K.g("fr");if(frr)A.s.fr=frr;
+    const se=K.g("ses");if(se){A.s.role=se.role;A.s.user=se.user;}
+    A.r();
+  },
+  r(){
+    const el=document.getElementById("app");
+    if(!el)return;
+    if(!A.s.role){el.innerHTML=rLogin();bLogin();return;}
+    el.innerHTML=rMain();bMain();
+  }
+};
+
+
+function tBdg(ty,sm=false){const c=TC[ty]||TC["Autre"];return`<span class="bt" style="background:${c.bg};color:${c.c};border-color:${c.b};font-size:${sm?"12px":"14px"}">${c.e} ${ty}</span>`;}
+function sBdg(s){const c={[ST.ATT]:{bg:"#FEF3E2",c:"#B8670A",b:"#E8A030"},[ST.APP]:{bg:"#E8F5EE",c:"#2E7D52",b:"#5AAA80"},[ST.REF]:{bg:"#FDECEA",c:"#C0392B",b:"#E08080"},[ST.ANN]:{bg:"#F0F0F0",c:"#888",b:"#CCC"}}[s]||{bg:"#EEE",c:"#666",b:"#CCC"};return`<span class="bs2" style="background:${c.bg};color:${c.c};border-color:${c.b}">${s}</span>`;}
+function fld(lb,inp,hint=""){return`<div class="fld"><label>${lb}</label>${inp}${hint?`<span style="font-size:15px;color:#888">${hint}</span>`:""}</div>`;}
+function sel(id,opts,val="",ph="",cls=""){const o=opts.map(o=>{const v=o.v!==undefined?o.v:o,l=o.l!==undefined?o.l:o;return`<option value="${v}"${val===v?" selected":""}>${l}</option>`;}).join("");return`<select id="${id}" class="${cls}">${ph?`<option value="">${ph}</option>`:""}${o}</select>`;}
+function mdl(ti,body,w=540){return`<div class="ovl" id="mov"><div class="mdl" style="max-width:${w}px"><div class="mh"><h3>${ti}</h3><button class="mc" id="mcl">×</button></div><div class="mb">${body}</div></div></div>`;}
+
+
+function rLogin(){return`<div class="lgbg"><div class="lgbox"><div class="lglogo">🌿</div><h1 style="text-align:center;font-size:23px;font-weight:800;color:#3A4425;margin-bottom:4px">MFR du Néracais</h1><p style="text-align:center;font-size:15px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:24px">Gestion RH · Équipe</p><div id="lc"><p style="text-align:center;color:#555;font-size:17px;margin-bottom:12px">Qui êtes-vous ?</p><button class="btn bp bfull blg" id="bd" style="margin-bottom:10px">🏫 Direction / Administration</button><button class="btn bg bfull blg" id="bs">👤 Membre de l'équipe</button></div>
+    <div style="margin-top:20px;padding:12px;background:#EEF2E6;border-radius:10px;font-size:12px;color:#555;text-align:center;line-height:1.5">
+      🔒 Vos données sont traitées dans le cadre de votre contrat de travail conformément au RGPD.<br>
+      Responsable de traitement : MFR du Néracais · <a href="mailto:mfr.barbaste@mfr.asso.fr" style="color:#5C6B3A">mfr.barbaste@mfr.asso.fr</a>
+    </div>
+  </div></div></div>`;}
+function bLogin(){
+  const eq=A.s.eq;
+  document.getElementById("bd").onclick=()=>{
+    document.getElementById("lc").innerHTML=`${fld("Votre identité",sel("who",ADM.map(a=>{const m=eq.find(e=>e.id===a.id);return{v:a.id,l:m?`${m.pr} ${m.nom}`:a.id}}),"","-- Choisir --"))}${fld("Mot de passe",'<input type="password" id="pwd" placeholder="••••••••">')}<p id="lerr" style="color:#C0392B;font-size:16px;display:none">⚠ Identifiant ou mot de passe incorrect</p><button class="btn bp bfull" id="bld" style="margin-bottom:10px">Accéder →</button><button class="btn bl bfull bsm" id="brt">← Retour</button><p style="text-align:center;font-size:15px;color:#888;margin-top:8px">Direction : mfr2024 · Sandrine : grodecoeur2024</p>`;
+    document.getElementById("brt").onclick=()=>A.r();
+    document.getElementById("bld").onclick=()=>{const who=document.getElementById("who").value,pwd=document.getElementById("pwd").value,adm=ADM.find(a=>a.id===who&&a.pwd===pwd);if(adm){const m=eq.find(e=>e.id===who)||{id:who,nom:"Direction",pr:""};A.s.role="direction";A.s.user=m;K.s("ses",{role:"direction",user:m});A.set({vue:"db"});}else document.getElementById("lerr").style.display="block";};
+  };
+  document.getElementById("bs").onclick=()=>{
+    document.getElementById("lc").innerHTML=`${fld("Votre nom",sel("whs",sortEq(A.s.eq).map(m=>({v:m.id,l:`${m.pr} ${m.nom} — ${m.sv||""}`})),"","-- Sélectionner --"))}${fld("Mot de passe",'<input type="password" id="pwdsal" placeholder="••••••••">')}<p id="lerr2" style="color:#C0392B;font-size:16px;display:none">⚠ Sélectionnez votre nom</p><button class="btn bp bfull" id="bls" style="margin-bottom:10px">Accéder →</button><button class="btn bl bfull bsm" id="brt2">← Retour</button>`;
+    document.getElementById("brt2").onclick=()=>A.r();
+    document.getElementById("bls").onclick=()=>{
+    const who=document.getElementById("whs").value,pwd=document.getElementById("pwdsal").value;
+    const m=A.s.eq.find(e=>e.id===who);
+    if(!m){document.getElementById("lerr2").textContent="⚠ Sélectionnez votre nom";document.getElementById("lerr2").style.display="block";return;}
+    
+    const pwdAttendu=m.pw||PWDS_CLAIRS[who]||"";
+    if(!pwdAttendu||pwd!==pwdAttendu){
+      document.getElementById("lerr2").textContent="⚠ Mot de passe incorrect";
+      document.getElementById("lerr2").style.display="block";return;
+    }
+    A.s.role="salarie";A.s.user=m;K.s("ses",{role:"salarie",user:m});A.set({vue:"db"});
+};
+  };
+}
+
+
+function rMain(){
+  const {role,user,vue,toast,dem,ord}=A.s;
+  const nAtt=dem.filter(d=>d.st===ST.ATT).length;
+  const nOM=ord.filter(o=>o.st===ST.ATT).length;
+  const nu=user?`${user.pr||""} ${user.nom||""}`.trim():"";
+  const navItems=[
+    {id:"db",ic:"🏠",lb:"Accueil"},
+    {id:"rc",ic:"📋",lb:"Récap"},
+    {id:"dm",ic:"📨",lb:"Demandes",bdg:role==="direction"?nAtt:0},
+    {id:"ab",ic:"📅",lb:"Absences"},
+    {id:"pl",ic:"🗓",lb:"Planning"},
+    {id:"hr",ic:"⏱",lb:"Heures"},
+    {id:"om",ic:"🗺️",lb:"Missions"},
+    ...(role==="direction"?[{id:"fr",ic:"💶",lb:"Frais"},
+    {id:"pc",ic:"🎓",lb:"Classes"},{id:"fi",ic:"📚",lb:"Filières"},{id:"im",ic:"🖨️",lb:"Imprimer"},{id:"eq",ic:"👥",lb:"Équipe"},{id:"pr",ic:"⚙️",lb:"Réglages"}]:[])
+  ];
+  const nav=navItems.map(n=>`<button class="nb${vue===n.id?" on":""}" data-v="${n.id}"><span class="ic">${n.ic}</span><span class="lb">${n.lb}</span>${n.bdg>0?`<span class="bdg">${n.bdg}</span>`:""}</button>`).join("");
+  let content="";
+  if(vue==="db")content=rDB();
+  else if(vue==="rc")content=rRC();
+  else if(vue==="dm")content=rDM();
+  else if(vue==="ab")content=rAB();
+  else if(vue==="pl")content=rPL();
+  else if(vue==="hr")content=rHR();
+  else if(vue==="om")content=rOM();
+  else if(vue==="fr")content=rFR();
+  else if(vue==="pc")content=rPLANNING_CLASSES();
+  else if(vue==="fi"&&role==="direction")content=rFILIERES();
+  else if(vue==="im"&&role==="direction")content=rIM();
+  else if(vue==="eq"&&role==="direction")content=rEQ();
+  else if(vue==="pr"&&role==="direction")content=rPR();
+  const tst=toast?`<div class="tst" style="background:${{success:"#2E7D52",error:"#C0392B",info:"#1A6B9A",warn:"#B8670A"}[toast.ty]||"#5C6B3A"}">${toast.msg}</div>`:"";
+  const modal=A.s.modal?rMdl():"";
+  return`<div class="hdr"><div><div class="hdr-t">🌿 MFR Néracais</div><div class="hdr-s">${role==="direction"?`Dir. – ${nu}`:nu}</div></div>
+  <div style="display:flex;align-items:center;gap:8px">
+    ${role==="salarie"?`<button class="btn bgo bsm" id="bnd">+ Demande</button>`:""}
+    <button class="btn bd bsm" id="btn-logout-hdr" title="Se déconnecter">⬡ Quitter</button>
+  </div></div><div class="app">${content}</div><nav class="nav">${nav}</nav>${tst}${modal}`;
+}
+function bMain(){
+  document.querySelectorAll(".nb[data-v]").forEach(b=>b.onclick=()=>A.set({vue:b.dataset.v,modal:null}));
+  const bnd=document.getElementById("bnd");if(bnd)bnd.onclick=()=>A.set({modal:{ty:"nd"}});
+  const blo2=document.getElementById("btn-logout-hdr");
+  if(blo2)blo2.onclick=()=>{
+    if(!confirm("Se déconnecter ?"))return;
+    A.s.role=null;A.s.user=null;K.s("ses",null);A.r();
+  };
+  const mc=document.getElementById("mcl");if(mc)mc.onclick=()=>A.set({modal:null});
+  const ov=document.getElementById("mov");if(ov)ov.onclick=e=>{if(e.target===ov)A.set({modal:null});};
+  const v=A.s.vue;
+  if(v==="db")bDB();else if(v==="rc")bRC();else if(v==="dm")bDM();else if(v==="ab")bAB();
+  else if(v==="pl")bPL();else if(v==="hr")bHR();else if(v==="om")bOM();
+  else if(v==="fr")bFR();
+  else if(v==="pc")bPLANNING_CLASSES();
+  else if(v==="fi")bFILIERES();
+  else if(v==="im")bIM();
+  else if(v==="eq")bEQ();else if(v==="pr")bPR();
+  if(A.s.modal)bMdl();
+}
+function rMdl(){const {modal}=A.s;if(!modal)return"";const m={"nd":rMdlND,"vd":rMdlVD,"ad":rMdlAD,"sa":rMdlSA,"sm":rMdlSM,"dp":rMdlDP,"no":rMdlNO,"do":rMdlDO,"nf":rMdlNF,"df":rMdlDF,"class-filiere":rMdlClassFiliere}[modal.ty];return m?m():"";} 
+function bMdl(){const {modal}=A.s;const mc=document.getElementById("mcl");if(mc)mc.onclick=()=>A.set({modal:null});const m={"nd":bMdlND,"vd":bMdlVD,"ad":bMdlAD,"sa":bMdlSA,"sm":bMdlSM,"dp":bMdlDP,"no":bMdlNO,"do":bMdlDO,"nf":bMdlNF,"df":bMdlDF,"class-filiere":bMdlClassFiliere}[modal.ty];if(m)m();}
+
+
+function rRC(){
+  const {eq,abs,dem}=A.s;const ms=getMC();const[y,mo]=ms.split("-").map(Number);
+  const dJ=new Date(y,mo,0).getDate();
+  let jours=[];
+  for(let i=1;i<=dJ;i++){const ds=`${y}-${String(mo).padStart(2,"0")}-${String(i).padStart(2,"0")}`;const d=new Date(ds+"T12:00:00");jours.push({n:i,ds,we:d.getDay()===0||d.getDay()===6,td:ds===today2()});}
+  const gTy=(mid,ds)=>{const a=abs.find(a=>a.mid===mid&&a.ty!=="Annulée"&&a.dd<=ds&&(a.df||a.dd)>=ds);if(a)return a.ty;const d=dem.find(d=>d.mid===mid&&d.st===ST.APP&&d.dd<=ds&&(d.df||d.dd)>=ds);return d?d.ty:null;};
+  const an=new Date().getFullYear();
+  let th=`<tr><th class="stk1">Membre</th><th class="stk2">CP</th>`;
+  jours.forEach(j=>{const dy=["D","L","M","M","J","V","S"][new Date(j.ds+"T12:00:00").getDay()];th+=`<th style="${j.td?"background:#C8A84B":j.we?"background:#2A3818":""}">${dy}<br>${j.n}</th>`;});
+  th+=`</tr>`;
+  let tb="";
+  eq.forEach(m=>{
+    const cp=Math.max(0,(m.cp||0)-(m.cpp||0));const cc=cp>5?"#2E7D52":cp>0?"#B8670A":"#C0392B";
+    tb+=`<tr><td class="td1"><div style="font-weight:600;font-size:15px;color:#3A4425">${m.pr} ${m.nom}</div><div style="font-size:14px;color:#888">${m.sv}</div></td><td class="td2" style="color:${cc}">${cp}j</td>`;
+    jours.forEach(j=>{const ty=gTy(m.id,j.ds);const c=ty?TC[ty]||TC["Autre"]:null;tb+=`<td class="${j.td?"tod":j.we?"we":""}">${c?`<div title="${ty}" style="background:${c.bg};border-radius:3px;padding:2px 1px;font-size:15px;text-align:center">${c.e}</div>`:""}</td>`;});
+    tb+=`</tr>`;
+  });
+  const ms2=`<select id="rcm" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:7px 10px;font-size:16px">${MNS.map((m,i)=>{const v=`${an}-${String(i+1).padStart(2,"0")}`;return`<option value="${v}"${v===ms?" selected":""}>${m} ${an}</option>`;}).join("")}</select>`;
+  return`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px"><h2 style="color:#3A4425;font-size:22px;font-weight:800">📋 Tableau récapitulatif</h2>${ms2}</div>
+  <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px">${["Congés payés","Maladie","Formation","Télétravail","Récupération","Absence autorisée"].map(t=>tBdg(t,true)).join("")}</div>
+  <div class="rtbl"><table><thead>${th}</thead><tbody>${tb}</tbody></table></div>
+  <p style="font-size:15px;color:#888;margin-top:8px">Survolez les emojis pour voir le détail</p>`;
+}
+function bRC(){const s=document.getElementById("rcm");if(s)s.onchange=()=>A.r();}
+
+
+function rDM(){
+  const {role,user,dem}=A.s;
+  let vis=dem.filter(d=>{if(role==="salarie"&&d.mid!==user?.id)return false;return true;}).sort((a,b)=>(b.cr||"").localeCompare(a.cr||""));
+  let fH=role==="direction"?`<div class="flt">${sel("fsd",SVC,"","Tous les services")} ${sel("ftd",TSAL,"","Tous les types")} ${sel("fsd2",Object.values(ST),"","Tous les statuts")}</div>`:"";
+  let lH="";
+  if(!vis.length)lH=`<div class="card" style="text-align:center;padding:40px"><p style="color:#888">Aucune demande</p></div>`;
+  else vis.forEach(d=>{const c=TC[d.ty]||TC["Autre"];lH+=`<div class="card ca" style="border-left-color:${c.b}"><div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px"><div style="flex:1"><div style="display:flex;align-items:center;gap:7px;margin-bottom:5px;flex-wrap:wrap">${role==="direction"?`<span style="font-weight:800;font-size:17px;color:#3A4425">${d.nm}</span>`:""}<span class="tsv">${d.sv||""}</span>${tBdg(d.ty,true)} ${sBdg(d.st)}</div><div style="font-size:16px;color:#555">📅 ${fD(d.dd)}${d.df&&d.df!==d.dd?` → ${fD(d.df)}`:""} ${d.dj&&d.dj!=="journee"?` · ${d.dj==="matin"?"🌅":"🌇"}`:""} ${d.nj>0?`<strong> ${d.nj}j</strong>`:""}</div>${d.co?`<div style="font-size:15px;color:#888;margin-top:3px">💬 ${d.co}</div>`:""} ${d.rp?`<div style="font-size:15px;margin-top:5px;padding:5px 10px;border-radius:6px;background:${d.st===ST.APP?"#E8F5EE":"#FDECEA"};color:${d.st===ST.APP?"#2E7D52":"#C0392B"}">📩 ${d.rp}</div>`:""}<div style="font-size:15px;color:#888;margin-top:3px">Envoyée le ${fD(d.cr)}</div></div><div style="display:flex;gap:6px;flex-wrap:wrap">${role==="direction"&&d.st===ST.ATT?`<button class="btn bs bsm" data-val="${d.id}" data-vst="${ST.APP}">✓</button><button class="btn bd bsm" data-val="${d.id}" data-vst="${ST.REF}">✗</button>`:""} ${((role==="salarie"&&d.mid===user?.id&&d.st===ST.ATT)||(role==="direction"&&d.st!==ST.ANN))?`<button class="btn bw bsm" data-ann="${d.id}">Annuler</button>`:""}</div></div></div>`;});
+  return`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px"><h2 style="color:#3A4425;font-size:22px;font-weight:800">${role==="direction"?"Demandes de l'équipe":"Mes demandes"}</h2><span style="font-size:16px;color:#888">${vis.length} demande${vis.length>1?"s":""}</span></div>${fH}${lH}`;
+}
+function bDM(){
+  document.querySelectorAll("[data-val]").forEach(b=>b.onclick=()=>A.set({modal:{ty:"vd",data:{id:b.dataset.val,st:b.dataset.vst}}}));
+  document.querySelectorAll("[data-ann]").forEach(b=>b.onclick=()=>A.set({modal:{ty:"ad",data:{id:b.dataset.ann}}}));
+}
+
+function rMdlND(){const mb=A.s.eq.find(m=>m.id===A.s.user?.id);const cpt={cp:Math.max(0,(mb?.cp||0)-(mb?.cpp||0)),rc:Math.max(0,(mb?.ra||0)-(mb?.rp||0))};return mdl("Nouvelle demande",`${fld("Type *",sel("nty",TSAL,"","-- Choisir --"))}<div id="nex" style="display:none">${fld("Date début *",'<input type="date" id="ndd">'+" "+fld("Date fin",'<input type="date" id="ndf">').replace('<div class="fld">','').replace('</div>',''))}<div class="fld"><label>Durée</label><div style="display:flex;gap:8px">${["journee","matin","apmidi"].map(v=>`<button class="btn bl bsm" data-dj="${v}" style="flex:1">${v==="journee"?"Journée":v==="matin"?"Matin":"Après-midi"}</button>`).join("")}</div></div>${fld("Commentaire",'<textarea id="nco" rows="2" placeholder="Précisions…"></textarea>')}<div class="dvd"></div><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn bl" id="ncn">Annuler</button><button class="btn bp" id="nsb">Envoyer ✉</button></div></div>`);}
+function bMdlND(){
+  let dj="journee";
+  document.querySelectorAll("[data-dj]").forEach(b=>{b.onclick=()=>{dj=b.dataset.dj;document.querySelectorAll("[data-dj]").forEach(x=>{x.style.background=x.dataset.dj===dj?"#EEF2E6":"#FAF7F0";x.style.borderColor=x.dataset.dj===dj?"#5C6B3A":"#DDD5B8";});}; });
+  document.getElementById("nty").onchange=function(){document.getElementById("nex").style.display=this.value?"block":"none";};
+  document.getElementById("ncn").onclick=()=>A.set({modal:null});
+  document.getElementById("nsb").onclick=()=>{
+    const ty=document.getElementById("nty").value,dd=document.getElementById("ndd").value,df=document.getElementById("ndf").value,co=document.getElementById("nco").value;
+    if(!ty||!dd)return;
+    const cj=dj==="journee"?1:0.5,nj=nJO(dd,df||dd,cj);
+    const mb=A.s.eq.find(m=>m.id===A.s.user?.id);
+    const d={id:uid(),cr:today2(),as:getAS(),ty,dd,df:df||dd,dj,cj,nj,nh:0,co,st:ST.ATT,mid:mb.id,nm:`${mb.pr} ${mb.nom}`,em:mb.em,sv:mb.sv};
+    A.save("dem",[...A.s.dem,d]);A.set({modal:null});A.toast("Demande envoyée ✓ — en attente de validation");
+  };
+}
+
+function rMdlVD(){const {id,st}=A.s.modal.data;const d=A.s.dem.find(x=>x.id===id);if(!d)return"";const isA=st===ST.APP;return mdl(isA?"✓ Valider":"✗ Refuser",`<div style="background:#FAF7F0;border:1px solid #DDD5B8;border-radius:10px;padding:11px 13px;margin-bottom:12px"><div style="font-weight:700">${d.nm}</div><div style="font-size:16px;color:#555;margin-top:3px">${tBdg(d.ty,true)} · ${fD(d.dd)}${d.nj>0?` · ${d.nj}j`:""}</div></div>${fld("Message (optionnel)",'<textarea id="vrp" rows="2" placeholder=""></textarea>')}<div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn bl" id="vcn">Annuler</button><button class="btn ${isA?"bs":"bd"}" id="vcf">Confirmer</button></div>`);}
+function bMdlVD(){
+  document.getElementById("vcn").onclick=()=>A.set({modal:null});
+  document.getElementById("vcf").onclick=()=>{
+    const {id,st}=A.s.modal.data;const rep=document.getElementById("vrp").value;
+    let neq=[...A.s.eq];
+    const dl=A.s.dem.map(d=>{
+      if(d.id!==id)return d;
+      if(st===ST.APP){
+        if(d.ty!=="Heures supp."){const na={id:uid(),cr:today2(),as:getAS(),mid:d.mid,nm:d.nm,sv:d.sv,ty:d.ty,dd:d.dd,df:d.df||d.dd,dj:d.dj,cj:d.cj,nj:d.nj,co:"Demande approuvée"};const la=[...A.s.abs,na];K.s("abs",la);A.s.abs=la;}
+        neq=neq.map(m=>{if(m.id!==d.mid)return m;let u={...m};if(d.ty==="Congés payés")u.cpp=(m.cpp||0)+(d.nj||0);if(d.ty==="Récupération")u.rp=(m.rp||0)+(d.nj||0);if(d.ty==="Récupération veillée")u.ra=(m.ra||0)+0.5;return u;});K.s("eq",neq);A.s.eq=neq;
+      }
+      if(st===ST.ANN&&d.st===ST.APP){neq=neq.map(m=>{if(m.id!==d.mid)return m;let u={...m};if(d.ty==="Congés payés")u.cpp=Math.max(0,(m.cpp||0)-(d.nj||0));if(d.ty==="Récupération")u.rp=Math.max(0,(m.rp||0)-(d.nj||0));return u;});K.s("eq",neq);A.s.eq=neq;const la=A.s.abs.map(a=>a.mid===d.mid&&a.dd===d.dd&&a.ty===d.ty?{...a,ty:"Annulée"}:a);K.s("abs",la);A.s.abs=la;}
+      return{...d,st,rp:rep};
+    });
+    A.save("dem",dl);A.set({modal:null});A.toast(`Demande ${st.toLowerCase()} ✓`,st===ST.APP?"success":"error");
+  };
+}
+
+function rMdlAD(){const {id}=A.s.modal.data;const d=A.s.dem.find(x=>x.id===id);if(!d)return"";return mdl("Annuler la demande",`<p style="font-size:17px;margin-bottom:12px">Annuler la demande de <strong>${d.nm}</strong> (${d.ty} — ${fD(d.dd)}) ?</p>${d.st===ST.APP?`<div class="wbox">⚠ Déjà validée. L'annulation restituera le solde.</div>`:""}<div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn bl" id="acn">Non</button><button class="btn bd" id="acf">Oui, annuler</button></div>`);}
+function bMdlAD(){
+  document.getElementById("acn").onclick=()=>A.set({modal:null});
+  document.getElementById("acf").onclick=()=>{
+    const {id}=A.s.modal.data;let neq=[...A.s.eq];
+    const dl=A.s.dem.map(d=>{
+      if(d.id!==id)return d;
+      if(d.st===ST.APP){neq=neq.map(m=>{if(m.id!==d.mid)return m;let u={...m};if(d.ty==="Congés payés")u.cpp=Math.max(0,(m.cpp||0)-(d.nj||0));if(d.ty==="Récupération")u.rp=Math.max(0,(m.rp||0)-(d.nj||0));return u;});K.s("eq",neq);A.s.eq=neq;const la=A.s.abs.map(a=>a.mid===d.mid&&a.dd===d.dd&&a.ty===d.ty?{...a,ty:"Annulée"}:a);K.s("abs",la);A.s.abs=la;}
+      return{...d,st:ST.ANN,rp:"Demande annulée"};
+    });
+    A.save("dem",dl);A.set({modal:null});A.toast("Demande annulée","warn");
+  };
+}
+
+function rAB(){
+  const {role,abs}=A.s;const as=getAS();const[y1,y2]=as.split("-").map(Number);
+  const vis=abs.filter(a=>a.dd>=`${y1}-09-01`&&a.dd<=`${y2}-08-31`).sort((a,b)=>(b.dd||"").localeCompare(a.dd||""));
+  let lH="";
+  if(!vis.length)lH=`<div class="card" style="text-align:center;padding:40px"><p style="color:#888">Aucune absence</p></div>`;
+  else vis.forEach(a=>{const c=TC[a.ty]||TC["Autre"];lH+=`<div class="card ca" style="border-left-color:${c.b};opacity:${a.ty==="Annulée"?.6:1}"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><div style="flex:1"><div style="display:flex;align-items:center;gap:7px;margin-bottom:4px;flex-wrap:wrap"><span style="font-weight:800;font-size:17px">${a.nm}</span><span class="tsv">${a.sv||""}</span>${tBdg(a.ty,true)}</div><div style="font-size:16px;color:#555">📅 ${fD(a.dd)}${a.df&&a.df!==a.dd?` → ${fD(a.df)}`:""} ${a.nj>0?`<strong> ${a.nj}j</strong>`:""}</div>${a.co?`<div style="font-size:15px;color:#888;margin-top:2px">💬 ${a.co}</div>`:""}</div>${role==="direction"&&a.ty!=="Annulée"?`<div style="display:flex;gap:6px"><button class="btn bl bsm" data-edab="${a.id}">✏️</button><button class="btn bw bsm" data-anab="${a.id}">Annuler</button></div>`:""}</div></div>`;});
+  return`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px"><h2 style="color:#3A4425;font-size:22px;font-weight:800">Absences</h2>${role==="direction"?`<button class="btn bp" id="bnab">+ Saisir une absence</button>`:""}</div>${lH}`;
+}
+function bAB(){
+  const b=document.getElementById("bnab");if(b)b.onclick=()=>A.set({modal:{ty:"sa",data:{}}});
+  document.querySelectorAll("[data-edab]").forEach(b=>{const a=A.s.abs.find(x=>x.id===b.dataset.edab);if(a)b.onclick=()=>A.set({modal:{ty:"sa",data:{init:a}}});});
+  document.querySelectorAll("[data-anab]").forEach(b=>{b.onclick=()=>{const la=A.s.abs.map(x=>x.id===b.dataset.anab?{...x,ty:"Annulée"}:x);A.save("abs",la);A.toast("Absence annulée","warn");};});
+}
+function rMdlSA(){const i=A.s.modal.data?.init||{};const {eq}=A.s;return mdl(i.id?"Modifier":"Saisir une absence",`${fld("Membre *",sel("asm",sortEq(eq).map(m=>({v:m.id,l:`${m.pr} ${m.nom}`})),i.mid||"","-- Choisir --"))}${fld("Type *",sel("asty",TDIR,i.ty||"","-- Choisir --"))}<div class="g2">${fld("Date début *",`<input type="date" id="asdd" value="${i.dd||""}">`)}${fld("Date fin",`<input type="date" id="asdf" value="${i.df||""}">`)}</div>${fld("Note",`<textarea id="asco" rows="2">${i.co||""}</textarea>`)}<div class="dvd"></div><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn bl" id="ascn">Annuler</button><button class="btn bp" id="assb">${i.id?"Mettre à jour":"Enregistrer"}</button></div>`);}
+function bMdlSA(){
+  document.getElementById("ascn").onclick=()=>A.set({modal:null});
+  document.getElementById("assb").onclick=()=>{
+    const i=A.s.modal.data?.init||{};const mid=document.getElementById("asm").value,ty=document.getElementById("asty").value,dd=document.getElementById("asdd").value,df=document.getElementById("asdf").value,co=document.getElementById("asco").value;
+    if(!mid||!ty||!dd)return;const mb=A.s.eq.find(m=>m.id===mid);
+    const e={id:i.id||uid(),cr:i.cr||today2(),as:getAS(),mid,nm:`${mb.pr} ${mb.nom}`,sv:mb.sv,ty,dd,df:df||dd,dj:"journee",cj:1,nj:nJO(dd,df||dd),co};
+    const la=i.id?A.s.abs.map(a=>a.id===i.id?e:a):[...A.s.abs,e];A.save("abs",la);A.set({modal:null});A.toast(i.id?"Absence mise à jour ✓":"Absence enregistrée ✓");
+  };
+}
+
+
+let pMo=new Date().getMonth(),pAn=new Date().getFullYear();
+function rPL(){
+  const {eq,abs,dem}=A.s;const mo=pMo,an=pAn;
+  const pJ=new Date(an,mo,1),dJ=new Date(an,mo+1,0);const off=(pJ.getDay()+6)%7,nbJ=dJ.getDate();
+  const dS=`${an}-${String(mo+1).padStart(2,"0")}-01`,fS=`${an}-${String(mo+1).padStart(2,"0")}-${String(nbJ).padStart(2,"0")}`;
+  const evts=[...abs.filter(a=>a.ty!=="Annulée"),...dem.filter(d=>d.st===ST.APP)].filter(e=>{const d=e.dd||e.dd,f=e.df||e.dd;return!(d>fS||f<dS);});
+  const gE=j=>{const ds=`${an}-${String(mo+1).padStart(2,"0")}-${String(j).padStart(2,"0")}`;return evts.filter(e=>(e.dd||e.dd)<=ds&&(e.df||e.dd)>=ds);};
+  let calH=`<div style="background:#3A4425;border-radius:14px 14px 0 0"><div class="cgrd">`;
+  ["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"].forEach(j=>{calH+=`<div style="padding:8px 3px;text-align:center;font-size:15px;font-weight:700;color:#fff;text-transform:uppercase">${j}</div>`;});
+  calH+=`</div></div><div class="cgrd" style="border:1px solid #DDD5B8;border-top:none;background:#fff">`;
+  for(let i=0;i<off;i++)calH+=`<div class="cc ce"></div>`;
+  for(let i=1;i<=nbJ;i++){const ds=`${an}-${String(mo+1).padStart(2,"0")}-${String(i).padStart(2,"0")}`;const iT=ds===today2();const iW=((off+i-1)%7)>=5;const es=gE(i);calH+=`<div class="cc${iT?" ct":iW?" cw":""}"><div class="cd" style="${iT?"color:#C8A84B;font-weight:800":""}">${i}</div>`;es.slice(0,3).forEach(e=>{const c=TC[e.ty]||TC["Autre"];calH+=`<div class="cev" style="background:${c.bg};color:${c.c};border-left-color:${c.b}" title="${e.nm} — ${e.ty}">${c.e}${(e.nm||"").split(" ")[0]||"?"}</div>`;});if(es.length>3)calH+=`<div style="font-size:13px;color:#888">+${es.length-3}</div>`;calH+=`</div>`;}
+  calH+=`</div>`;
+  let lH="";
+  if(evts.length>0){lH=`<div class="card"><h3 style="font-size:17px;color:#3A4425;margin-bottom:10px">${MNS[mo]} ${an} — ${evts.length} évt</h3>`;evts.sort((a,b)=>(a.dd||"").localeCompare(b.dd||"")).forEach(e=>{const c=TC[e.ty]||TC["Autre"];lH+=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 10px;background:#FAF7F0;border-radius:7px;border-left:3px solid ${c.b};margin-bottom:5px"><span style="font-weight:700;font-size:16px">${e.nm}</span>${tBdg(e.ty,true)}<span style="font-size:15px;color:#555">${fD(e.dd)}${e.df&&e.df!==e.dd?` → ${fD(e.df)}`:""}</span></div>`;});lH+=`</div>`;}
+  return`<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px"><h2 style="color:#3A4425;font-size:22px;font-weight:800">Planning</h2><div style="display:flex;align-items:center;gap:8px"><button class="btn bl bsm" id="ppv">←</button><span style="font-weight:700;font-size:17px;min-width:130px;text-align:center">${MNS[mo]} ${an}</span><button class="btn bl bsm" id="pnx">→</button></div></div>${calH}${lH}`;
+}
+function bPL(){const p=document.getElementById("ppv");if(p)p.onclick=()=>{pMo--;if(pMo<0){pMo=11;pAn--;}A.r();};const n=document.getElementById("pnx");if(n)n.onclick=()=>{pMo++;if(pMo>11){pMo=0;pAn++;}A.r();};}
+
+
+
+
+let hLun=getLun(today2());
+
+
+const SVC_SPECIAUX=["Pédagogie","Direction"];
+const CRENEAUX_SPECIAUX={
+  svc_midi:{label:"Service midi",debut:"12:00",fin:"13:30",duree:1.5,emoji:"🍽️"},
+  svc_soir:{label:"Service soir",debut:"17:30",fin:"19:00",duree:1.5,emoji:"🌆"},
+  veillee:{label:"Veillée",debut:"13:30",fin:"21:00",duree:7.5,emoji:"🌙",remplace:true}
+};
+
+function isDimanche(ds){return new Date(ds+"T12:00:00").getDay()===0;}
+function coefRecup(ds){return isDimanche(ds)?1.5:1.0;}
+function isSvcSpecial(mb){return SVC_SPECIAUX.includes(mb?.sv);}
+
+
+function gHT(mid,jk){
+  const p=HOR[mid];if(!p)return 0;
+  const j=p.j[jk];if(!j)return 0;
+  const[dm,fm,da,fa]=j;return cH(dm,fm)+cH(da,fa);
+}
+
+
+function rHR(){
+  const {role,user,eq,heu}=A.s;
+  const mb=role==="salarie"?eq.find(m=>m.id===user?.id):null;
+
+  if(role==="salarie"&&mb){
+    const prof=HOR[mb.id];
+    const canSvcSpecial=isSvcSpecial(mb);
+
+    
+    const joursActifs=JK.filter(jk=>{
+      const ds=getDJ(hLun,jk);
+      return(prof?.j[jk]||heu.find(x=>x.mid===mb.id&&x.dt===ds))&&ds<=today2();
+    });
+    const tousConfirmes=joursActifs.length>0&&joursActifs.every(jk=>{
+      const ds=getDJ(hLun,jk);
+      return heu.find(x=>x.mid===mb.id&&x.dt===ds);
+    });
+
+    
+    let totalTheo=0,totalReel=0,totalDep=0,totalRecup=0,totalSvc=0;
+    JK.forEach(jk=>{
+      const ds=getDJ(hLun,jk);
+      const dc=heu.find(x=>x.mid===mb.id&&x.dt===ds);
+      totalTheo+=gHT(mb.id,jk);
+      if(dc){
+        totalReel+=dc.hr||0;
+        totalDep+=dc.dep||0;
+        totalRecup+=dc.rc||0;
+        
+        if(dc.svcMidi)totalSvc+=CRENEAUX_SPECIAUX.svc_midi.duree;
+        if(dc.svcSoir)totalSvc+=CRENEAUX_SPECIAUX.svc_soir.duree;
+        if(dc.veillee)totalReel+=CRENEAUX_SPECIAUX.veillee.duree;
+      }
+    });
+
+    let h=`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+      <h2 style="color:#3A4425;font-size:22px;font-weight:800">⏱ Mes heures</h2>
+      <div class="snav">
+        <button class="btn bl bsm" id="hpv">← Sem.</button>
+        <span>${fD(hLun)}</span>
+        <button class="btn bl bsm" id="hnx">Sem. →</button>
+      </div>
+    </div>
+    <div class="wbox">⚠️ Toute heure supplémentaire doit être validée en amont par la direction, sauf situation d'urgence. Les heures du dimanche sont récupérées à 1,5×.</div>
+    ${prof?.note?`<div class="ibox">ℹ️ ${prof.note}</div>`:""}`;
+
+    if(joursActifs.length>0&&!tousConfirmes){
+      h+=`<div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+        <button class="btn bs" id="btn-val-sem">✓ Valider toute la semaine (heures conformes)</button>
+      </div>`;
+    }
+
+    
+    h+=`<div style="display:grid;grid-template-columns:repeat(${canSvcSpecial?4:3},1fr);gap:8px;margin-bottom:14px">
+      <div class="sc"><div class="lbl">Théorique</div><div class="val" style="color:#5C6B3A;font-size:18px">${fH(totalTheo)}</div></div>
+      <div class="sc"><div class="lbl">Déclaré</div><div class="val" style="color:#1A6B9A;font-size:18px">${fH(totalReel)}</div></div>
+      <div class="sc"><div class="lbl">Récup générée</div><div class="val" style="color:#B8670A;font-size:18px">${fH(totalRecup)}</div></div>
+      ${canSvcSpecial?`<div class="sc"><div class="lbl">Services spéciaux</div><div class="val" style="color:#6A2A8A;font-size:18px">${fH(totalSvc)}h</div></div>`:""}
+    </div>`;
+
+    
+    if(canSvcSpecial){
+      h+=`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;padding:10px 14px;background:#F5EAF8;border:1px solid #A060C0;border-radius:10px">
+        <span style="font-size:13px;font-weight:700;color:#6A2A8A;width:100%;margin-bottom:4px">Services spéciaux disponibles pour votre poste :</span>
+        <span style="font-size:13px;color:#555">🍽️ Service midi (12h00–13h30 · 1h30)</span>
+        <span style="font-size:13px;color:#555;margin:0 8px">·</span>
+        <span style="font-size:13px;color:#555">🌆 Service soir (17h30–19h00 · 1h30)</span>
+        <span style="font-size:13px;color:#555;margin:0 8px">·</span>
+        <span style="font-size:13px;color:#555">🌙 Veillée (13h30–21h00 · remplace les horaires habituels)</span>
+      </div>`;
+    }
+
+    
+    JK.forEach(jk=>{
+      const ds=getDJ(hLun,jk);
+      const jT=prof?.j[jk];
+      const hT=gHT(mb.id,jk);
+      const dc=heu.find(x=>x.mid===mb.id&&x.dt===ds);
+      const isPast=ds<=today2();
+      const isDim=new Date(ds+"T12:00:00").getDay()===0;
+
+      
+      const isVeillee=dc?.veillee||false;
+      const hTEffectif=isVeillee?CRENEAUX_SPECIAUX.veillee.duree:hT;
+
+      if(!jT&&!dc&&!isDim){
+        h+=`<div style="padding:10px 14px;background:#F8F6F0;border-radius:10px;opacity:.5;margin-bottom:7px;font-size:14px;color:#888">${JL[jk]} ${fD(ds)} — Repos</div>`;
+        return;
+      }
+
+      const ac=dc?(dc.dep>0?(dc.st===ST.APP?"#2E7D52":dc.st===ST.REF?"#C0392B":"#B8670A"):isVeillee?"#7050B0":dc.svcMidi||dc.svcSoir?"#A060C0":"#2E7D52"):"#DDD5B8";
+
+      h+=`<div class="card ca" style="border-left-color:${ac};margin-bottom:7px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
+          <div style="flex:1">
+            <div style="font-weight:700;font-size:15px;color:#3A4425;margin-bottom:5px">
+              ${JL[jk]} <span style="font-size:13px;color:#888;font-weight:400">${fD(ds)}</span>
+              ${isDim?`<span style="background:#FEF3E2;color:#B8670A;border-radius:10px;padding:1px 8px;font-size:12px;font-weight:700;margin-left:6px">🌞 Dimanche ×1,5</span>`:""}
+              ${isVeillee?`<span style="background:#EAE0F8;color:#6A2A8A;border-radius:10px;padding:1px 8px;font-size:12px;font-weight:700;margin-left:6px">🌙 Veillée</span>`:""}
+            </div>
+
+            <!-- Horaires théoriques ou veillée -->
+            ${isVeillee
+              ?`<div style="font-size:14px;color:#6A2A8A;font-weight:600">🌙 Veillée : 13h30 → 21h00 = ${fH(CRENEAUX_SPECIAUX.veillee.duree)} <span style="font-size:12px;color:#888;font-weight:400">(remplace les horaires habituels)</span></div>`
+              :jT?`<div style="font-size:14px;color:#555">Théorique : <strong>${jT[0]||"—"}${jT[1]?` → ${jT[1]}`:""}</strong>${jT[2]||jT[3]?` / <strong>${jT[2]||"—"}${jT[3]?` → ${jT[3]}`:""}</strong>`:""} <span style="color:#5C6B3A;font-weight:600">(${fH(hT)})</span></div>`:""
+            }
+
+            <!-- Services spéciaux cochés -->
+            ${dc&&(dc.svcMidi||dc.svcSoir)?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
+              ${dc.svcMidi?`<span style="background:#F5EAF8;color:#6A2A8A;border:1px solid #A060C0;border-radius:8px;padding:2px 8px;font-size:12px;font-weight:700">🍽️ Service midi 12h00–13h30</span>`:""}
+              ${dc.svcSoir?`<span style="background:#F5EAF8;color:#6A2A8A;border:1px solid #A060C0;border-radius:8px;padding:2px 8px;font-size:12px;font-weight:700">🌆 Service soir 17h30–19h00</span>`:""}
+            </div>`:""}
+
+            <!-- Déclaration heures -->
+            ${dc?`<div style="font-size:14px;color:#555;margin-top:4px">
+              Déclaré : <strong>${dc.hd} → ${dc.hf}</strong> = <span style="color:#1A6B9A;font-weight:700">${fH(dc.hr)}</span>
+              ${dc.dep>0?`<span style="color:#B8670A;font-weight:600;margin-left:8px">+${fH(dc.dep)} supp.</span>`:""}
+              ${dc.rc>0?`<span style="color:#2E7D52;font-weight:600;margin-left:8px">→ ${fH(dc.rc)} récup${isDim?" (×1,5)":""}</span>`:""}
+            </div>
+            ${dc.dep>0&&dc.mo?`<div style="font-size:12px;color:#888;margin-top:2px">💬 ${dc.mo}</div>`:""}
+            <div style="margin-top:5px">${dc.dep>0?sBdg(dc.st):`<span style="background:#E8F5EE;color:#2E7D52;border:1.5px solid #5AAA80;border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700">✓ Confirmé</span>`}</div>`:""}
+          </div>
+
+          <!-- Boutons d'action -->
+          <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end">
+            ${isPast&&!dc&&(jT||isDim)?`
+              <div style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end">
+                <button class="btn bs bsm" data-conf="${jk}" data-cds="${ds}">✓ Conforme</button>
+                <button class="btn bw bsm" data-dpj="${jk}" data-dpd="${ds}">+ Heures sup.</button>
+              </div>
+              ${isDim&&!jT?`<button class="btn bw bsm" data-dpj="${jk}" data-dpd="${ds}" style="margin-top:2px">+ Heures dimanche</button>`:""}
+              ${canSvcSpecial?`<div style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;margin-top:4px">
+                <button class="btn" style="background:#F5EAF8;color:#6A2A8A;border:1.5px solid #A060C0;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600" data-svc="${jk}" data-sds="${ds}" data-stype="svc_midi">🍽️ Svc midi</button>
+                <button class="btn" style="background:#F5EAF8;color:#6A2A8A;border:1.5px solid #A060C0;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600" data-svc="${jk}" data-sds="${ds}" data-stype="svc_soir">🌆 Svc soir</button>
+                <button class="btn" style="background:#EAE0F8;color:#4A1A7A;border:1.5px solid #7050B0;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600" data-svc="${jk}" data-sds="${ds}" data-stype="veillee">🌙 Veillée</button>
+              </div>`:""}
+            `:""}
+            ${isPast&&dc&&canSvcSpecial&&!isVeillee?`
+              <div style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;margin-top:4px">
+                ${!dc.svcMidi?`<button class="btn" style="background:#F5EAF8;color:#6A2A8A;border:1.5px solid #A060C0;border-radius:8px;padding:4px 8px;font-size:11px;font-weight:600" data-add-svc="${dc.id}" data-add-type="svcMidi">+🍽️</button>`:`<button class="btn" style="background:#EEE;color:#888;border:1px solid #CCC;border-radius:8px;padding:4px 8px;font-size:11px" data-rm-svc="${dc.id}" data-rm-type="svcMidi">×🍽️</button>`}
+                ${!dc.svcSoir?`<button class="btn" style="background:#F5EAF8;color:#6A2A8A;border:1.5px solid #A060C0;border-radius:8px;padding:4px 8px;font-size:11px;font-weight:600" data-add-svc="${dc.id}" data-add-type="svcSoir">+🌆</button>`:`<button class="btn" style="background:#EEE;color:#888;border:1px solid #CCC;border-radius:8px;padding:4px 8px;font-size:11px" data-rm-svc="${dc.id}" data-rm-type="svcSoir">×🌆</button>`}
+              </div>
+            `:""}
+            ${dc&&dc.st===ST.ATT&&dc.dep>0?`<button class="btn bl bsm" data-anh="${dc.id}">Annuler</button>`:""}
+          </div>
+        </div>
+      </div>`;
+    });
+
+    
+    const rcTotal=Math.max(0,(mb.ra||0)-(mb.rp||0));
+    h+=`<div class="card" style="background:#EEF2E6;border-color:#5C6B3A33;margin-top:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div><div style="font-size:14px;font-weight:700;color:#3A4425">Mon solde récupération total</div>
+        <div style="font-size:12px;color:#888;margin-top:2px">Heures supp. validées + veillées — récup posées</div></div>
+        <div style="font-size:26px;font-weight:800;color:#5C6B3A">${fH(rcTotal*7)}</div>
+      </div>
+    </div>`;
+
+    return h;
+  }
+
+  
+  const deq=A.s.eq,dheu=A.s.heu;
+  const enAH=dheu.filter(x=>x.st===ST.ATT&&x.dep>0).length;
+
+  
+  const semaines={};
+  dheu.forEach(x=>{
+    const k=`${x.lun||getLun(x.dt)}_${x.mid}`;
+    if(!semaines[k])semaines[k]={lun:x.lun||getLun(x.dt),mid:x.mid,nm:x.nm,sv:x.sv,jours:[]};
+    semaines[k].jours.push(x);
+  });
+  const semsArr=Object.values(semaines).sort((a,b)=>b.lun.localeCompare(a.lun));
+
+  let lH="";
+  if(!semsArr.length)lH=`<div class="card" style="text-align:center;padding:40px"><p style="color:#888">Aucune déclaration</p></div>`;
+  else semsArr.forEach(sem=>{
+    const totalH=sem.jours.reduce((s,j)=>s+(j.hr||0),0);
+    const totalT=sem.jours.reduce((s,j)=>s+(j.ht||0),0);
+    const totalDep=sem.jours.reduce((s,j)=>s+(j.dep||0),0);
+    const totalRec=sem.jours.reduce((s,j)=>s+(j.rc||0),0);
+    const nbMidi=sem.jours.filter(j=>j.svcMidi).length;
+    const nbSoir=sem.jours.filter(j=>j.svcSoir).length;
+    const nbVeillee=sem.jours.filter(j=>j.veillee).length;
+    const hasAtt=sem.jours.some(j=>j.st===ST.ATT&&j.dep>0);
+
+    lH+=`<div class="card ca" style="border-left-color:${totalDep>0?"#B8670A":"#2E7D52"}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+            <span style="font-weight:800;font-size:15px;color:#3A4425">${sem.nm}</span>
+            <span class="tsv">${sem.sv||""}</span>
+            <span style="font-size:13px;color:#888">Sem. du ${fD(sem.lun)}</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px;margin-bottom:8px">
+            <div style="background:#FAF7F0;border-radius:7px;padding:5px 8px;font-size:13px"><div style="color:#888;font-size:10px">THÉORIQUE</div><strong>${fH(totalT)}</strong></div>
+            <div style="background:#E3F1FA;border-radius:7px;padding:5px 8px;font-size:13px"><div style="color:#888;font-size:10px">DÉCLARÉ</div><strong>${fH(totalH)}</strong></div>
+            ${totalDep>0?`<div style="background:#FEF3E2;border-radius:7px;padding:5px 8px;font-size:13px"><div style="color:#888;font-size:10px">DÉPASS.</div><strong style="color:#B8670A">+${fH(totalDep)}</strong></div>`:""}
+            ${totalRec>0?`<div style="background:#E8F5EE;border-radius:7px;padding:5px 8px;font-size:13px"><div style="color:#888;font-size:10px">RÉCUP</div><strong style="color:#2E7D52">${fH(totalRec)}</strong></div>`:""}
+            ${nbMidi>0?`<div style="background:#F5EAF8;border-radius:7px;padding:5px 8px;font-size:13px"><div style="color:#888;font-size:10px">SVC MIDI</div><strong style="color:#6A2A8A">×${nbMidi}</strong></div>`:""}
+            ${nbSoir>0?`<div style="background:#F5EAF8;border-radius:7px;padding:5px 8px;font-size:13px"><div style="color:#888;font-size:10px">SVC SOIR</div><strong style="color:#6A2A8A">×${nbSoir}</strong></div>`:""}
+            ${nbVeillee>0?`<div style="background:#EAE0F8;border-radius:7px;padding:5px 8px;font-size:13px"><div style="color:#888;font-size:10px">VEILLÉES</div><strong style="color:#4A1A7A">×${nbVeillee}</strong></div>`:""}
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:5px">
+            ${sem.jours.map(j=>{
+              const c=j.dep>0?(j.st===ST.APP?"#2E7D52":j.st===ST.REF?"#C0392B":j.st===ST.ATT?"#B8670A":"#888"):j.veillee?"#7050B0":j.svcMidi||j.svcSoir?"#A060C0":"#5C6B3A";
+              const extras=(j.svcMidi?"🍽️":"")+(j.svcSoir?"🌆":"")+(j.veillee?"🌙":"");
+              return`<span style="font-size:11px;background:#F5F5F5;border:1px solid #DDD;border-radius:6px;padding:2px 8px;color:${c}">${["D","L","M","M","J","V","S"][new Date(j.dt+"T12:00:00").getDay()]}${extras} ${j.dep>0?`+${fH(j.dep)}`:fH(j.hr)}</span>`;
+            }).join("")}
+          </div>
+        </div>
+        ${hasAtt?`<div style="display:flex;flex-direction:column;gap:5px">
+          <button class="btn bs bsm" data-val-sem="${sem.mid}_${sem.lun}">✓ Valider récup</button>
+          <button class="btn bd bsm" data-ref-sem="${sem.mid}_${sem.lun}">✗ Refuser</button>
+        </div>`:""}
+      </div>
+    </div>`;
+  });
+
+  return`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+    <h2 style="color:#3A4425;font-size:22px;font-weight:800">⏱ Déclarations horaires</h2>
+    ${enAH>0?`<span style="background:#FEF3E2;color:#B8670A;border:1.5px solid #E8A030;border-radius:20px;padding:3px 12px;font-size:13px;font-weight:700">${enAH} dépassement${enAH>1?"s":""} à valider</span>`:""}
+  </div>${lH}`;
+}
+
+function bHR(){
+  const pv=document.getElementById("hpv");
+  if(pv)pv.onclick=()=>{const d=new Date(hLun+"T12:00:00");d.setDate(d.getDate()-7);hLun=d.toISOString().split("T")[0];A.r();};
+  const nx=document.getElementById("hnx");
+  if(nx)nx.onclick=()=>{const d=new Date(hLun+"T12:00:00");d.setDate(d.getDate()+7);hLun=d.toISOString().split("T")[0];A.r();};
+
+  const mb=A.s.eq.find(m=>m.id===A.s.user?.id);
+
+  
+  document.querySelectorAll("[data-conf]").forEach(b=>{
+    b.onclick=()=>{
+      const jk=b.dataset.conf,ds=b.dataset.cds;if(!mb)return;
+      const ht=gHT(mb.id,jk);const jT=HOR[mb.id]?.j[jk];if(!jT)return;
+      const e={id:uid(),mid:mb.id,nm:`${mb.pr} ${mb.nom}`,sv:mb.sv,dt:ds,jk,
+        hd:jT[0]||"",hf:jT[3]||jT[1]||"",ht,hr:ht,dep:0,rc:0,mo:"",
+        st:ST.APP,cr:today2(),lun:hLun,conf:true,svcMidi:false,svcSoir:false,veillee:false};
+      const l=[...A.s.heu.filter(x=>!(x.mid===mb.id&&x.dt===ds)),e];
+      A.save("heu",l);A.toast("Journée confirmée ✓","success");
+    };
+  });
+
+  
+  const bvs=document.getElementById("btn-val-sem");
+  if(bvs&&mb){
+    bvs.onclick=()=>{
+      const prof=HOR[mb.id];let newH=[...A.s.heu];
+      JK.forEach(jk=>{
+        const ds=getDJ(hLun,jk);if(ds>today2())return;
+        const jT=prof?.j[jk];if(!jT)return;
+        if(newH.find(x=>x.mid===mb.id&&x.dt===ds))return;
+        const ht=gHT(mb.id,jk);
+        const e={id:uid(),mid:mb.id,nm:`${mb.pr} ${mb.nom}`,sv:mb.sv,dt:ds,jk,
+          hd:jT[0]||"",hf:jT[3]||jT[1]||"",ht,hr:ht,dep:0,rc:0,mo:"",
+          st:ST.APP,cr:today2(),lun:hLun,conf:true,svcMidi:false,svcSoir:false,veillee:false};
+        newH=[...newH.filter(x=>!(x.mid===mb.id&&x.dt===ds)),e];
+      });
+      A.save("heu",newH);A.toast("Semaine confirmée ✓","success");
+    };
+  }
+
+  
+  document.querySelectorAll("[data-svc]").forEach(b=>{
+    b.onclick=()=>{
+      if(!mb)return;
+      const jk=b.dataset.svc,ds=b.dataset.sds,stype=b.dataset.stype;
+      const cr=CRENEAUX_SPECIAUX[stype];
+      const jT=HOR[mb.id]?.j[jk];
+      const ht=cr.remplace?cr.duree:gHT(mb.id,jk);
+      
+      const existing=A.s.heu.find(x=>x.mid===mb.id&&x.dt===ds);
+      if(existing){
+        
+        const updated={...existing,[stype==="veillee"?"veillee":stype==="svc_midi"?"svcMidi":"svcSoir"]:true};
+        if(cr.remplace){updated.hd="13:30";updated.hf="21:00";updated.hr=cr.duree;updated.ht=ht;}
+        const l=[...A.s.heu.filter(x=>!(x.mid===mb.id&&x.dt===ds)),updated];
+        A.save("heu",l);
+      } else {
+        
+        const hd=cr.remplace?"13:30":(jT?jT[0]||"":"08:00");
+        const hf=cr.remplace?"21:00":(jT?jT[3]||jT[1]||"":"17:30");
+        const e={id:uid(),mid:mb.id,nm:`${mb.pr} ${mb.nom}`,sv:mb.sv,dt:ds,jk,
+          hd,hf,ht,hr:cr.remplace?cr.duree:gHT(mb.id,jk),dep:0,rc:0,mo:"",
+          st:ST.APP,cr:today2(),lun:hLun,conf:true,
+          svcMidi:stype==="svc_midi",svcSoir:stype==="svc_soir",veillee:cr.remplace};
+        const l=[...A.s.heu.filter(x=>!(x.mid===mb.id&&x.dt===ds)),e];
+        A.save("heu",l);
+      }
+      A.toast(`${cr.emoji} ${cr.label} enregistré ✓`,"success");
+    };
+  });
+
+  
+  document.querySelectorAll("[data-add-svc]").forEach(b=>{
+    b.onclick=()=>{
+      const id=b.dataset.addSvc,field=b.dataset.addType;
+      const l=A.s.heu.map(x=>x.id===id?{...x,[field]:true}:x);
+      A.save("heu",l);A.toast("Service ajouté ✓","success");
+    };
+  });
+
+  
+  document.querySelectorAll("[data-rm-svc]").forEach(b=>{
+    b.onclick=()=>{
+      const id=b.dataset.rmSvc,field=b.dataset.rmType;
+      const l=A.s.heu.map(x=>x.id===id?{...x,[field]:false}:x);
+      A.save("heu",l);A.toast("Service retiré","warn");
+    };
+  });
+
+  
+  document.querySelectorAll("[data-dpj]").forEach(b=>{
+    b.onclick=()=>{
+      if(!mb)return;
+      const jk=b.dataset.dpj,ds=b.dataset.dpd;
+      const jT=HOR[mb.id]?.j[jk];
+      A.set({modal:{ty:"dp",data:{mb,jk,ds,jT,ht:gHT(mb.id,jk),isDim:new Date(ds+"T12:00:00").getDay()===0}}});
+    };
+  });
+
+  
+  document.querySelectorAll("[data-anh]").forEach(b=>{
+    b.onclick=()=>{const l=A.s.heu.filter(h=>h.id!==b.dataset.anh);A.save("heu",l);A.toast("Déclaration annulée","warn");};
+  });
+
+  
+  document.querySelectorAll("[data-val-sem]").forEach(b=>{
+    b.onclick=()=>{
+      const[mid,lun]=b.dataset.valSem.split("_");
+      let neq=[...A.s.eq];
+      const l=A.s.heu.map(x=>{
+        if(x.mid!==mid||x.lun!==lun||x.st!==ST.ATT||x.dep<=0)return x;
+        neq=neq.map(m=>{if(m.id!==mid)return m;return{...m,ra:(m.ra||0)+(x.rc||0)/7};});
+        return{...x,st:ST.APP};
+      });
+      K.s("eq",neq);A.s.eq=neq;
+      A.save("heu",l);A.toast("Récupérations créditées ✓","success");
+    };
+  });
+  document.querySelectorAll("[data-ref-sem]").forEach(b=>{
+    b.onclick=()=>{
+      const[mid,lun]=b.dataset.refSem.split("_");
+      const l=A.s.heu.map(x=>x.mid===mid&&x.lun===lun&&x.st===ST.ATT&&x.dep>0?{...x,st:ST.REF}:x);
+      A.save("heu",l);A.toast("Dépassements refusés","error");
+    };
+  });
+}
+
+
+function rMdlDP(){
+  const {mb,jk,ds,jT,ht,isDim}=A.s.modal.data;
+  const coef=isDim?1.5:1.0;
+  
+  const pauseDeb=jT?jT[1]||"":""
+  const pauseFin=jT?jT[2]||"":""
+  return mdl(isDim?"🌞 Déclarer des heures dimanche":"⏱ Rectification d'horaire",`
+    ${!isDim?`<div class="wbox">⚠️ Toute heure supplémentaire doit être validée en amont par la direction sauf urgence.</div>`:""}
+    ${isDim?`<div style="background:#FEF3E2;border:1.5px solid #E8A030;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:14px;color:#7A4A00;font-weight:600">🌞 Heures travaillées le dimanche — récupérées à <strong>×1,5</strong> après validation direction.</div>`:""}
+    <div style="background:#FAF7F0;border:1px solid #DDD5B8;border-radius:9px;padding:10px 14px;margin-bottom:12px">
+      <div style="font-weight:700;font-size:15px">${JL[jk]} ${fD(ds)}</div>
+      ${ht>0?`<div style="font-size:13px;color:#555;margin-top:2px">Horaire théorique : ${fH(ht)}</div>`:""}
+    </div>
+
+    <p style="font-size:13px;font-weight:700;color:#3A4425;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">🌅 Matin</p>
+    <div class="g2">
+      ${fld("Début de journée",`<input type="time" id="dphd" value="${jT?jT[0]||"":""}">`)}
+      ${fld("Fin de matinée",`<input type="time" id="dpfm" value="${pauseDeb}">`)}
+    </div>
+
+    <p style="font-size:13px;font-weight:700;color:#3A4425;text-transform:uppercase;letter-spacing:.5px;margin:8px 0">☀️ Pause méridienne</p>
+    <div class="g2">
+      ${fld("Début de pause",`<input type="time" id="dpdp" value="${pauseDeb}" placeholder="ex: 12:00">`)}
+      ${fld("Fin de pause",`<input type="time" id="dpfp" value="${pauseFin}" placeholder="ex: 13:30">`)}
+    </div>
+    <div id="pause-info" style="font-size:13px;color:#888;margin-bottom:8px"></div>
+
+    <p style="font-size:13px;font-weight:700;color:#3A4425;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">🌇 Après-midi</p>
+    <div class="g2">
+      ${fld("Reprise après-midi",`<input type="time" id="dpda" value="${pauseFin}">`)}
+      ${fld("Fin de journée",`<input type="time" id="dphf" value="${jT?jT[3]||jT[1]||"":""}">`)}
+    </div>
+
+    <div id="dpnfo" style="background:#E8F5EE;border-radius:8px;padding:10px 14px;font-size:14px;color:#2E7D52;font-weight:600;margin-bottom:10px;display:none"></div>
+
+    ${fld("Motif (obligatoire)",'<textarea id="dpmo" rows="2" placeholder="Décrivez la raison du dépassement ou de la modification…"></textarea>',"Obligatoire pour tout dépassement")}
+    <div class="dvd"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn bl" id="dpcn">Annuler</button>
+      <button class="btn bw" id="dpsb">Envoyer la déclaration</button>
+    </div>`);
+}
+function bMdlDP(){
+  const {mb,jk,ds,ht,isDim}=A.s.modal.data;
+  const coef=isDim?1.5:1.0;
+
+  
+  const calcTotal=()=>{
+    const hd=document.getElementById("dphd").value;   
+    const fm=document.getElementById("dpfm").value;   
+    const dp=document.getElementById("dpdp").value;   
+    const fp=document.getElementById("dpfp").value;   
+    const da=document.getElementById("dpda").value;   
+    const hf=document.getElementById("dphf").value;   
+    
+    const pauseDuree=dp&&fp?cH(dp,fp):0;
+    
+    const pi=document.getElementById("pause-info");
+    if(pi&&dp&&fp) pi.textContent=`Pause méridienne : ${fH(pauseDuree)} (${dp} → ${fp})`;
+    else if(pi) pi.textContent="";
+    
+    if(!hd||!hf) return{r:0,dep:0,rc:0,pauseDuree,hd,hf,fm,dp,fp,da};
+    const brut=cH(hd,hf);
+    const r=Math.max(0,brut-pauseDuree);
+    const dep=Math.max(0,r-ht);
+    const rc=dep*coef;
+    const nfo=document.getElementById("dpnfo");
+    if(nfo){
+      nfo.style.display="block";
+      nfo.innerHTML=`Temps réel : <strong>${fH(r)}</strong>${pauseDuree>0?` (pause ${fH(pauseDuree)} déduite)`:""}${dep>0?` · Dépassement : <strong style="color:#B8670A">+${fH(dep)}</strong> · Récup : <strong>${fH(rc)}</strong>${isDim?" (×1,5)":""}`:` · <span style="color:#2E7D52">Conforme</span>`}`;
+    }
+    return{r,dep,rc,pauseDuree,hd,hf,fm,dp,fp,da};
+  };
+
+  ["dphd","dpfm","dpdp","dpfp","dpda","dphf"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.oninput=calcTotal;
+  });
+  calcTotal();
+
+  document.getElementById("dpcn").onclick=()=>A.set({modal:null});
+  document.getElementById("dpsb").onclick=()=>{
+    const mo=document.getElementById("dpmo").value;
+    const {r,dep,rc,pauseDuree,hd,hf,fm,dp,fp,da}=calcTotal();
+    if(!hd||!hf||(!mo&&dep>0)){
+      if(!mo&&dep>0){alert("Le motif est obligatoire pour tout dépassement.");return;}
+      if(!hd||!hf){alert("Renseignez au minimum l'heure de début et de fin.");return;}
+    }
+    const e={id:uid(),mid:mb.id,nm:`${mb.pr} ${mb.nom}`,sv:mb.sv,dt:ds,jk,
+      hd,hf,fm:fm||"",dp:dp||"",fp:fp||"",da:da||"",
+      pauseDuree,ht,hr:r,dep,rc,coef,mo:mo||"",isDim:isDim||false,
+      st:dep>0?ST.ATT:ST.APP,cr:today2(),lun:hLun,
+      svcMidi:false,svcSoir:false,veillee:false};
+    const l=[...A.s.heu.filter(x=>!(x.mid===mb.id&&x.dt===ds)),e];
+    A.save("heu",l);A.set({modal:null});
+    if(dep>0) A.toast("Déclaration envoyée ✓ — dépassement en attente de validation");
+    else A.toast("Horaires enregistrés ✓","success");
+  };
+}
+
 </script>
 </body>
 </html>
