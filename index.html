@@ -273,7 +273,7 @@ function bOM(){
   document.querySelectorAll("[data-pom]").forEach(b=>{b.onclick=()=>{const o=A.s.ord.find(x=>x.id===b.dataset.pom);if(o)pdfOM(o);};});
   document.querySelectorAll("[data-dom]").forEach(b=>{b.onclick=()=>{const o=A.s.ord.find(x=>x.id===b.dataset.dom);if(o)A.set({modal:{ty:"do",data:{o}}});};});
 }
-function rMdlNO(){const dr=omD.map((d,i)=>`<div class="odr"><input placeholder="Destination (nom, commune)" value="${d.dest||""}" data-di="${i}" data-df="dest" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px"><input placeholder="Jeune (optionnel)" value="${d.jeu||""}" data-di="${i}" data-df="jeu" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px">${omD.length>1?`<button class="btn bd bsm" data-rmd="${i}">✕</button>`:`<div></div>`}</div>`).join("");return mdl("Nouvel ordre de mission",`<div class="ibox">ℹ️ Cet OM doit être validé par la direction avant le départ.</div>${fld("Objet du déplacement *",'<textarea id="omob" rows="2" placeholder="Ex: Visite entreprise — Jean DUPONT — Nérac"></textarea>')}<div class="g2">${fld("Date du déplacement *",'<input type="date" id="omdd">')} ${fld("Véhicule personnel *",sel("omve",[{v:"oui",l:"☑ Oui"},{v:"non",l:"☐ Non"}],"","-- Choisir --"))}</div><div class="g2">${fld("Heure départ *",'<input type="time" id="omhd">')} ${fld("Lieu de départ *",'<input id="omld" placeholder="ex: MFR Barbaste">')}</div><div class="g2">${fld("Heure retour",'<input type="time" id="omhr">')} ${fld("Lieu de retour",'<input id="omlr" placeholder="ex: MFR Barbaste">')}</div><div class="dvd"></div><p style="font-size:15px;font-weight:700;color:#3A4425;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Destinations</p><div id="omde">${dr}</div>${omD.length<5?`<button class="btn bg bsm" id="omad" style="margin-bottom:10px">+ Destination</button>`:""}<div class="dvd"></div><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn bl" id="omcn">Annuler</button><button class="btn bp" id="omsb">Soumettre ✉</button></div>`,600);}
+function rMdlNO(){const dr=omD.map((d,i)=>`<div class="odr"><input placeholder="Destination (nom, commune)" value="${d.dest||""}" data-di="${i}" data-df="dest" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px"><input placeholder="Jeune (optionnel)" value="${d.jeu||""}" data-di="${i}" data-df="jeu" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px">${omD.length>1?`<button class="btn bd bsm" data-rmd="${i}">✕</button>`:`<div></div>`}</div>`).join("");return mdl("Nouvel ordre de mission",`<div class="ibox">ℹ️ Cet OM doit être validé par la direction avant le départ.</div>${fld("Objet du déplacement *",'<textarea id="omob" rows="2" placeholder="Ex: Visite entreprise — Jean DUPONT — Nérac"></textarea>')}<div class="g2">${fld("Date du déplacement *",'<input type="date" id="omdd">')} ${fld("Véhicule personnel *",sel("omve",[{v:"oui",l:"☑ Oui"},{v:"non",l:"☐ Non"}],"","-- Choisir --"))}</div><div class="g2">${fld("Heure départ *",'<input type="time" id="omhd">')} ${fld("Lieu de départ *",'<input id="omld" placeholder="ex: 200 route de Bordeaux Barbaste 47230">')}</div><div class="g2">${fld("Heure retour",'<input type="time" id="omhr">')} ${fld("Lieu de retour",'<input id="omlr" placeholder="ex: 200 route de Bordeaux Barbaste 47230">')}</div><div class="dvd"></div><p style="font-size:15px;font-weight:700;color:#3A4425;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Destinations</p><div id="omde">${dr}</div>${omD.length<5?`<button class="btn bg bsm" id="omad" style="margin-bottom:10px">+ Destination</button>`:""}<div class="dvd"></div><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn bl" id="omcn">Annuler</button><button class="btn bp" id="omsb">Soumettre ✉</button></div>`,600);}
 function bMdlNO(){
   document.getElementById("omcn").onclick=()=>{omD=[{dest:"",jeu:""}];A.set({modal:null});};
   const ad=document.getElementById("omad");if(ad)ad.onclick=()=>{omD.push({dest:"",jeu:""});A.set({modal:{ty:"no"}});};
@@ -1033,24 +1033,35 @@ const ST_FR = {
 
 
 async function calcDistance(depart, arrivee){
-  
-  
+  // Géocodage via Nominatim (OpenStreetMap) + routage via OSRM
+  const geocode = async (addr) => {
+    const q = encodeURIComponent(addr.trim() + (addr.toLowerCase().includes('france')?'':', France'));
+    const url = `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1&countrycodes=fr`;
+    const r = await fetch(url, {
+      headers:{"Accept":"application/json","Accept-Language":"fr"}
+    });
+    if(!r.ok) throw new Error(`Erreur géocodage HTTP ${r.status}`);
+    const data = await r.json();
+    if(!data||!data.length) throw new Error(`Adresse introuvable : "${addr}". Essayez avec ville + code postal.`);
+    return {lat:parseFloat(data[0].lat), lon:parseFloat(data[0].lon), label:data[0].display_name};
+  };
+
   try {
-    const geo = async (addr) => {
-      const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(addr+", France")}&format=json&limit=1`, {headers:{"User-Agent":"MFR-Neracais-RH/1.0"}});
-      const d = await r.json();
-      if(!d||!d[0]) throw new Error("Adresse non trouvée");
-      return {lat:parseFloat(d[0].lat), lon:parseFloat(d[0].lon), label:d[0].display_name};
-    };
-    const [dep, arr] = await Promise.all([geo(depart), geo(arrivee)]);
-    
-    const url = `https://router.project-osrm.org/route/v1/driving/${dep.lon},${dep.lat};${arr.lon},${arr.lat}?overview=false`;
-    const r2 = await fetch(url);
+    // Géocoder les 2 adresses en parallèle
+    const [dep, arr] = await Promise.all([geocode(depart), geocode(arrivee)]);
+
+    // Calcul itinéraire OSRM
+    const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${dep.lon},${dep.lat};${arr.lon},${arr.lat}?overview=false`;
+    const r2 = await fetch(osrmUrl);
+    if(!r2.ok) throw new Error(`Erreur routage OSRM HTTP ${r2.status}`);
     const d2 = await r2.json();
-    if(d2.code!=="Ok") throw new Error("Itinéraire impossible");
-    const km = Math.round(d2.routes[0].distance/1000);
+    if(!d2||d2.code!=="Ok"||!d2.routes||!d2.routes.length) throw new Error("Itinéraire impossible entre ces deux adresses");
+    
+    const km = Math.round(d2.routes[0].distance / 1000);
     return {km, depLabel:dep.label, arrLabel:arr.label, ok:true};
+
   } catch(e) {
+    console.error("calcDistance error:", e.message);
     return {km:0, error:e.message, ok:false};
   }
 }
@@ -1122,20 +1133,17 @@ function rFR(){
     </div>`;
   });
 
+  // Filtres direction
   const filSt=A.s.frFilSt||"";
   const filNm=A.s.frFilNm||"";
-  let visFr2=visFr.filter(f=>{
+  const visFr2=role==="direction"?visFr.filter(f=>{
     if(filSt&&f.st!==filSt)return false;
     if(filNm&&f.mid!==filNm)return false;
     return true;
-  });
-  const lH2=visFr2.length===0?`<div class="card" style="text-align:center;padding:40px"><p style="color:#888">Aucune fiche${filSt||filNm?" pour ces filtres":""}</p></div>`:lH.split('').filter((_,i)=>{
-    // recalcul nécessaire pour filtré — on réutilise visFr2
-    return true;
-  }).join('');
-  // Recalculer lH avec visFr2
+  }):visFr;
+  // Reconstruire la liste avec visFr2
   let lHf="";
-  if(!visFr2.length)lHf=`<div class="card" style="text-align:center;padding:40px"><p style="color:#888">Aucune fiche${filSt||filNm?" pour ces filtres":""}</p></div>`;
+  if(!visFr2.length)lHf=`<div class="card" style="text-align:center;padding:40px"><p style="color:#888">Aucune fiche de remboursement${role==="salarie"?" — cliquez sur '+ Nouvelle fiche'":filSt||filNm?" pour ces filtres":""}</p></div>`;
   else visFr2.forEach(f=>{
     const total=calcTotalFiche(f);
     const stCfg2={"Brouillon":{bg:"#F5F5F5",c:"#888",b:"#CCC"},"Soumise":{bg:"#FEF3E2",c:"#B8670A",b:"#E8A030"},"En attente Direction":{bg:"#FEF3E2",c:"#B8670A",b:"#E8A030"},[ST.ATT]:{bg:"#FEF3E2",c:"#B8670A",b:"#E8A030"},"Validée Direction":{bg:"#E3F1FA",c:"#1A6B9A",b:"#4A85B0"},[ST.APP]:{bg:"#E3F1FA",c:"#1A6B9A",b:"#4A85B0"},[ST.REF]:{bg:"#FDECEA",c:"#C0392B",b:"#E08080"},"Refusée":{bg:"#FDECEA",c:"#C0392B",b:"#E08080"},"Transmise Comptabilité":{bg:"#F0E8F5",c:"#6A2A8A",b:"#A060C0"},"Validée":{bg:"#E3F1FA",c:"#1A6B9A",b:"#4A85B0"},"Payée":{bg:"#E8F5EE",c:"#2E7D52",b:"#2E7D52"},"Archivée":{bg:"#EFEFEF",c:"#999",b:"#CCC"}}[f.st]||{bg:"#EEE",c:"#666",b:"#CCC"};
@@ -1239,27 +1247,46 @@ function rMdlNF(){
   const lignesFrais=d.lignesFrais||[];
   const pj=d.pj||[];
 
-  
-  let kmH=lignesKm.map((l,i)=>`
-    <div style="background:#FAF7F0;border:1px solid #DDD5B8;border-radius:10px;padding:10px 12px;margin-bottom:8px">
-      <div class="g2" style="margin-bottom:8px">
-        <div class="fld"><label>Lieu de départ</label><input id="km-dep-${i}" value="${l.depart||""}" placeholder="ex: MFR Barbaste" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:8px 11px;width:100%"></div>
-        <div class="fld"><label>Destination</label><input id="km-arr-${i}" value="${l.arrivee||""}" placeholder="ex: Agen, Nérac..." style="border:1.5px solid #DDD5B8;border-radius:8px;padding:8px 11px;width:100%"></div>
-      </div>
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <button class="btn bl bsm" data-calc-km="${i}">🗺️ Calculer</button>
-        <label style="display:flex;align-items:center;gap:5px;font-size:14px;cursor:pointer">
-          <input type="checkbox" id="km-ar-${i}" ${l.ar?"checked":""} style="width:16px;height:16px"> Aller-retour
-        </label>
-        <span id="km-res-${i}" style="font-size:14px;font-weight:700;color:#3A4425">
-          ${l.km>0?`${l.km} km ${l.ar?"(×2) ":""}→ ${(l.km*(l.ar?2:1)*TAUX_KM).toFixed(2)} €`:"—"}
-        </span>
-        ${lignesKm.length>1?`<button class="btn bd bsm" data-rm-km="${i}">✕</button>`:""}
-      </div>
+  // Rendu des justificatifs existants
+  let pjH=pj.map((p,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#FAF7F0;border:1px solid #DDD5B8;border-radius:8px;margin-bottom:5px">
+      <span style="font-size:13px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name} <span style="color:#888;font-size:11px">(${(p.size/1024).toFixed(0)} Ko)</span></span>
+      ${p.type.startsWith("image/")?`<img src="${p.data}" style="width:44px;height:34px;object-fit:cover;border-radius:4px;cursor:pointer;border:1px solid #DDD" data-preview="${i}">`:`<span style="font-size:22px">📄</span>`}
+      <button class="btn bd bsm" data-rm-pj="${i}">✕</button>
     </div>`).join("");
 
   
-  let frH=lignesFrais.map((l,i)=>`
+  let kmH=lignesKm.map((l,i)=>{
+    const montant=((l.km||0)*(l.ar?2:1)*TAUX_KM).toFixed(2);
+    return`<div style="background:#FAF7F0;border:1px solid #DDD5B8;border-radius:10px;padding:10px 12px;margin-bottom:8px">
+      <div class="g2" style="margin-bottom:8px">
+        <div class="fld"><label>Lieu de départ</label>
+          <input id="km-dep-${i}" value="${l.depart||""}" placeholder="ex: MFR Barbaste" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:8px 11px;width:100%">
+        </div>
+        <div class="fld"><label>Destination</label>
+          <input id="km-arr-${i}" value="${l.arrivee||""}" placeholder="ex: Agen, Nérac..." style="border:1.5px solid #DDD5B8;border-radius:8px;padding:8px 11px;width:100%">
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <div class="fld" style="margin:0;flex:1;min-width:100px">
+          <label style="font-size:11px;font-weight:700;color:#3A4425;text-transform:uppercase;letter-spacing:.6px">Nombre de km (aller)</label>
+          <input type="number" id="km-nb-${i}" value="${l.km||""}" min="0" step="1" placeholder="ex: 45"
+            style="border:1.5px solid #DDD5B8;border-radius:8px;padding:8px 11px;width:100%" data-km-i="${i}" data-km-field="km">
+        </div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;margin-top:16px">
+          <input type="checkbox" id="km-ar-${i}" ${l.ar?"checked":""} style="width:18px;height:18px">
+          Aller-retour (×2)
+        </label>
+        <div style="text-align:center;min-width:90px;margin-top:16px">
+          <div id="km-res-${i}" style="font-size:18px;font-weight:800;color:${l.km>0?"#2E7D52":"#888"}">${l.km>0?montant+" €":"— €"}</div>
+          <div style="font-size:11px;color:#888">${l.km>0?(l.ar?l.km*2:l.km)+" km × 0,48 €":""}</div>
+        </div>
+        ${lignesKm.length>1?`<button class="btn bd bsm" data-rm-km="${i}" style="margin-top:16px">✕</button>`:""}
+      </div>
+    </div>`;
+  }).join("");
+
+let frH=lignesFrais.map((l,i)=>`
     <div style="display:grid;grid-template-columns:1fr 1.5fr auto auto;gap:8px;align-items:end;margin-bottom:6px">
       <div class="fld" style="margin:0"><label style="font-size:11px">Type</label>
         <select id="fr-ty-${i}" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:8px 10px;width:100%">
@@ -1276,12 +1303,7 @@ function rMdlNF(){
     </div>`).join("");
 
   
-  let pjH=pj.map((p,i)=>`
-    <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#FAF7F0;border:1px solid #DDD5B8;border-radius:8px;margin-bottom:5px">
-      <span style="font-size:13px;flex:1">${p.name} (${(p.size/1024).toFixed(0)} Ko)</span>
-      ${p.type.startsWith("image/")?`<img src="${p.data}" style="width:40px;height:30px;object-fit:cover;border-radius:4px;cursor:pointer" data-preview="${i}">`:"<span style='font-size:20px'>📄</span>"}
-      <button class="btn bd bsm" data-rm-pj="${i}">✕</button>
-    </div>`).join("");
+  
 
   return mdl("💶 Nouvelle fiche de remboursement",`
     <div class="ibox" style="margin-bottom:12px">💡 Renseignez l'objet, les trajets et frais. Les km sont calculés automatiquement via OpenStreetMap.</div>
@@ -1342,7 +1364,15 @@ function bMdlNF(){
     const dep=document.getElementById(`km-dep-${i}`)?.value||"";
     const arr=document.getElementById(`km-arr-${i}`)?.value||"";
     const ar=document.getElementById(`km-ar-${i}`)?.checked||false;
-    if(lignesKm[i]){lignesKm[i].depart=dep;lignesKm[i].arrivee=arr;lignesKm[i].ar=ar;}
+    const km=parseFloat(document.getElementById(`km-nb-${i}`)?.value)||0;
+    if(lignesKm[i]){lignesKm[i].depart=dep;lignesKm[i].arrivee=arr;lignesKm[i].ar=ar;lignesKm[i].km=km;}
+    // Mise à jour affichage montant en temps réel
+    const montant=(km*(ar?2:1)*TAUX_KM).toFixed(2);
+    const res=document.getElementById(`km-res-${i}`);
+    const det=res?.nextElementSibling;
+    if(res){res.textContent=km>0?montant+" €":"— €";res.style.color=km>0?"#2E7D52":"#888";}
+    if(det){det.textContent=km>0?`${ar?km*2:km} km × 0,48 €`:"";}
+    calcTotal();
   };
   const syncFrais=(i)=>{
     const ty=document.getElementById(`fr-ty-${i}`)?.value||"Autre";
@@ -1356,23 +1386,42 @@ function bMdlNF(){
   const calcKm=async(i)=>{
     syncKm(i);
     const l=lignesKm[i];
-    if(!l.depart||!l.arrivee){alert("Renseignez départ et destination.");return;}
+    if(!l.depart||!l.arrivee){alert("Renseignez le lieu de départ et la destination.");return;}
     const res=document.getElementById(`km-res-${i}`);
-    if(res) res.textContent="⏳ Calcul en cours…";
+    const btn=document.querySelector(`[data-calc-km="${i}"]`);
+    if(res){res.textContent="⏳ Calcul en cours…";res.style.color="#888";}
+    if(btn){btn.disabled=true;btn.textContent="⏳";}
     const result=await calcDistance(l.depart,l.arrivee);
+    if(btn){btn.disabled=false;btn.textContent="🗺️ Calculer";}
     if(result.ok){
       lignesKm[i].km=result.km;
       const ar=document.getElementById(`km-ar-${i}`)?.checked||false;
       lignesKm[i].ar=ar;
-      if(res) res.textContent=`${result.km} km${ar?" (×2) ":""} → ${(result.km*(ar?2:1)*TAUX_KM).toFixed(2)} €`;
+      const total=(result.km*(ar?2:1)*TAUX_KM).toFixed(2);
+      if(res){
+        res.textContent=`✓ ${result.km} km${ar?" (×2 = "+(result.km*2)+" km)":""} → ${total} €`;
+        res.style.color="#2E7D52";res.style.fontWeight="700";
+      }
       calcTotal();
     } else {
-      if(res) res.textContent=`⚠ Erreur: ${result.error}`;
-      alert(`Impossible de calculer la distance.\nErreur: ${result.error}\n\nVérifiez les adresses et réessayez.`);
+      if(res){res.textContent=`⚠ ${result.error}`;res.style.color="#C0392B";}
+      alert(`Calcul impossible.
+
+${result.error}
+
+Conseils :
+• Saisissez : "Ville (47xxx)"
+• Exemple : "Barbaste 47230" → "Agen 47000"`);
     }
   };
-
-  document.querySelectorAll("[data-calc-km]").forEach(b=>{b.onclick=()=>calcKm(parseInt(b.dataset.calcKm));});
+  // Calcul automatique à chaque saisie km
+  document.querySelectorAll("[data-km-i]").forEach(inp=>{
+    inp.oninput=()=>syncKm(parseInt(inp.dataset.kmI));
+  });
+  // AR checkbox
+  document.querySelectorAll("[id^='km-ar-']").forEach(cb=>{
+    cb.onchange=()=>{const i=parseInt(cb.id.split("-")[2]);syncKm(i);};
+  });
   document.querySelectorAll("[data-rm-km]").forEach(b=>{b.onclick=()=>{lignesKm.splice(parseInt(b.dataset.rmKm),1);A.set({modal:{ty:"nf",data:{lignesKm,lignesFrais,pj}}});};});
   document.querySelectorAll("[data-rm-fr]").forEach(b=>{b.onclick=()=>{lignesFrais.splice(parseInt(b.dataset.rmFr),1);A.set({modal:{ty:"nf",data:{lignesKm,lignesFrais,pj}}});};});
   document.querySelectorAll("[data-rm-pj]").forEach(b=>{b.onclick=()=>{pj.splice(parseInt(b.dataset.rmPj),1);A.set({modal:{ty:"nf",data:{lignesKm,lignesFrais,pj}}});};});
@@ -1507,80 +1556,168 @@ function pdfFrais(f){
   const kmTotal=(f.lignesKm||[]).reduce((s,l)=>s+(l.km||0)*(l.ar?2:1)*TAUX_KM,0);
   const fraisTotal=(f.lignesFrais||[]).reduce((s,l)=>s+(parseFloat(l.montant)||0),0);
 
-  let kmRows=(f.lignesKm||[]).map(l=>{const mt=(l.km||0)*(l.ar?2:1)*TAUX_KM;return`<tr><td>${l.depart||"—"}</td><td>${l.arrivee||"—"}</td><td style="text-align:center">${l.km||0} km</td><td style="text-align:center">${l.ar?"Oui":"Non"}</td><td style="text-align:center">${f.tauxKm||TAUX_KM} €</td><td style="text-align:right;font-weight:700">${mt.toFixed(2)} €</td></tr>`;}).join("");
+  // Lignes km
+  let kmRows=(f.lignesKm||[]).filter(l=>l.km>0).map(l=>{
+    const dist=(l.km||0)*(l.ar?2:1);
+    const mt=(dist*TAUX_KM).toFixed(2);
+    return`<tr><td>${l.depart||"—"}</td><td>${l.arrivee||"—"}</td>
+      <td style="text-align:center">${l.km} km${l.ar?" (AR)":""}</td>
+      <td style="text-align:center">${dist} km</td>
+      <td style="text-align:center">0,48 €</td>
+      <td style="text-align:right;font-weight:700;color:#2E7D52">${mt} €</td></tr>`;
+  }).join("");
 
-  let fraisRows=(f.lignesFrais||[]).map(l=>`<tr><td>${l.type||"—"}</td><td colspan="4">${l.desc||"—"}</td><td style="text-align:right;font-weight:700">${parseFloat(l.montant||0).toFixed(2)} €</td></tr>`).join("");
+  // Lignes frais divers
+  let frRows=(f.lignesFrais||[]).map(l=>`<tr>
+    <td>${l.type||"—"}</td><td colspan="4">${l.desc||"—"}</td>
+    <td style="text-align:right;font-weight:700">${parseFloat(l.montant||0).toFixed(2)} €</td></tr>`).join("");
 
-  
-  let pjImgs=(f.pj||[]).filter(p=>p.type.startsWith("image/")).map(p=>`<div style="display:inline-block;margin:5px;text-align:center"><img src="${p.data}" style="max-width:180px;max-height:140px;border:1px solid #ddd;border-radius:4px"><div style="font-size:10px;color:#888;margin-top:3px">${p.name}</div></div>`).join("");
-  let pjPdfs=(f.pj||[]).filter(p=>!p.type.startsWith("image/")).map(p=>`<div style="display:inline-block;margin:5px;padding:8px 14px;background:#EEF2E6;border-radius:6px;font-size:12px">📄 ${p.name}</div>`).join("");
+  // Images justificatifs
+  const pjImgs=(f.pj||[]).filter(p=>p.type&&p.type.startsWith("image/")).map((p,i)=>`
+    <div style="display:inline-block;margin:6px;text-align:center;vertical-align:top">
+      <img src="${p.data}" style="max-width:200px;max-height:160px;border:1px solid #ddd;border-radius:4px;display:block">
+      <div style="font-size:10px;color:#888;margin-top:3px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name}</div>
+    </div>`).join("");
+  const pjPdfs=(f.pj||[]).filter(p=>!p.type||!p.type.startsWith("image/")).map(p=>`
+    <div style="display:inline-block;margin:6px;padding:8px 14px;background:#EEF2E6;border-radius:6px;font-size:12px;vertical-align:top">
+      📄 ${p.name}</div>`).join("");
 
-  const html=`<!`+`DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Note de frais — ${f.nm}</title>
+  // Historique
+  const histRows=(f.historique||[]).map(e=>`
+    <tr><td>${fD(e.date)}</td><td><strong>${e.user}</strong></td><td>${e.action}</td></tr>`).join("");
+
+  const w=window.open("","_blank","width=950,height=750");
+  w.document.write(`<!`+`DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
+  <title>Note de frais — ${f.nm}</title>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'Palatino Linotype',Georgia,serif;margin:35px;color:#2A2A2A;font-size:13px}
-    h1{font-size:19px;text-align:center;color:#3A4425;border-bottom:2px solid #C8A84B;padding-bottom:10px;margin-bottom:6px}
-    h2{font-size:14px;color:#3A4425;margin:14px 0 6px;border-left:4px solid #5C6B3A;padding-left:10px;text-transform:uppercase;letter-spacing:.5px}
-    .sub{text-align:center;font-size:11px;color:#888;margin-bottom:20px}
-    table{width:100%;border-collapse:collapse;margin-bottom:10px}
-    th{background:#EEF2E6;color:#3A4425;padding:7px 10px;text-align:left;font-weight:700;border:1px solid #DDD5B8;font-size:12px}
-    td{padding:6px 10px;border:1px solid #DDD5B8;font-size:12px;vertical-align:top}
+    body{font-family:'Palatino Linotype',Georgia,serif;color:#2A2A2A;padding:30px;font-size:13px}
+    .entete{text-align:center;margin-bottom:20px;border-bottom:3px solid #3A4425;padding-bottom:14px}
+    .entete h1{font-size:20px;color:#3A4425;margin-bottom:4px;font-weight:800}
+    .entete .sub{font-size:11px;color:#888}
+    .entete .titre{font-size:17px;color:#5C6B3A;font-weight:700;margin-top:8px;text-transform:uppercase;letter-spacing:1px}
+    .meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+    .meta-cell{background:#FAF7F0;border:1px solid #DDD5B8;border-radius:6px;padding:8px 12px}
+    .meta-cell .lbl{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+    .meta-cell .val{font-size:13px;font-weight:700;color:#2A2A2A}
+    .section{margin-bottom:18px}
+    .section h2{font-size:13px;color:#fff;background:#3A4425;padding:7px 12px;border-radius:6px 6px 0 0;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:0}
+    table{width:100%;border-collapse:collapse;font-size:12px}
+    th{background:#EEF2E6;color:#3A4425;padding:7px 10px;text-align:left;font-weight:700;border:1px solid #DDD5B8}
+    td{padding:6px 10px;border:1px solid #DDD5B8;vertical-align:top}
     tr:nth-child(even) td{background:#FAF7F0}
-    .total-bar{background:#EEF2E6;border:2px solid #5C6B3A;border-radius:8px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin:14px 0}
-    .total-val{font-size:22px;font-weight:800;color:#3A4425}
-    .meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
-    .meta-cell{background:#FAF7F0;border-radius:6px;padding:8px 12px;border:1px solid #DDD5B8}
-    .meta-label{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
-    .meta-val{font-size:13px;font-weight:600}
-    .sig-block{display:flex;justify-content:space-between;margin-top:40px}
-    .sig{width:30%;text-align:center}
-    .sig .line{border-top:1px solid #555;padding-top:8px;font-size:12px;margin-top:35px}
-    .footer{margin-top:25px;border-top:1px solid #DDD;padding-top:10px;font-size:10px;color:#888;display:flex;justify-content:space-between}
-    .pj-section img{max-width:180px;max-height:140px;border:1px solid #DDD;border-radius:4px;margin:5px}
-    @media print{body{margin:15px}.no-print{display:none}}
-  </style>
-  </head><body>
-  <h1>MFR CFA du Néracais — Territoire de l'Albret</h1>
-  <div class="sub">200 Route de Bordeaux • 47230 Barbaste • mfr.barbaste@mfr.asso.fr</div>
+    .total-box{background:#3A4425;color:#fff;border-radius:8px;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;margin:16px 0}
+    .total-box .label{font-size:15px;font-weight:700}
+    .total-box .amount{font-size:26px;font-weight:800}
+    .statut-box{border:2px solid #C8A84B;border-radius:8px;padding:10px 16px;margin-bottom:16px;background:#FBF5E0;display:flex;align-items:center;gap:12px}
+    .statut-box .st{font-size:15px;font-weight:800;color:#7A5A10}
+    .sig-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:30px}
+    .sig-cell{border:1px solid #DDD5B8;border-radius:8px;padding:12px;text-align:center}
+    .sig-cell .titre-sig{font-size:11px;font-weight:700;color:#3A4425;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+    .sig-cell .nom{font-size:13px;font-weight:700;margin-bottom:2px}
+    .sig-cell .role{font-size:11px;color:#888;margin-bottom:24px}
+    .sig-cell .ligne{border-top:1px solid #555;padding-top:6px;font-size:11px;color:#888;margin-top:8px}
+    .footer{margin-top:24px;border-top:1px solid #DDD;padding-top:10px;font-size:10px;color:#888;display:flex;justify-content:space-between}
+    .badge{display:inline-block;border-radius:20px;padding:3px 12px;font-size:12px;font-weight:700;border:1.5px solid}
+    @media print{body{padding:15px}.no-print{display:none}button{display:none}}
+  </style></head><body>
 
-  <h1 style="font-size:16px;margin-top:0">NOTE DE FRAIS — DEMANDE DE REMBOURSEMENT</h1>
-
-  <div class="meta-grid">
-    <div class="meta-cell"><div class="meta-label">Salarié(e)</div><div class="meta-val">${f.nm}</div></div>
-    <div class="meta-cell"><div class="meta-label">Service</div><div class="meta-val">${f.sv||"—"}</div></div>
-    <div class="meta-cell"><div class="meta-label">Objet</div><div class="meta-val">${f.objet}</div></div>
-    <div class="meta-cell"><div class="meta-label">Date du déplacement</div><div class="meta-val">${fD(f.date)}</div></div>
-    <div class="meta-cell"><div class="meta-label">Date de soumission</div><div class="meta-val">${fD(f.cr)}</div></div>
-    <div class="meta-cell"><div class="meta-label">Statut</div><div class="meta-val">${f.st}</div></div>
+  <div style="text-align:right;margin-bottom:12px" class="no-print">
+    <button onclick="window.print()" style="background:#3A4425;color:#fff;border:none;border-radius:8px;padding:10px 24px;font-size:14px;font-weight:700;cursor:pointer">🖨 Imprimer</button>
   </div>
 
-  ${(f.lignesKm||[]).length>0?`
-  <h2>🚗 Indemnités kilométriques (${f.tauxKm||TAUX_KM} €/km)</h2>
-  <table><thead><tr><th>Départ</th><th>Destination</th><th>Distance</th><th>Aller-retour</th><th>Taux</th><th>Montant</th></tr></thead>
-  <tbody>${kmRows}<tr style="background:#EEF2E6"><td colspan="5"><strong>Sous-total kilométrique</strong></td><td style="text-align:right;font-weight:800">${kmTotal.toFixed(2)} €</td></tr></tbody></table>`:""}
-
-  ${(f.lignesFrais||[]).length>0?`
-  <h2>🧾 Frais divers</h2>
-  <table><thead><tr><th>Type</th><th colspan="4">Description</th><th>Montant</th></tr></thead>
-  <tbody>${fraisRows}<tr style="background:#EEF2E6"><td colspan="5"><strong>Sous-total frais divers</strong></td><td style="text-align:right;font-weight:800">${fraisTotal.toFixed(2)} €</td></tr></tbody></table>`:""}
-
-  <div class="total-bar"><span style="font-size:15px;font-weight:700">TOTAL À REMBOURSER</span><span class="total-val">${total.toFixed(2)} €</span></div>
-
-  ${f.commentaire?`<p style="font-size:12px;color:#555;margin-bottom:12px"><em>Commentaire : ${f.commentaire}</em></p>`:""}
-
-  ${(f.pj||[]).length>0?`<h2>📎 Justificatifs (${f.pj.length})</h2><div class="pj-section">${pjImgs}${pjPdfs}</div>`:""}
-
-  <div class="sig-block">
-    <div class="sig"><div class="line">Le/La salarié(e)<br><strong>${f.nm}</strong></div></div>
-    <div class="sig"><div class="line">Validé par la Direction<br><strong>P. DAUGE</strong><br>${f.dateValidation?fD(f.dateValidation):""}</div></div>
-    <div class="sig"><div class="line">Mis en paiement<br><strong>S. GRODECOEUR</strong><br>${f.datePaiement?fD(f.datePaiement):""}</div></div>
+  <div class="entete">
+    <h1>MFR CFA du Néracais — Territoire de l'Albret</h1>
+    <div class="sub">200 Route de Bordeaux • 47230 Barbaste • 05 53 65 56 06 • mfr.barbaste@mfr.asso.fr</div>
+    <div class="titre">Note de frais — Demande de remboursement</div>
   </div>
 
-  <div class="footer"><span>MFR du Néracais — Note de frais N° ${f.id}</span><span>Édité le ${fD(today2())}</span></div>
-  </body></html>`;
+  <div class="statut-box">
+    <div>
+      <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Statut de la demande</div>
+      <div class="st">${f.st||"—"}</div>
+    </div>
+    ${f.dateValidation?`<div><div style="font-size:11px;color:#888">Validée le</div><div style="font-size:13px;font-weight:700">${fD(f.dateValidation)}</div></div>`:""}
+    ${f.datePaiement?`<div><div style="font-size:11px;color:#888">Payée le</div><div style="font-size:13px;font-weight:700;color:#2E7D52">${fD(f.datePaiement)}</div></div>`:""}
+  </div>
 
-  const w=window.open("","_blank","width=900,height=700");
-  w.document.write(html);w.document.close();
+  <div class="meta">
+    <div class="meta-cell"><div class="lbl">Salarié(e)</div><div class="val">${f.nm}</div></div>
+    <div class="meta-cell"><div class="lbl">Service</div><div class="val">${f.sv||"—"}</div></div>
+    <div class="meta-cell"><div class="lbl">Objet du déplacement</div><div class="val">${f.objet}</div></div>
+    <div class="meta-cell"><div class="lbl">Date du déplacement</div><div class="val">${fD(f.date)}</div></div>
+    <div class="meta-cell"><div class="lbl">Date de soumission</div><div class="val">${fD(f.cr)}</div></div>
+    <div class="meta-cell"><div class="lbl">Taux kilométrique</div><div class="val">${f.tauxKm||0.48} €/km</div></div>
+  </div>
+
+  ${kmRows?`<div class="section">
+    <h2>🚗 Indemnités kilométriques</h2>
+    <table><thead><tr><th>Départ</th><th>Destination</th><th>Distance (aller)</th><th>Distance totale</th><th>Taux</th><th>Montant</th></tr></thead>
+    <tbody>${kmRows}
+    <tr style="background:#EEF2E6"><td colspan="5" style="font-weight:700;text-align:right">Sous-total km</td>
+    <td style="text-align:right;font-weight:800;color:#2E7D52">${kmTotal.toFixed(2)} €</td></tr>
+    </tbody></table></div>`:""}
+
+  ${frRows?`<div class="section">
+    <h2>🧾 Frais divers</h2>
+    <table><thead><tr><th>Type</th><th colspan="4">Description</th><th>Montant</th></tr></thead>
+    <tbody>${frRows}
+    <tr style="background:#EEF2E6"><td colspan="5" style="font-weight:700;text-align:right">Sous-total frais</td>
+    <td style="text-align:right;font-weight:800">${fraisTotal.toFixed(2)} €</td></tr>
+    </tbody></table></div>`:""}
+
+  <div class="total-box">
+    <span class="label">TOTAL À REMBOURSER</span>
+    <span class="amount">${total.toFixed(2)} €</span>
+  </div>
+
+  ${f.commentaire?`<div style="background:#FAF7F0;border:1px solid #DDD5B8;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:13px"><strong>Commentaire :</strong> ${f.commentaire}</div>`:""}
+
+  ${(f.pj||[]).length>0?`<div class="section">
+    <h2>📎 Justificatifs (${f.pj.length})</h2>
+    <div style="padding:10px;background:#fff;border:1px solid #DDD5B8;border-radius:0 0 6px 6px">
+      ${pjImgs}${pjPdfs}
+    </div></div>`:""}
+
+  ${histRows?`<div class="section">
+    <h2>🕐 Historique des actions</h2>
+    <table><thead><tr><th>Date</th><th>Utilisateur</th><th>Action</th></tr></thead>
+    <tbody>${histRows}</tbody></table></div>`:""}
+
+  <div class="sig-grid">
+    <div class="sig-cell">
+      <div class="titre-sig">Le/La salarié(e)</div>
+      <div class="nom">${f.nm}</div>
+      <div class="role">${f.sv||""}</div>
+      <div class="ligne">Date et signature :<br><br><br></div>
+    </div>
+    <div class="sig-cell">
+      <div class="titre-sig">Validation Direction</div>
+      <div class="nom">Pascale DAUGE</div>
+      <div class="role">Directrice</div>
+      <div class="ligne">
+        ${f.dateValidation?`Validée le ${fD(f.dateValidation)}`:"Date et signature :"}
+        <br><br>
+      </div>
+    </div>
+    <div class="sig-cell">
+      <div class="titre-sig">Mise en paiement</div>
+      <div class="nom">Sandrine GRODECOEUR</div>
+      <div class="role">Assistante de direction</div>
+      <div class="ligne">
+        ${f.datePaiement?`Payé le ${fD(f.datePaiement)}`:"Date et signature :"}
+        <br><br>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>MFR du Néracais — Note de frais N° ${f.id} — Confidentiel RH</span>
+    <span>Édité le ${fD(today2())} par ${A.s.user?A.s.user.pr+" "+A.s.user.nom:"—"}</span>
+  </div>
+
+  </body></html>`);
+  w.document.close();
   setTimeout(()=>w.print(),700);
 }
 
@@ -2075,7 +2212,7 @@ const A={
     
     initPwdHashes();
     
-    const VER="v12";
+    const VER="v16";
     if(K.g("ver")!==VER){K.s("ver",VER);K.s("eq",null);K.s("abs",null);K.s("dem",null);K.s("heu",null);K.s("ord",null);K.s("ses",null);}
     const eq=K.g("eq");A.s.eq=eq&&eq.length>0?eq:JSON.parse(JSON.stringify(EQ0));if(!eq||!eq.length)K.s("eq",A.s.eq);
     const ab=K.g("abs");A.s.abs=ab&&ab.length>0?ab:JSON.parse(JSON.stringify(AB0));if(!ab||!ab.length)K.s("abs",A.s.abs);
@@ -2111,12 +2248,12 @@ function rLogin(){return`<div class="lgbg"><div class="lgbox"><div class="lglogo
 function bLogin(){
   const eq=A.s.eq;
   document.getElementById("bd").onclick=()=>{
-    document.getElementById("lc").innerHTML=`${fld("Votre identité",sel("who",ADM.map(a=>{const m=eq.find(e=>e.id===a.id);return{v:a.id,l:m?`${m.pr} ${m.nom}`:a.id}}),"","-- Choisir --"))}${fld("Mot de passe",'<input type="password" id="pwd" placeholder="••••••••">')}<p id="lerr" style="color:#C0392B;font-size:16px;display:none">⚠ Identifiant ou mot de passe incorrect</p><button class="btn bp bfull" id="bld" style="margin-bottom:10px">Accéder →</button><button class="btn bl bfull bsm" id="brt">← Retour</button><p style="text-align:center;font-size:15px;color:#888;margin-top:8px">Direction : mfr2024 · Sandrine : grodecoeur2024</p>`;
+    document.getElementById("lc").innerHTML=`${fld("Votre identité",sel("who",ADM.map(a=>{const m=eq.find(e=>e.id===a.id);return{v:a.id,l:m?`${m.pr} ${m.nom}`:a.id}}),"","-- Choisir --"))}${fld("Mot de passe",`<div style="position:relative"><input type="password" id="pwd" placeholder="••••••••" style="padding-right:40px;width:100%"><button type="button" onclick="const i=document.getElementById('pwd');i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'👁':'🙈'" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;font-size:16px">👁</button></div>`)}<p id="lerr" style="color:#C0392B;font-size:16px;display:none">⚠ Identifiant ou mot de passe incorrect</p><button class="btn bp bfull" id="bld" style="margin-bottom:10px">Accéder →</button><button class="btn bl bfull bsm" id="brt">← Retour</button><p style="text-align:center;font-size:15px;color:#888;margin-top:8px">Direction : mfr2024 · Sandrine : grodecoeur2024</p>`;
     document.getElementById("brt").onclick=()=>A.r();
     document.getElementById("bld").onclick=()=>{const who=document.getElementById("who").value,pwd=document.getElementById("pwd").value,adm=ADM.find(a=>a.id===who&&a.pwd===pwd);if(adm){const m=eq.find(e=>e.id===who)||{id:who,nom:"Direction",pr:""};A.s.role="direction";A.s.user=m;K.s("ses",{role:"direction",user:m});A.set({vue:"db"});}else document.getElementById("lerr").style.display="block";};
   };
   document.getElementById("bs").onclick=()=>{
-    document.getElementById("lc").innerHTML=`${fld("Votre nom",sel("whs",sortEq(A.s.eq).map(m=>({v:m.id,l:`${m.pr} ${m.nom} — ${m.sv||""}`})),"","-- Sélectionner --"))}${fld("Mot de passe",'<input type="password" id="pwdsal" placeholder="••••••••">')}<p id="lerr2" style="color:#C0392B;font-size:16px;display:none">⚠ Sélectionnez votre nom</p><button class="btn bp bfull" id="bls" style="margin-bottom:10px">Accéder →</button><button class="btn bl bfull bsm" id="brt2">← Retour</button>`;
+    document.getElementById("lc").innerHTML=`${fld("Votre nom",sel("whs",sortEq(A.s.eq).map(m=>({v:m.id,l:`${m.pr} ${m.nom} — ${m.sv||""}`})),"","-- Sélectionner --"))}${fld("Mot de passe",`<div style="position:relative"><input type="password" id="pwdsal" placeholder="••••••••" style="padding-right:40px;width:100%"><button type="button" onclick="const i=document.getElementById('pwdsal');i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'👁':'🙈'" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;font-size:16px">👁</button></div>`)}<p id="lerr2" style="color:#C0392B;font-size:16px;display:none">⚠ Sélectionnez votre nom</p><button class="btn bp bfull" id="bls" style="margin-bottom:10px">Accéder →</button><button class="btn bl bfull bsm" id="brt2">← Retour</button>`;
     document.getElementById("brt2").onclick=()=>A.r();
     document.getElementById("bls").onclick=()=>{
     const who=document.getElementById("whs").value,pwd=document.getElementById("pwdsal").value;
@@ -2147,8 +2284,8 @@ function rMain(){
     {id:"pl",ic:"🗓",lb:"Planning"},
     {id:"hr",ic:"⏱",lb:"Heures"},
     {id:"om",ic:"🗺️",lb:"Missions"},
-    ...(role==="direction"?[{id:"fr",ic:"💶",lb:"Frais"},
-    {id:"pc",ic:"🎓",lb:"Classes"},{id:"fi",ic:"📚",lb:"Filières"},{id:"im",ic:"🖨️",lb:"Imprimer"},{id:"eq",ic:"👥",lb:"Équipe"},{id:"pr",ic:"⚙️",lb:"Réglages"}]:[])
+    {id:"fr",ic:"💶",lb:"Frais"},
+    ...(role==="direction"?[{id:"pc",ic:"🎓",lb:"Classes"},{id:"fi",ic:"📚",lb:"Filières"},{id:"im",ic:"🖨️",lb:"Imprimer"},{id:"eq",ic:"👥",lb:"Équipe"},{id:"pr",ic:"⚙️",lb:"Réglages"}]:[])
   ];
   const nav=navItems.map(n=>`<button class="nb${vue===n.id?" on":""}" data-v="${n.id}"><span class="ic">${n.ic}</span><span class="lb">${n.lb}</span>${n.bdg>0?`<span class="bdg">${n.bdg}</span>`:""}</button>`).join("");
   let content="";
