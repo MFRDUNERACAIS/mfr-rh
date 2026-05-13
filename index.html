@@ -234,27 +234,9 @@ const K={
 function sortEq(eq){return [...eq].sort((a,b)=>{const n=(a.nom||"").localeCompare(b.nom||"","fr");return n!==0?n:(a.pr||"").localeCompare(b.pr||"","fr");});}
 
 
-async function sha256(msg){
-  const buf=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(msg));
-  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
-}
-async function hashPwd(pwd){return await sha256(pwd);}
 
+// Auth simplifiée
 
-const PWD_HASHES={};
-async function initPwdHashes(){
-  const pwds={
-    mfr001:"pascale8746",mfr002:"benoit7645",mfr003:"claire8575",mfr004:"mathieu0300",
-    mfr005:"teddy4542",mfr006:"celine8291",mfr007:"fanny9573",mfr008:"aurelie8723",
-    mfr009:"amelie9609",mfr010:"cannelle9771",mfr011:"marie2246",mfr012:"stephanie5294",
-    mfr013:"iric4230",mfr014:"claire0300",mfr015:"sandrine4504",mfr016:"melissa9252",
-    mfr017:"gabriel1315",mfr018:"loic4428",mfr019:"melina4885",mfr020:"marc2201",
-    mfr021:"caroline2906",mfr022:"romain0615",mfr023:"caroline4327",mfr024:"oceane3676",
-    mfr025:"laura7974",mfr026:"asmae9528",
-    dir_mfr001:"mfr2024",dir_mfr015:"grodecoeur2024"
-  };
-  for(const[k,v]of Object.entries(pwds)) PWD_HASHES[k]=await sha256(v);
-}
 
 
 
@@ -2159,7 +2141,7 @@ function rPR(){
     <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:12px">
       ${A.s.eq.filter(m=>!m.archive).map(m=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 13px;background:#FAF7F0;border-radius:8px;border:1px solid #DDD5B8">
         <span style="font-size:15px;font-weight:600">${m.pr} ${m.nom}</span>
-        <span style="font-size:13px;color:${m.pwhash||PWD_HASHES[m.id]?"#2E7D52":"#C0392B"};font-weight:600">${m.pwhash||PWD_HASHES[m.id]?"🔒 Défini":"⚠ Non défini"}</span>
+        <span style="font-size:13px;color:${m.pw||PWDS_CLAIRS[m.id]?"#2E7D52":"#C0392B"};font-weight:600">${m.pw||PWDS_CLAIRS[m.id]?"🔒 Défini":"⚠ Non défini"}</span>
       </div>`).join("")}
     </div>
     <div class="ibox">Pour modifier un mot de passe : onglet <strong>Équipe</strong> → bouton 🔑</div>
@@ -2210,9 +2192,8 @@ const A={
   save(k,v){K.s(k,v);A.set({[k]:v});},
   init(){
     
-    initPwdHashes();
     
-    const VER="v16";
+    const VER="v17";
     if(K.g("ver")!==VER){K.s("ver",VER);K.s("eq",null);K.s("abs",null);K.s("dem",null);K.s("heu",null);K.s("ord",null);K.s("ses",null);}
     const eq=K.g("eq");A.s.eq=eq&&eq.length>0?eq:JSON.parse(JSON.stringify(EQ0));if(!eq||!eq.length)K.s("eq",A.s.eq);
     const ab=K.g("abs");A.s.abs=ab&&ab.length>0?ab:JSON.parse(JSON.stringify(AB0));if(!ab||!ab.length)K.s("abs",A.s.abs);
