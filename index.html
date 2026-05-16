@@ -718,6 +718,7 @@ function rDB(){
 
     return`<h2 style="color:#3A4425;font-size:22px;font-weight:800;margin-bottom:4px">Bonjour, ${user?.pr||""} 👋</h2>
       <p style="color:#888;font-size:13px;margin-bottom:14px">Année scolaire ${getAS()} · 1er sept → 31 août</p>
+      ${A.s._cpRechargeInfo?`<div style="background:#E8F5EE;border:1.5px solid #5AAA80;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:14px;color:#2E7D52;font-weight:700">🎉 CP rechargés automatiquement — ${A.s._cpRechargeInfo.nb} salarié${A.s._cpRechargeInfo.nb>1?"s":""} mis à jour le ${fD(A.s._cpRechargeInfo.date)}</div>`:""}
 
       ${/* ── 1. AUJOURD'HUI ── */""}
       <div style="background:#3A4425;border-radius:10px;padding:8px 14px;margin-bottom:10px">
@@ -1175,6 +1176,16 @@ function getAlertLevel(dateEch){
 
 // Générer les échéances automatiques depuis les données RH
 function genEcheancesAuto(eq){
+  // Alerte recharge CP (J-30 avant le 1er septembre)
+  const nowCP=new Date();const yyyyCP=nowCP.getFullYear();
+  const dateRecharge=`${nowCP.getMonth()>=8?yyyyCP+1:yyyyCP}-09-01`;
+  const auto_cp=[{
+    id:`cp_recharge_alerte_${yyyyCP}`,auto:true,mid:null,nm:"Toute l'équipe",
+    type:"Rappel",
+    label:`Recharge automatique des CP — 1er septembre ${dateRecharge.split("-")[0]}`,
+    date:dateRecharge,
+    note:`Les soldes CP de tous les salariés seront rechargés automatiquement au 1er septembre. Vérifiez les capitaux annuels dans les fiches membres avant cette date.`,
+  }];
   const auto=[];
   const today=new Date(); today.setHours(0,0,0,0);
 
@@ -1241,7 +1252,7 @@ function genEcheancesAuto(eq){
     }
   });
 
-  return auto;
+  return[...auto,...auto_cp];
 }
 
 // Toutes les échéances (auto + manuelles)
@@ -3110,6 +3121,41 @@ function pdfSynthese(annee){
 }
 
 
+
+// ── Recharge automatique CP au 1er septembre ────────────────────
+function rechargerCPAnnuels(){
+  const today=new Date();
+  const mm=today.getMonth()+1; // 1-12
+  const dd=today.getDate();
+  const yyyy=today.getFullYear();
+  // Vérifier si on est entre le 1er et le 7 septembre (fenêtre de détection)
+  if(mm!==9||dd>7) return;
+  // Clé de la dernière recharge pour éviter de recharger 2 fois
+  const cleRecharge=`cp_recharge_${yyyy}`;
+  const dejaDone=K.g(cleRecharge);
+  if(dejaDone) return;
+  // Recharger les CP de chaque salarié actif
+  const eq=A.s.eq||[];
+  let nb=0;
+  const newEq=eq.map(m=>{
+    if(m.archive||!m.cpAnnuel) return m;
+    nb++;
+    // Reporter les CP non pris (dans la limite de 5j max selon CCN MFR)
+    const soldeActuel=Math.max(0,(m.cp||0)-(m.cpp||0));
+    const report=Math.min(5,soldeActuel); // report max 5j
+    return{...m, cp:(m.cpAnnuel||25)+report, cpp:0};
+  });
+  if(nb>0){
+    A.s.eq=newEq;
+    K.s("eq",newEq);
+    K.s(cleRecharge,{date:today.toISOString(),nb});
+    console.log(`CP rechargés pour ${nb} salariés le 1er septembre ${yyyy}`);
+    // Afficher une notification direction
+    A.s._cpRechargeInfo={date:today.toISOString().split("T")[0],nb};
+  }
+}
+
+
 function rBUDGET(){
   const {role,user,eq}=A.s;
   initBudgets();
@@ -4667,7 +4713,7 @@ function bEQ(){
   });
 }
 function rMdlSM(){const i=A.s.modal.data?.init||{};return mdl(i.id?"Modifier":"Ajouter un membre",`<div class="g2">${fld("Prénom *",`<input id="mbpr" value="${i.pr||""}">`)} ${fld("Nom *",`<input id="mbno" value="${i.nom||""}">`)}</div>${fld("Service *",sel("mbsv",SVC,i.sv||"","-- Choisir --"))}${fld("Poste",`<input id="mbpo" value="${i.po||""}" placeholder="ex: Formateur…">`)}${fld("Email",`<input type="email" id="mbem" value="${i.em||""}">`)}${fld("Date d'entrée",`<input id="mbde" value="${i.de||""}" placeholder="ex: 01/09/2025">`)}
-    ${fld("Mot de passe",`<input type="password" id="mbpw" placeholder="${i.id?"Laisser vide pour ne pas changer":"Définir un mot de passe"}">`,i.id?"Laisser vide = mot de passe inchangé":"")}<div class="dvd"></div><div class="g2">${fld("Solde CP (j)",`<input type="number" id="mbcp" value="${i.cp??0}" min="0" step="0.5">`)} ${fld("Plafond TT (h/mois)",`<input type="number" id="mbtt" value="${i.ttp??8}" min="0" step="0.5">`)}</div><div class="dvd"></div><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn bl" id="smcn">Annuler</button><button class="btn bp" id="smsb">${i.id?"Mettre à jour":"Ajouter"}</button></div>`);}
+    ${fld("Mot de passe",`<input type="password" id="mbpw" placeholder="${i.id?"Laisser vide pour ne pas changer":"Définir un mot de passe"}">`,i.id?"Laisser vide = mot de passe inchangé":"")}<div class="dvd"></div><div class="g2">${fld("Capital CP annuel (j)",`<input type="number" id="mbcpan" value="${i.cpAnnuel??25}" min="0" step="0.5" title="Nombre de jours attribués automatiquement chaque 1er septembre">`,"Rechargé automatiquement le 1er septembre") } ${fld("Solde CP actuel (j)",`<input type="number" id="mbcp" value="${i.cp??0}" min="0" step="0.5">`)} ${fld("Plafond TT (h/mois)",`<input type="number" id="mbtt" value="${i.ttp??8}" min="0" step="0.5">`)}</div><div class="dvd"></div><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn bl" id="smcn">Annuler</button><button class="btn bp" id="smsb">${i.id?"Mettre à jour":"Ajouter"}</button></div>`);}
 function bMdlSM(){
   document.getElementById("smcn").onclick=()=>A.set({modal:null});
   document.getElementById("smsb").onclick=()=>{
@@ -4693,7 +4739,7 @@ function bMdlSM(){
         ttp:parseFloat(document.getElementById("mbtt").value)||0,
         ttu:i.ttu||0,
         pw:pwclair||(i.pw||""),
-        dernVisite,dateEssai,dateFinContrat,typeContrat,enfants,tauxHoraire:parseFloat(document.getElementById("mb-taux")?.value)||i.tauxHoraire||25
+        cpAnnuel:parseFloat(document.getElementById("mbcpan")?.value)||i.cpAnnuel||25,dernVisite,dateEssai,dateFinContrat,typeContrat,enfants,tauxHoraire:parseFloat(document.getElementById("mb-taux")?.value)||i.tauxHoraire||25
       };
       const l=i.id?A.s.eq.map(m=>m.id===i.id?e:m):[...A.s.eq,e];
       A.save("eq",l);A.set({modal:null});
@@ -4807,7 +4853,7 @@ const A={
   init(){
     
     
-    const VER="v41";
+    const VER="v42";
     if(K.g("ver")!==VER){K.s("ver",VER);K.s("eq",null);K.s("abs",null);K.s("dem",null);K.s("heu",null);K.s("ord",null);K.s("ses",null);}
     const eq=K.g("eq");A.s.eq=eq&&eq.length>0?eq:JSON.parse(JSON.stringify(EQ0));if(!eq||!eq.length)K.s("eq",A.s.eq);
     const ab=K.g("abs");A.s.abs=ab&&ab.length>0?ab:JSON.parse(JSON.stringify(AB0));if(!ab||!ab.length)K.s("abs",A.s.abs);
@@ -4819,6 +4865,7 @@ const A={
     const dvr=K.g("devis");if(dvr)A.s.devis=dvr;
     const echr=K.g("echeances");if(echr)A.s.echeances=echr;
     const locr=K.g("locations");if(locr)A.s.locations=locr;
+    rechargerCPAnnuels(); // Recharge auto CP le 1er septembre
     const formr=K.g("formations");if(formr)A.s.formations=formr;
     const affr=K.g("affichage");if(affr)A.s.affichage=affr;
     const maintr=K.g("maintenances");if(maintr)A.s.maintenances=maintr;
