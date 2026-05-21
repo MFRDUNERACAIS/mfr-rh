@@ -720,7 +720,8 @@ function rDB(){
       <p style="color:#888;font-size:13px;margin-bottom:14px">Année scolaire ${getAS()} · 1er sept → 31 août</p>
       ${A.s._cpRechargeInfo?`<div style="background:#E8F5EE;border:1.5px solid #5AAA80;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:14px;color:#2E7D52;font-weight:700">🎉 CP rechargés automatiquement — ${A.s._cpRechargeInfo.nb} salarié${A.s._cpRechargeInfo.nb>1?"s":""} mis à jour le ${fD(A.s._cpRechargeInfo.date)}</div>`:""}
 
-      ${/* ── 1. AUJOURD'HUI ── */""}
+    ${user?.id==="mfr001"?rBlocAnniversaires(eq):""}
+        ${/* ── 1. AUJOURD'HUI ── */""}
       <div style="background:#3A4425;border-radius:10px;padding:8px 14px;margin-bottom:10px">
         <span style="color:#C8A84B;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1px">📍 Aujourd'hui — ${fD(today2())}</span>
       </div>
@@ -4853,7 +4854,7 @@ const A={
   init(){
     
     
-    const VER="v42";
+    const VER="v43";
     if(K.g("ver")!==VER){K.s("ver",VER);K.s("eq",null);K.s("abs",null);K.s("dem",null);K.s("heu",null);K.s("ord",null);K.s("ses",null);}
     const eq=K.g("eq");A.s.eq=eq&&eq.length>0?eq:JSON.parse(JSON.stringify(EQ0));if(!eq||!eq.length)K.s("eq",A.s.eq);
     const ab=K.g("abs");A.s.abs=ab&&ab.length>0?ab:JSON.parse(JSON.stringify(AB0));if(!ab||!ab.length)K.s("abs",A.s.abs);
