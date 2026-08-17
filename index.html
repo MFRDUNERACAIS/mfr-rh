@@ -5439,7 +5439,7 @@ function imprimerAbsences(as,sv){
 
 
 function rEQ(){
-  const {eq,abs}=A.s;let lH="";
+  const {eq,abs,role}=A.s;let lH="";
   const eqVis=(A.s.eqFiltreArch?eq.filter(m=>m.archive):eq.filter(m=>!m.archive));
   eqVis.forEach(m=>{const cp=Math.max(0,(m.cp||0)-(m.cpp||0)),rc=Math.max(0,(m.ra||0)-(m.rp||0)),tt=Math.max(0,(m.ttp||0)-(m.ttu||0));const ec=abs.find(a=>{const t=today2();return a.mid===m.id&&a.dd<=t&&(a.df||a.dd)>=t&&a.ty!=="Annulée";});lH+=`<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px"><div><div style="font-weight:800;font-size:17px;color:#3A4425">${m.nom} ${m.pr}</div><div style="font-size:15px;color:#555">${m.po||"—"}</div>
           <div style="font-size:15px;color:#888;margin-top:1px">🔑 ${m.pw?"••••••••":"<span style='color:#C0392B'>Aucun mot de passe</span>"}</div><span class="tsv" style="margin-top:3px;display:inline-block">${m.sv}</span>${m.em?`<div style="font-size:15px;color:#888;margin-top:2px">📧 ${m.em}</div>`:""}</div><div style="display:flex;gap:5px"><button class="btn bl bsm" data-edm="${m.id}">✏️</button><button class="btn bi bsm" data-rpwm="${m.id}" title="Réinitialiser mot de passe">🔑</button>${m.archive?`<button class="btn bs bsm" data-unarch="${m.id}">↩ Réactiver</button>`:`<button class="btn bw bsm" data-arch="${m.id}">📦 Archiver</button>`}<button class="btn bd bsm" data-dlm="${m.id}">🗑</button></div></div>${ec?`<div style="padding:5px 9px;background:#FAF7F0;border:1px solid #DDD5B8;border-radius:8px;margin-bottom:9px">${tBdg(ec.ty,true)}</div>`:""}${role==="direction"?`<div class="g3"><div style="background:#FBF5E0;border-radius:7px;padding:6px;text-align:center"><div style="font-size:17px;font-weight:800;color:#C8A84B">${cp}j</div><div style="font-size:14px;color:#888">CP</div></div><div style="background:#EEF2E6;border-radius:7px;padding:6px;text-align:center"><div style="font-size:17px;font-weight:800;color:#5C6B3A">${rc}j</div><div style="font-size:14px;color:#888">Récup</div></div><div style="background:#E3F1FA;border-radius:7px;padding:6px;text-align:center"><div style="font-size:17px;font-weight:800;color:#1A6B9A">${hStr(tt)}</div><div style="font-size:14px;color:#888">TT</div></div></div>`:""}</div>`;});
@@ -5607,7 +5607,7 @@ const A={
   toast(msg,ty="success"){if(A.s.tT)clearTimeout(A.s.tT);const t=setTimeout(()=>A.set({toast:null,tT:null}),3200);A.set({toast:{msg,ty},tT:t});},
   save(k,v){K.s(k,v);A.set({[k]:v});if(fbReady&&FB_COLLECTIONS.includes(k))fbSave(k,v);},
   init(){
-    const VER="v59";
+    const VER="v61";
     if(K.g("ver")!==VER){K.s("ver",VER);}
     // Charger d'abord le cache local (affichage immédiat)
     const eq=K.g("eq");A.s.eq=eq&&eq.length>0?eq:JSON.parse(JSON.stringify(EQ0));if(!eq||!eq.length)K.s("eq",A.s.eq);
@@ -5967,16 +5967,20 @@ function bRCPL(){
 
 function rHR(){
   const {role,user,eq,heu}=A.s;
-  const mb=role==="salarie"?eq.find(m=>m.id===user?.id):null;
+  const mb=eq.find(m=>m.id===user?.id);
+  const saisiePerso=mb&&(role==="salarie"||user?.id==="mfr001");
 
-  if(role==="salarie"&&mb){
+  if(saisiePerso){
     const prof=HOR[mb.id];
     const canSvcSpecial=isSvcSpecial(mb);
 
     
+    const sansHoraire=!prof||JK.every(jk=>!prof.j[jk]&&!(prof.jm&&prof.jm[jk]));
     const joursActifs=JK.filter(jk=>{
       const ds=getDJ(hLun,jk);
-      return(prof?.j[jk]||heu.find(x=>x.mid===mb.id&&x.dt===ds))&&ds<=today2();
+      // Si pas d'horaire théorique (ex: direction), tous les jours ouvrés lun-ven sont saisissables
+      const jourOuvre=sansHoraire?(jk!=="sam"):(prof?.j[jk]||(prof?.jm&&prof.jm[jk]));
+      return(jourOuvre||heu.find(x=>x.mid===mb.id&&x.dt===ds))&&ds<=today2();
     });
     const tousConfirmes=joursActifs.length>0&&joursActifs.every(jk=>{
       const ds=getDJ(hLun,jk);
@@ -6060,10 +6064,12 @@ function rHR(){
       const isVeillee=dc?.veillee||false;
       const hTEffectif=isVeillee?CRENEAUX_SPECIAUX.veillee.duree:hT;
 
-      if(!jT&&!dc&&!isDim){
+      if(!jT&&!dc&&!isDim&&!sansHoraire){
         h+=`<div style="padding:10px 14px;background:#F8F6F0;border-radius:10px;opacity:.5;margin-bottom:7px;font-size:14px;color:#888">${JL[jk]} ${fD(ds)} — Repos</div>`;
         return;
       }
+      // Pour une personne sans horaire théorique (direction), ne pas afficher "Repos" — proposer la saisie
+      if(sansHoraire&&!dc&&isDim){ return; }
 
       const ac=dc?(dc.dep>0?(dc.st===ST.APP?"#2E7D52":dc.st===ST.REF?"#C0392B":"#B8670A"):isVeillee?"#7050B0":dc.svcMidi||dc.svcSoir?"#A060C0":"#2E7D52"):"#DDD5B8";
 
@@ -6100,7 +6106,10 @@ function rHR(){
 
           <!-- Boutons d'action -->
           <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end">
-            ${isPast&&!dc&&(jT||isDim)?`
+            ${isPast&&!dc&&sansHoraire&&!isDim?`
+              <button class="btn bp bsm" data-dpj="${jk}" data-dpd="${ds}">✏️ Saisir mes heures</button>
+            `:""}
+            ${isPast&&!dc&&(jT||isDim)&&!sansHoraire?`
               <div style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end">
                 <button class="btn bs bsm" data-conf="${jk}" data-cds="${ds}">✓ Conforme</button>
                 <button class="btn bw bsm" data-dpj="${jk}" data-dpd="${ds}">+ Heures sup.</button>
@@ -6296,7 +6305,8 @@ function bHR(){
       if(!mb)return;
       const jk=b.dataset.dpj,ds=b.dataset.dpd;
       const jT=HOR[mb.id]?.j[jk];
-      A.set({modal:{ty:"dp",data:{mb,jk,ds,jT,ht:gHT(mb.id,jk),isDim:new Date(ds+"T12:00:00").getDay()===0}}});
+      const sansHor=!HOR[mb.id]||JK.every(j=>!HOR[mb.id].j[j]&&!(HOR[mb.id].jm&&HOR[mb.id].jm[j]));
+      A.set({modal:{ty:"dp",data:{mb,jk,ds,jT,ht:gHT(mb.id,jk),isDim:new Date(ds+"T12:00:00").getDay()===0,sansHoraire:sansHor}}});
     };
   });
 
@@ -6330,13 +6340,13 @@ function bHR(){
 
 
 function rMdlDP(){
-  const {mb,jk,ds,jT,ht,isDim}=A.s.modal.data;
+  const {mb,jk,ds,jT,ht,isDim,sansHoraire}=A.s.modal.data;
   const coef=isDim?1.5:1.0;
   
   const pauseDeb=jT?jT[1]||"":""
   const pauseFin=jT?jT[2]||"":""
-  return mdl(isDim?"🌞 Déclarer des heures dimanche":"⏱ Rectification d'horaire",`
-    ${!isDim?`<div class="wbox">⚠️ Toute heure supplémentaire doit être validée en amont par la direction sauf urgence.</div>`:""}
+  return mdl(isDim?"🌞 Déclarer des heures dimanche":sansHoraire?"⏱ Saisir mes heures":"⏱ Rectification d'horaire",`
+    ${!isDim&&!sansHoraire?`<div class="wbox">⚠️ Toute heure supplémentaire doit être validée en amont par la direction sauf urgence.</div>`:""}
     ${isDim?`<div style="background:#FEF3E2;border:1.5px solid #E8A030;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:14px;color:#7A4A00;font-weight:600">🌞 Heures travaillées le dimanche — récupérées à <strong>×1,5</strong> après validation direction.</div>`:""}
     <div style="background:#FAF7F0;border:1px solid #DDD5B8;border-radius:9px;padding:10px 14px;margin-bottom:12px">
       <div style="font-weight:700;font-size:15px">${JL[jk]} ${fD(ds)}</div>
@@ -6372,7 +6382,7 @@ function rMdlDP(){
     </div>`);
 }
 function bMdlDP(){
-  const {mb,jk,ds,ht,isDim}=A.s.modal.data;
+  const {mb,jk,ds,ht,isDim,sansHoraire}=A.s.modal.data;
   const coef=isDim?1.5:1.0;
 
   
@@ -6393,7 +6403,7 @@ function bMdlDP(){
     if(!hd||!hf) return{r:0,dep:0,rc:0,pauseDuree,hd,hf,fm,dp,fp,da};
     const brut=cH(hd,hf);
     const r=Math.max(0,brut-pauseDuree);
-    const dep=Math.max(0,r-ht);
+    const dep=sansHoraire?0:Math.max(0,r-ht);
     const rc=dep*coef;
     const nfo=document.getElementById("dpnfo");
     if(nfo){
