@@ -11,17 +11,17 @@
 body{font-family:'Palatino Linotype',Georgia,serif;background:#FAF7F0;color:#2A2A2A;min-height:100vh}
 input,select,textarea,button{font-family:inherit;font-size:14px}
 button{cursor:pointer}
-.app{max-width:900px;margin:0 auto;padding:16px 14px 80px}
-.hdr{background:#3A4425;color:#fff;padding:0 18px;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.2)}
+.app{margin-left:180px;padding:16px 20px;min-height:100vh;max-width:calc(100vw - 180px)}
+.hdr{background:#3A4425;color:#fff;padding:0 18px;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.2);left:180px}
 .hdr-t{font-size:13px;font-weight:800}
 .hdr-s{font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.8px}
-.nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #DDD5B8;display:flex;box-shadow:0 -4px 20px rgba(0,0,0,.1);z-index:100;min-height:70px}
-.nb{flex:1;border:none;background:none;padding:12px 2px 10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;position:relative}
-.nb.on{border-top:2.5px solid #5C6B3A}
-.nb .ic{font-size:16px}
-.nb .lb{font-size:9px;color:#888}
-.nb.on .lb{color:#5C6B3A;font-weight:700}
-.bdg{position:absolute;top:4px;right:calc(50% - 16px);background:#C0392B;color:#fff;border-radius:50%;width:15px;height:15px;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.nav{position:fixed;top:0;left:0;bottom:0;width:180px;background:#3A4425;display:flex;flex-direction:column;box-shadow:4px 0 20px rgba(0,0,0,.15);z-index:100;overflow-y:auto;padding-top:8px}
+.nb{width:100%;border:none;background:none;padding:14px 16px;cursor:pointer;display:flex;flex-direction:row;align-items:center;gap:12px;position:relative;text-align:left;border-radius:0}
+.nb.nb-ic{font-size:22px;min-width:26px;text-align:center}.nb-lb{font-size:15px;font-weight:600;color:#FAF7F0;letter-spacing:.2px}.nb.act .nb-lb{color:#C8A84B}.nb-bdg{position:absolute;top:8px;right:10px;background:#C0392B;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:700}.nb.act{background:rgba(200,168,75,.25);border-left:4px solid #C8A84B}.nb:hover{background:rgba(255,255,255,.08)}.on{border-top:2.5px solid #5C6B3A}
+.nb .ic{font-size:22px;min-width:26px;text-align:center}
+.nb .lb{font-size:15px;font-weight:600;color:#FAF7F0}
+.nb.on .lb{color:#C8A84B}
+.bdg{position:absolute;top:8px;right:10px;background:#C0392B;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:700}
 .card{background:#fff;border-radius:14px;border:1px solid #DDD5B8;padding:16px;margin-bottom:10px}
 .ca{border-left:4px solid #5C6B3A}
 .btn{border:none;border-radius:8px;padding:9px 18px;font-weight:600;cursor:pointer;font-family:inherit}
@@ -106,6 +106,19 @@ input,select,textarea{font-size:16px!important}/* évite zoom auto iOS */
 
 
 const SVC=["Pédagogie","Administratif","Vie résidentielle","Direction","AESH"];
+const CRENEAUX_SPECIAUX={
+  svc_midi:{label:"Service midi",horaire:"12h00-13h00",duree:1},
+  svc_soir:{label:"Soir / étude",horaire:"17h30-19h00",duree:1.5},
+  veillee:{label:"Veillée",horaire:"13h30-21h00",duree:7.5,remplace:true},
+};
+
+// Un salarié effectue des services spéciaux s'il est en Pédagogie ou Vie résidentielle
+// (moniteurs et personnels éducatifs — pas l'administratif, ni technique, ni AESH, ni direction)
+function isSvcSpecial(mb){
+  if(!mb) return false;
+  return mb.sv==="Pédagogie"||mb.sv==="Vie résidentielle";
+}
+
 const ANN=[];for(let y=2025;y<=2034;y++)ANN.push(`${y}-${y+1}`);
 const ADM=[{id:"mfr001",pwd:"mfr2024"},{id:"mfr015",pwd:"grodecoeur2024"}];
 const TAMPON_B64="data:image/png;base64,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bTcb/eWWEAgkbLLRWsp+DsHyBWnvHFfKOayHf8cctP263L0PyzF4v0retDe3FlSled+FA/8A0AsfMuQ8Hw5Czk2VWq2LQAVMuyAXdHej6Y2sjwftVO5J+LLD0zDbsHx2/ZlNG/ESOpCP4I8FR/8A1qQ4p+GHiKxvtSpVjfv0ttIHq3WSp8K0PJKPCDs+f0/fxoVbFksdmscRESzWmDb2GxpDcZhLaQNa+AKDnN3MvxL5ypQs2DnELavaUOLW2JBBUAlRU7vWgFb0j7jW69Y34f8AM78+1PyzIraH3CHXvq1P3ZxtX7JDyksjyd+G9ePjRrpilBUto4ExNhoN3a65BdmzrtGVOMWKfjf9GP0Rrx9wfFTfEsEwzE9HG8XtNrcCenqsRkh0j+V67H4+5qR0oFKUoFKUoFKUoFKUoKt5dyfLLDyNhUTG2/rY8iNcpNwtiUguTWmRH9rZPw4A4pSfIBI6n5rW8LPZvlzljzpWctzMbKblGegCJ1+rUmfJQ08FHRSA2lkAEbAQR/uNW1It8CRPi3B+Gw7LiBYjPqQCtoLACwk/I2AN6+dCv1boMO3RREgRWYscLWsNMoCUhS1FSjofcqUSf5JoKAyPkea0cwxxrLfRyFnN4US3Qg8gSfpFrjFSG0a7KQUl3Z0fHbzWC3yDl06dmM5D14i2rJ4c+Jic94NtwWpLDLpjKYXvuPVbbW4SpI9yPG+w10Uq2W1VxTclW+KqahPVMgsp9QD9grW69UxYyWW2Ex2Q01/poCB1R9vA+1BCoOToLXHfS/x22r4wFek7FWty4D6QuDorx6ZB0slQ8gEfeqtXl2UWjki+iG1kt7ydF0m+njoJTGct4ZR9O4lSwGwkL0rYV2O1DRror0m/Z/TR/T/R7R7fGvH7eK+9U9u/Udta3rzQcz2NvIMy4/smP5CcniXmdmMu3LluzSy+zHacdkOr2ySnslLRYT/tClbGwBRFwmzMwyKE7DyeZLH58clYdVJYjLhtOr+gEZfhIWR6ASWzspU4TuumAhA+EpHkn4+5+TX0gH5A80HH2cWPIMZxLDYKIuYz5DtnE71IzcqTuc5JaeUx2Q4CyoIHppWvsOu/bvZqaZvYL9GybPLjDtmTXcuJxu8NxS6XF+o1PUt9qOTpAKGka6j++910dSgqbhRT175BzvPGsduVltl7RbWY35lG+nkSFx23Q4tTZ8hOnEJBPz1P7VbNKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUH/2Q==";
@@ -118,7 +131,7 @@ const PWDS_CLAIRS={
   mfr013:"iric4230",mfr014:"claire0300",mfr015:"sandrine4504",mfr016:"melissa9252",
   mfr017:"gabriel1315",mfr018:"loic4428",mfr019:"melina4885",mfr020:"marc2201",
   mfr021:"caroline2906",mfr022:"romain0615",mfr023:"caroline4327",mfr024:"oceane3676",
-  mfr025:"laura7974",mfr026:"asmae9528"
+  mfr025:"laura7974",mfr026:"asmae9528",mfr027:"dominique5127",mfr028:"isia8340"
 };
 const MNS=["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
 const JL={lun:"Lundi",mar:"Mardi",mer:"Mercredi",jeu:"Jeudi",ven:"Vendredi",sam:"Samedi"};
@@ -146,32 +159,30 @@ const TSAL=["Congés payés","Récupération","Récupération veillée","Télét
 const TDIR=Object.keys(TC).filter(t=>t!=="Annulée");
 
 const HOR={
-  mfr001:{lb:"Directrice 39h",j:{lun:["08:00","12:00","13:30","17:30"],mar:["08:00","12:00","13:30","17:30"],mer:["08:00","12:00","13:30","17:30"],jeu:["08:00","12:00","13:30","17:30"],ven:["08:00","12:00","13:30","16:30"],sam:null}},
-  mfr002:{lb:"Moniteur 39h",j:{lun:["08:00","12:00","13:30","17:30"],mar:["08:00","12:00","13:30","17:30"],mer:["08:00","12:00","13:30","17:30"],jeu:["08:00","12:00","13:30","17:30"],ven:["08:00","12:00","13:30","16:30"],sam:null}},
-  mfr003:{lb:"Monitrice 80%",j:{lun:["08:00","12:00","13:30","17:30"],mar:["08:00","12:00","13:30","17:30"],mer:null,jeu:["08:00","12:00","13:30","17:30"],ven:["08:00","12:00","13:30","16:30"],sam:null}},
-  mfr004:{lb:"Moniteur 39h",j:{lun:["08:00","12:00","13:30","17:30"],mar:["08:00","12:00","13:30","17:30"],mer:["08:00","12:00","13:30","17:30"],jeu:["08:00","12:00","13:30","17:30"],ven:["08:00","12:00","13:30","16:30"],sam:null}},
-  mfr005:{lb:"Moniteur 60%",j:{lun:["08:00","12:00","13:30","17:30"],mar:null,mer:["08:00","12:00","13:30","17:30"],jeu:null,ven:["08:00","12:00","13:30","16:30"],sam:null}},
-  mfr006:{lb:"Monitrice 39h",j:{lun:["08:00","12:00","13:30","17:30"],mar:["08:00","12:00","13:30","17:30"],mer:["08:00","12:00","13:30","17:30"],jeu:["08:00","12:00","13:30","17:30"],ven:["08:00","12:00","13:30","16:30"],sam:null}},
-  mfr007:{lb:"Monitrice 39h",j:{lun:["08:00","12:00","13:30","17:30"],mar:["08:00","12:00","13:30","17:30"],mer:["08:00","12:00","13:30","17:30"],jeu:["08:00","12:00","13:30","17:30"],ven:["08:00","12:00","13:30","16:30"],sam:null}},
-  mfr008:{lb:"Monitrice 39h",j:{lun:["08:00","12:00","13:30","17:30"],mar:["08:00","12:00","13:30","17:30"],mer:["08:00","12:00","13:30","17:30"],jeu:["08:00","12:00","13:30","17:30"],ven:["08:00","12:00","13:30","16:30"],sam:null}},
-  mfr009:{lb:"Monitrice 39h",j:{lun:["08:00","12:00","13:30","17:30"],mar:["08:00","12:00","13:30","17:30"],mer:["08:00","12:00","13:30","17:30"],jeu:["08:00","12:00","13:30","17:30"],ven:["08:00","12:00","13:30","16:30"],sam:null}},
-  mfr010:{lb:"Monitrice 39h",j:{lun:["08:00","12:00","13:30","17:30"],mar:["08:00","12:00","13:30","17:30"],mer:["08:00","12:00","13:30","17:30"],jeu:["08:00","12:00","13:30","17:30"],ven:["08:00","12:00","13:30","16:30"],sam:null}},
-  mfr011:{lb:"Monitrice 90%",j:{lun:["08:00","12:00","13:30","17:30"],mar:["08:00","12:00","13:30","17:30"],mer:["08:00","12:00",null,null],jeu:["08:00","12:00","13:30","17:30"],ven:["08:00","12:00","13:30","16:30"],sam:null}},
-  mfr012:{lb:"Monitrice 60%",j:{lun:null,mar:["08:00","12:00","13:30","17:30"],mer:["08:00","12:00","13:30","17:30"],jeu:["08:00","12:00","13:30","17:30"],ven:null,sam:null}},
-  mfr013:{lb:"Chargé de cours",note:"Horaires selon groupes IMFR",j:{lun:null,mar:["13:30",null,null,"17:30"],mer:null,jeu:null,ven:null,sam:null}},
-  mfr014:{lb:"Secrétaire 80%",j:{lun:["08:00","12:00","12:30","17:00"],mar:["08:00","12:00","12:30","17:00"],mer:["08:00","12:00",null,null],jeu:["08:00","12:00","12:30","17:00"],ven:["08:00","12:30","13:00","16:00"],sam:null}},
-  mfr015:{lb:"Assist. direction 37h",j:{lun:["08:00","12:15","13:15","17:30"],mar:["08:00","12:15","13:15","17:30"],mer:["08:00","12:15","13:15","17:00"],jeu:["08:00","12:15","13:15","17:00"],ven:["08:00","12:00",null,null],sam:null}},
-  mfr016:{lb:"Assist. admin 37h",j:{lun:["08:00","12:15","13:15","17:30"],mar:["08:00","12:15","13:15","17:30"],mer:["08:00","12:15",null,null],jeu:["08:00","12:15","13:15","17:00"],ven:["08:00","12:00","13:00","17:00"],sam:null}},
-  mfr017:{lb:"Aide compta 80%",j:{lun:["08:00","12:15","13:15","17:00"],mar:["08:00","12:15","13:15","17:00"],mer:["08:00","12:15","13:15","17:30"],jeu:["08:00","12:15","13:15","17:30"],ven:null,sam:null}},
-  mfr018:{lb:"Maître maison 39h",j:{lun:["07:00","11:00","11:30","15:30"],mar:["07:00",null,null,"15:30"],mer:["07:00",null,null,"15:30"],jeu:["07:00",null,null,"15:30"],ven:["07:00","13:00",null,null],sam:null}},
-  mfr019:{lb:"Personnel service 39h",j:{lun:["07:00","11:00","11:30","15:30"],mar:["07:00",null,null,"15:30"],mer:["07:00",null,null,"15:30"],jeu:["07:00",null,null,"15:30"],ven:["07:00","13:00",null,null],sam:null}},
-  mfr020:{lb:"Chargé de cours",note:"Horaires selon groupes IMFR",j:{lun:null,mar:["13:30",null,null,"17:30"],mer:null,jeu:null,ven:null,sam:null}},
-  mfr021:{lb:"Animatrice 68% (AT)",j:{lun:[null,null,"17:30","23:30"],mar:[null,null,"17:30","23:30"],mer:[null,null,"17:30","23:30"],jeu:[null,null,"17:30","23:30"],ven:null,sam:null}},
-  mfr022:{lb:"Surveill. nuit 35h30",j:{lun:[null,null,"17:30","24:00"],mar:["06:00","08:00","17:30","24:00"],mer:["06:00","08:30","17:30","24:00"],jeu:["06:00","08:00","17:30","24:00"],ven:["06:00","08:30",null,null],sam:null}},
-  mfr023:{lb:"Animatrice surv. 68%",note:"En arrêt maladie jusqu'au 20/07/2026 — remplacée par Laura HILLION",j:{lun:[null,null,"17:00","23:00"],mar:[null,null,"17:00","23:00"],mer:[null,null,"17:00","23:00"],jeu:[null,null,"17:00","23:00"],ven:null,sam:null}},
-  mfr024:{lb:"Agent entretien 71%",j:{lun:[null,null,"16:00","21:00"],mar:[null,null,"16:00","21:00"],mer:[null,null,"16:00","21:00"],jeu:[null,null,"16:00","21:00"],ven:["08:00","12:30","13:00","14:30"],sam:null}},
-  mfr025:{lb:"Animatrice surv. 68%",j:{lun:[null,null,"17:00","23:00"],mar:[null,null,"17:00","23:00"],mer:[null,null,"17:00","23:00"],jeu:[null,null,"17:00","23:00"],ven:null,sam:null}},
-  mfr026:{lb:"AESH 68% 28h",j:{lun:null,mar:["08:00","12:00","13:30","17:30"],mer:["08:00","12:00","13:30","17:30"],jeu:["08:00","12:00","13:30","17:30"],ven:["08:00","12:00",null,null],sam:null}}
+  mfr001:{lb:"Directrice",j:{lun:null,mar:null,mer:null,jeu:null,ven:null,sam:null}},
+  mfr002:{lb:"Moniteur",j:{lun:["08:00","12:00","13:30","17:30"],mar:["08:00","12:00","13:30","17:30"],mer:["08:00","12:00","13:30","17:30"],jeu:["08:00","12:00","13:30","17:30"],ven:["08:00","12:00","13:30","16:30"],sam:null}},
+  mfr003:{lb:"Monitrice",j:{lun:["08:00","12:00","13:30","17:30"],mar:["08:00","12:00","13:30","17:30"],mer:null,jeu:["08:00","12:00","13:30","17:30"],ven:["08:00","12:00","13:30","16:30"],sam:null}},
+  mfr004:{lb:"Moniteur",j:{lun:["08:00","12:00","13:30","17:30"],mar:["08:00","12:00","13:30","17:30"],mer:["08:00","12:00","13:30","17:30"],jeu:["08:00","12:00","13:30","17:30"],ven:["08:00","12:00","13:30","16:30"],sam:null}},
+  mfr005:{lb:"Moniteur",j:{lun:["08:00","12:00","13:30","17:30"],mar:["08:00","12:00","13:30","17:30"],mer:["08:00","12:00","13:30","17:30"],jeu:["08:00","12:00","13:30","17:30"],ven:["08:00","12:00","13:30","16:30"],sam:null}},
+  mfr006:{lb:"Monitrice",j:{lun:["08:00","12:00","13:30","17:30"],mar:["08:00","12:00","13:30","17:30"],mer:["08:00","12:00","13:30","17:30"],jeu:null,ven:null,sam:null}},
+  mfr007:{lb:"Monitrice",j:{lun:["08:00","12:00","13:30","17:30"],mar:["08:00","12:00","13:30","17:30"],mer:["08:00","12:00","13:30","17:30"],jeu:["08:00","12:00","13:30","17:30"],ven:["08:00","12:00","13:30","16:30"],sam:null}},
+  mfr008:{lb:"Monitrice",j:{lun:["08:00","12:00","13:30","17:30"],mar:["08:00","12:00","13:30","17:30"],mer:["08:00","12:00","13:30","17:30"],jeu:["08:00","12:00","13:30","17:30"],ven:["08:00","12:00","13:30","16:30"],sam:null}},
+  mfr010:{lb:"Monitrice",j:{lun:["08:00","12:00","13:30","17:30"],mar:["08:00","12:00","13:30","17:30"],mer:["08:00","12:00","13:30","17:30"],jeu:["08:00","12:00","13:30","17:30"],ven:["08:00","12:00","13:30","16:30"],sam:null}},
+  mfr011:{lb:"Monitrice",j:{lun:["08:00","12:00","13:30","17:30"],mar:["08:00","12:00","13:30","17:30"],mer:["08:00","12:00",null,null],jeu:["08:00","12:00","13:30","17:30"],ven:["08:00","12:00","13:30","16:30"],sam:null}},
+  mfr014:{lb:"Administratif",j:{lun:["08:00","12:30","13:30","17:30"],mar:["08:00","12:30","13:30","17:30"],mer:null,jeu:["08:00","12:30","13:30","17:30"],ven:["08:00","12:30",null,null],sam:null}},
+  mfr015:{lb:"Assistante de direction",j:{lun:["08:00","12:15","13:15","17:30"],mar:["08:00","12:15","13:15","17:30"],mer:["08:00","12:15","13:15","17:00"],jeu:["08:00","12:15","13:15","17:00"],ven:["08:00","12:00",null,null],sam:null}},
+  mfr016:{lb:"Assistante administrative",j:{lun:["08:00","12:15","13:15","17:30"],mar:["08:00","12:15","13:15","17:30"],mer:["08:00","12:15",null,null],jeu:["08:00","12:15","13:15","17:00"],ven:["08:00","12:00","13:00","17:00"],sam:null}},
+  mfr017:{lb:"Administratif",j:{lun:["08:00","12:00","13:30","17:00"],mar:["08:00","12:00","13:30","17:00"],mer:["08:00","12:00","13:30","17:00"],jeu:["08:00","12:00","13:30","17:00"],ven:null,sam:null}},
+  mfr018:{lb:"Maitre de maison",j:{lun:["07:00","15:30",null,null],mar:["07:00","15:30",null,null],mer:["07:00","15:30",null,null],jeu:["07:00","15:30",null,null],ven:["07:00","13:00",null,null],sam:null}},
+  mfr019:{lb:"Service - aide cuisine",j:{lun:["07:00","15:30",null,null],mar:["07:00","15:30",null,null],mer:["07:00","15:30",null,null],jeu:["07:00","15:30",null,null],ven:["07:00","13:00",null,null],sam:null}},
+  mfr020:{lb:"Charge de cours",j:{lun:null,mar:null,mer:null,jeu:null,ven:null,sam:null}},
+  mfr022:{lb:"Veilleur de nuit",note:"Veille 17h30-01h30 + 06h00-08h00 · 40h/sem dont 17h de nuit · voir avenant",hNuit:17,jm:{lun:[["17:30","24:00"]],mar:[["00:00","01:30"],["06:00","08:00"],["17:30","24:00"]],mer:[["00:00","01:30"],["06:00","08:00"],["17:30","24:00"]],jeu:[["00:00","01:30"],["06:00","08:00"],["17:30","24:00"]],ven:[["00:00","01:30"],["06:00","08:00"]],sam:null},j:{lun:[null,null,"17:30","24:00"],mar:["00:00","01:30","17:30","24:00"],mer:["00:00","01:30","17:30","24:00"],jeu:["00:00","01:30","17:30","24:00"],ven:["00:00","01:30",null,null],sam:null}},
+  mfr023:{lb:"Animatrice surveillante",note:"En arrêt maladie jusqu'au 23/09/2026 — remplacée par Laura HILLION",j:{lun:[null,null,"17:00","23:00"],mar:[null,null,"17:00","23:00"],mer:[null,null,"17:00","23:00"],jeu:[null,null,"17:00","23:00"],ven:null,sam:null}},
+  mfr024:{lb:"Service",j:{lun:[null,null,"16:00","21:00"],mar:[null,null,"16:00","21:00"],mer:[null,null,"16:00","21:00"],jeu:[null,null,"16:00","21:00"],ven:["08:00","12:30","13:00","14:30"],sam:null}},
+  mfr025:{lb:"Animatrice surveillante",j:{lun:[null,null,"17:00","23:00"],mar:[null,null,"17:00","23:00"],mer:[null,null,"17:00","23:00"],jeu:[null,null,"17:00","23:00"],ven:null,sam:null}},
+  mfr026:{lb:"AESH",j:{lun:null,mar:["08:00","12:00","13:30","17:30"],mer:["08:00","12:00","13:30","17:30"],jeu:["08:00","12:00","13:30","17:30"],ven:["08:00","12:00",null,null],sam:null}},
+  mfr027:{lb:"Moniteur",j:{lun:["08:00","12:00","13:30","17:30"],mar:["08:00","12:00","13:30","17:30"],mer:["08:00","12:00","13:30","17:30"],jeu:["08:00","12:00","13:30","17:30"],ven:["08:00","12:00","13:30","16:30"],sam:null}},
+  mfr028:{lb:"Apprentie administrative",j:{lun:["08:00","12:00","13:30","17:30"],mar:["08:00","12:00","13:30","17:30"],mer:["08:00","12:00","13:30","17:30"],jeu:["08:00","12:00","13:30","17:30"],ven:["08:00","12:00","13:30","15:30"],sam:null}},
 };
 
 const EQ0=[
@@ -183,11 +194,11 @@ const EQ0=[
   {id:"mfr006",nom:"LACAZE-LABARRERE",pr:"Céline",po:"Formatrice",sv:"Pédagogie",em:"celine.lacaze@mfr.asso.fr",de:"17/08/2021",cp:14,cpp:0,ra:0,rp:0,ttp:8,ttu:0},
   {id:"mfr007",nom:"FRAYSSINOUS",pr:"Fanny",po:"Formatrice",sv:"Pédagogie",em:"fanny.frayssinous@mfr.asso.fr",de:"17/08/2021",cp:10,cpp:0,ra:0,rp:0,ttp:8,ttu:0},
   {id:"mfr008",nom:"LACOUR",pr:"Aurélie",po:"Formatrice",sv:"Pédagogie",em:"aurelie.lacour@mfr.asso.fr",de:"04/11/2024",cp:9,cpp:0,ra:0,rp:0,ttp:8,ttu:0},
-  {id:"mfr009",nom:"RENAUD",pr:"Amélie",po:"Formatrice",sv:"Pédagogie",em:"amelie.renaud@mfr.asso.fr",de:"18/08/2025",cp:10.5,cpp:0,ra:0,rp:0,ttp:8,ttu:0},
+  {id:"mfr009",nom:"RENAUD",pr:"Amélie",po:"Formatrice",sv:"Pédagogie",em:"amelie.renaud@mfr.asso.fr",de:"18/08/2025",cp:10.5,cpp:0,ra:0,rp:0,ttp:8,ttu:0,archive:true},
   {id:"mfr010",nom:"SAINT-ETIENNE",pr:"Cannelle",po:"Formatrice",sv:"Pédagogie",em:"cannelle.saint-etienne@mfr.asso.fr",de:"18/08/2025",cp:10.5,cpp:0,ra:0,rp:0,ttp:8,ttu:0},
   {id:"mfr011",nom:"SAMMARTIN",pr:"Marie-Pierre",po:"Formatrice",sv:"Pédagogie",em:"marie-pierre.sammartin@mfr.asso.fr",de:"14/09/1990",cp:19,cpp:0,ra:0,rp:0,ttp:8,ttu:0},
-  {id:"mfr012",nom:"ST LAMBERT",pr:"Stéphanie",po:"Formatrice",sv:"Pédagogie",em:"",de:"18/08/2025",cp:16.5,cpp:0,ra:0,rp:0,ttp:8,ttu:0},
-  {id:"mfr013",nom:"YODTS",pr:"Iric",po:"Formateur",sv:"Pédagogie",em:"iric.yodts@mfr.asso.fr",de:"14/01/2026",cp:9,cpp:0,ra:0,rp:0,ttp:8,ttu:0},
+  {id:"mfr012",nom:"ST LAMBERT",pr:"Stéphanie",po:"Formatrice",sv:"Pédagogie",em:"",de:"18/08/2025",cp:16.5,cpp:0,ra:0,rp:0,ttp:8,ttu:0,archive:true},
+  {id:"mfr013",nom:"YODTS",pr:"Iric",po:"Formateur",sv:"Pédagogie",em:"iric.yodts@mfr.asso.fr",de:"14/01/2026",cp:9,cpp:0,ra:0,rp:0,ttp:8,ttu:0,archive:true},
   {id:"mfr014",nom:"GASNIER",pr:"Claire",po:"Secrétaire",sv:"Administratif",em:"claire.gasnier@mfr.asso.fr",de:"26/01/2026",cp:2,cpp:0,ra:0,rp:0,ttp:8,ttu:0},
   {id:"mfr015",nom:"GRODECOEUR",pr:"Sandrine",po:"Assistante direction",sv:"Administratif",em:"sandrine.grodecoeur@mfr.asso.fr",de:"24/08/2017",cp:4,cpp:0,ra:0,rp:0,ttp:8,ttu:0},
   {id:"mfr016",nom:"PAGA",pr:"Mélissa",po:"Apprentie",sv:"Administratif",em:"melissa.paga@mfr.asso.fr",de:"20/08/2024",cp:17,cpp:0,ra:0,rp:0,ttp:8,ttu:0},
@@ -195,12 +206,14 @@ const EQ0=[
   {id:"mfr018",nom:"DUROSIER",pr:"Loïc",po:"Maître de maison",sv:"Vie résidentielle",em:"loic.durosier@mfr.asso.fr",de:"22/08/2022",cp:11,cpp:0,ra:0,rp:0,ttp:8,ttu:0},
   {id:"mfr019",nom:"DUROSIER",pr:"Mélina",po:"Personnel service",sv:"Vie résidentielle",em:"melina.durosier@mfr.asso.fr",de:"05/06/2023",cp:10,cpp:0,ra:0,rp:0,ttp:8,ttu:0},
   {id:"mfr020",nom:"GACHEDOIT",pr:"Marc Thierry",po:"Chargé de cours",sv:"Pédagogie",em:"thierry.gachedoit@mfr.asso.fr",de:"04/09/2001",cp:20,cpp:0,ra:0,rp:0,ttp:8,ttu:0},
-  {id:"mfr021",nom:"GAMBIER",pr:"Caroline",po:"Animatrice",sv:"Vie résidentielle",em:"",de:"26/08/2024",cp:20,cpp:0,ra:0,rp:0,ttp:8,ttu:0},
+  {id:"mfr021",nom:"GAMBIER",pr:"Caroline",po:"Animatrice",sv:"Vie résidentielle",em:"",de:"26/08/2024",cp:20,cpp:0,ra:0,rp:0,ttp:8,ttu:0,archive:true},
   {id:"mfr022",nom:"QUIROSA",pr:"Romain",po:"Surveillant nuit",sv:"Vie résidentielle",em:"romain.quirosa@mfr.asso.fr",de:"06/01/2020",cp:10,cpp:0,ra:0,rp:0,ttp:8,ttu:0},
   {id:"mfr023",nom:"TAIEB",pr:"Caroline",po:"",sv:"Vie résidentielle",em:"caroline.taieb@mfr.asso.fr",de:"",cp:0,cpp:0,ra:0,rp:0,ttp:8,ttu:0},
   {id:"mfr024",nom:"WAREMBOURG",pr:"Océane",po:"Agent entretien",sv:"Vie résidentielle",em:"oceane.warembourg@mfr.asso.fr",de:"26/02/2026",cp:5.25,cpp:0,ra:0,rp:0,ttp:8,ttu:0},
   {id:"mfr025",nom:"HILLION",pr:"Laura",po:"Animatrice surv.",sv:"Vie résidentielle",em:"laura.hillion@mfr.asso.fr",de:"09/03/2026",cp:4.417,cpp:0,ra:0,rp:0,ttp:8,ttu:0},
-  {id:"mfr026",nom:"OUCHRIF",pr:"Asmae",po:"AESH",sv:"AESH",em:"asmae.ouchrif@mfr.asso.fr",de:"01/10/2025",cp:11.5,cpp:0,ra:0,rp:0,ttp:8,ttu:0}
+  {id:"mfr026",nom:"OUCHRIF",pr:"Asmae",po:"AESH",sv:"AESH",em:"asmae.ouchrif@mfr.asso.fr",de:"01/10/2025",cp:11.5,cpp:0,ra:0,rp:0,ttp:8,ttu:0},
+  {id:"mfr027",nom:"SIMEON",pr:"Dominique",po:"Moniteur",sv:"Pédagogie",em:"dominique.simeon@mfr.asso.fr",de:"01/09/2026",cp:0,cpp:0,ra:0,rp:0,ttp:8,ttu:0,cpMensuel:2.5},
+  {id:"mfr028",nom:"GAJAC",pr:"Isia",po:"Apprentie administrative",sv:"Administratif",em:"isia.gajac@mfr.asso.fr",de:"01/09/2026",cp:0,cpp:0,ra:0,rp:0,ttp:8,ttu:0,cpMensuel:2.5}
 ];
 const AB0=[
   {id:"ab1",cr:today2(),as:"2025-2026",mid:"mfr021",nm:"Caroline GAMBIER",sv:"Vie résidentielle",ty:"Accident du travail",dd:"2025-09-24",df:"2026-12-31",dj:"journee",cj:1,nj:0,co:"Accident du travail — en cours"},
@@ -215,10 +228,80 @@ function getAS(){const n=new Date(),m=n.getMonth(),y=n.getFullYear();return m>=8
 function getMC(){const n=new Date();return`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,"0")}`;}
 function pH(s){if(!s)return 0;const[h,m]=s.split(":").map(Number);return h+(m||0)/60;}
 function cH(d,f){if(!d||!f)return 0;return Math.max(0,pH(f)-pH(d));}
+
+
+// ── Heures de nuit hebdo (21h-6h) pour équivalence veilleur ───────
+function cHeuresNuitHebdo(horM){
+  if(!horM) return 0;
+  const NUIT_DEB=21, NUIT_FIN=6; // 21h00 → 06h00
+  function heuresNuit(deb,fin){
+    if(!deb||!fin) return 0;
+    let d=pH(deb), f=pH(fin);
+    if(f<=d) return 0;
+    let total=0;
+    // Découper heure par tranche de 0.25h pour compter ce qui tombe la nuit
+    for(let t=d;t<f;t+=0.25){
+      const hr=t%24;
+      if(hr>=NUIT_DEB||hr<NUIT_FIN) total+=0.25;
+    }
+    return total;
+  }
+  let total=0;
+  if(horM.jm){
+    Object.values(horM.jm).forEach(jour=>{
+      if(!jour) return;
+      jour.forEach(cr=>{ total+=heuresNuit(cr[0],cr[1]); });
+    });
+  } else {
+    Object.values(horM.j||{}).forEach(j=>{
+      if(!j) return;
+      const[dm,fm,da,fa]=j;
+      total+=heuresNuit(dm,fm)+heuresNuit(da,fa);
+    });
+  }
+  return total;
+}
+
+// ── Annualisation avec équivalence nuit (veilleur) ───────────────
+function calcAnnualisationNuit(horM, nbSemaines){
+  const hHebdo=cHebdoHOR(horM);
+  // Heures de nuit : valeur conventionnelle saisie (hNuit) ou calcul auto 21h-6h
+  const hNuitHebdo=(horM.hNuit!=null?horM.hNuit:cHeuresNuitHebdo(horM));
+  const hRe=hHebdo*nbSemaines;           // heures réelles
+  const hNuitAn=hNuitHebdo*nbSemaines;   // heures de nuit annuelles
+  const equiv=hNuitAn/2;                 // équivalence conventionnelle : nuit / 2
+  const major=equiv*0.04;                // majoration 4%
+  return {hRe, hNuitAn, equiv, major, totalEquiv:hRe+equiv+major};
+}
+
+// Un salarié est "veilleur" (soumis à équivalence nuit) si hNuit est défini
+function estVeilleur(horM){ return horM && horM.hNuit!=null && horM.hNuit>0; }
+
+// ── Calcul heures hebdo (gère créneaux simples ET multiples) ──────
+function cHebdoHOR(horM){
+  if(!horM) return 0;
+  // Priorité au format multi-créneaux (jm) si présent
+  if(horM.jm){
+    let total=0;
+    Object.values(horM.jm).forEach(jour=>{
+      if(!jour) return;
+      jour.forEach(cr=>{ total += cH(cr[0]||"",cr[1]||""); });
+    });
+    return total;
+  }
+  // Format standard [dm,fm,da,fa]
+  return Object.values(horM.j||{}).reduce((s,j)=>{
+    if(!j) return s;
+    const[dm,fm,da,fa]=j;
+    return s+cH(dm||"",fm||"")+cH(da||"",fa||"");
+  },0);
+}
 function fH(h){if(!h)return"0h00";const hh=Math.floor(h),mm=Math.round((h-hh)*60);return`${hh}h${String(mm).padStart(2,"0")}`;}
 function getLun(ds){const d=new Date(ds+"T12:00:00");const j=d.getDay();const l=new Date(d);l.setDate(d.getDate()-(j===0?6:j-1));return l.toISOString().split("T")[0];}
 function getDJ(lun,key){const idx=JK.indexOf(key);const d=new Date(lun+"T12:00:00");d.setDate(d.getDate()+idx);return d.toISOString().split("T")[0];}
-function gHT(mid,jk){const p=HOR[mid];if(!p)return 0;const j=p.j[jk];if(!j)return 0;const[dm,fm,da,fa]=j;return cH(dm,fm)+cH(da,fa);}
+function gHT(mid,jk){const p=HOR[mid];if(!p)return 0;
+  if(p.jm&&p.jm[jk]){return p.jm[jk].reduce((s,cr)=>s+cH(cr[0]||"",cr[1]||""),0);}
+  const j=p.j[jk];if(!j)return 0;const[dm,fm,da,fa]=j;return cH(dm,fm)+cH(da,fa);}
 function calcPres(eq,abs,ms){
   const res={};SVC.forEach(s=>{
     const mb=eq.filter(m=>m.sv===s);if(!mb.length)return;
@@ -233,6 +316,119 @@ const K={
   g(k){try{const v=localStorage.getItem(`mfr_${k}`);return v?JSON.parse(v):null;}catch{return null;}},
   s(k,v){try{localStorage.setItem(`mfr_${k}`,JSON.stringify(v));}catch{}}
 };
+
+// ══════════════════════════════════════════════════════════════════
+//  FIREBASE — Synchronisation temps réel multi-postes
+// ══════════════════════════════════════════════════════════════════
+// Configuration du projet MFR-Neracais-RH
+const firebaseConfig = {
+  apiKey: "AIzaSyAJNsp-EY6DkT8AWa0824HuZh2Wu2Frce4",
+  authDomain: "gestion-rh-mfr-du-neracais.firebaseapp.com",
+  projectId: "gestion-rh-mfr-du-neracais",
+  storageBucket: "gestion-rh-mfr-du-neracais.firebasestorage.app",
+  messagingSenderId: "696780946775",
+  appId: "1:696780946775:web:f562a90db9dcd716f35212"
+};
+
+// Collections synchronisées (une par type de donnée)
+const FB_COLLECTIONS = ["eq","abs","dem","heu","ord","fr","budgets","devis","echeances","locations","formations","affichage","maintenances"];
+
+let fbDB = null;          // instance Firestore
+let fbReady = false;      // Firebase initialisé ?
+let fbSyncEnCours = {};   // évite les boucles d'écriture
+let fbListeners = [];     // écouteurs temps réel actifs
+
+// Initialisation Firebase (appelée au démarrage)
+async function initFirebase(){
+  try {
+    // Import dynamique du SDK Firebase (modules ES)
+    const appMod = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+    const fsMod = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    const app = appMod.initializeApp(firebaseConfig);
+    fbDB = fsMod.getFirestore(app);
+    // Exposer les fonctions Firestore utilisées
+    window._fs = {
+      doc: fsMod.doc,
+      getDoc: fsMod.getDoc,
+      setDoc: fsMod.setDoc,
+      onSnapshot: fsMod.onSnapshot,
+      collection: fsMod.collection
+    };
+    fbReady = true;
+    console.log("✅ Firebase connecté");
+    return true;
+  } catch(e){
+    console.error("❌ Erreur Firebase:", e);
+    fbReady = false;
+    return false;
+  }
+}
+
+// Écrire une collection dans Firestore
+async function fbSave(key, data){
+  if(!fbReady || !fbDB) return;
+  try {
+    fbSyncEnCours[key] = true;
+    const ref = window._fs.doc(fbDB, "mfr-rh", key);
+    await window._fs.setDoc(ref, { data: JSON.stringify(data), maj: new Date().toISOString() });
+    setTimeout(()=>{ fbSyncEnCours[key] = false; }, 500);
+  } catch(e){
+    console.error(`Erreur sauvegarde ${key}:`, e);
+    fbSyncEnCours[key] = false;
+  }
+}
+
+// Charger toutes les collections depuis Firestore (au démarrage)
+async function fbLoadAll(){
+  if(!fbReady || !fbDB) return {};
+  const result = {};
+  for(const key of FB_COLLECTIONS){
+    try {
+      const ref = window._fs.doc(fbDB, "mfr-rh", key);
+      const snap = await window._fs.getDoc(ref);
+      if(snap.exists()){
+        const d = snap.data();
+        result[key] = d.data ? JSON.parse(d.data) : null;
+      }
+    } catch(e){
+      console.error(`Erreur chargement ${key}:`, e);
+    }
+  }
+  return result;
+}
+
+// Activer les écouteurs temps réel (mise à jour auto entre postes)
+function fbActiverSync(){
+  if(!fbReady || !fbDB) return;
+  // Nettoyer les anciens écouteurs
+  fbListeners.forEach(unsub=>{ try{unsub();}catch{} });
+  fbListeners = [];
+
+  FB_COLLECTIONS.forEach(key=>{
+    const ref = window._fs.doc(fbDB, "mfr-rh", key);
+    const unsub = window._fs.onSnapshot(ref, (snap)=>{
+      // Ignorer si c'est notre propre écriture qui revient
+      if(fbSyncEnCours[key]) return;
+      if(snap.exists()){
+        const d = snap.data();
+        const data = d.data ? JSON.parse(d.data) : null;
+        if(data !== null){
+          // Mettre à jour l'état local + cache, sans réécrire dans Firebase
+          A.s[key] = data;
+          K.s(key, data);
+          // Rafraîchir l'affichage seulement si pertinent
+          A.r();
+        }
+      }
+    }, (err)=>{
+      console.error(`Écouteur ${key} erreur:`, err);
+    });
+    fbListeners.push(unsub);
+  });
+  console.log("🔄 Synchronisation temps réel activée");
+}
+
+
 // Tri alphabétique Nom puis Prénom
 function sortEq(eq){return [...eq].sort((a,b)=>{const n=(a.nom||"").localeCompare(b.nom||"","fr");return n!==0?n:(a.pr||"").localeCompare(b.pr||"","fr");});}
 
@@ -245,6 +441,419 @@ function sortEq(eq){return [...eq].sort((a,b)=>{const n=(a.nom||"").localeCompar
 
 
 let omD=[{dest:"",jeu:""}];
+let hLun=getLun(today2()); // Lundi de la semaine courante (module Heures)
+
+// ══ DEMANDES DE CONGÉS / RÉCUPÉRATION ═══════════════════════════
+
+const DEM_TYPES_SAL = ["Congés payés","Récupération","Télétravail","Formation"];
+const DEM_TYPES_DIR = ["Congés payés","Récupération","Télétravail","Formation","Maladie","Absence autorisée","Événement familial","Congé maternité","Autre"];
+const DEM_FRACTIONS = ["Journée entière","Matin","Après-midi"];
+
+function rDM(){
+  const {role,user,dem,eq}=A.s;
+  const isSal=role==="salarie";
+  const isDir=role==="direction";
+
+  // Filtrer selon le rôle
+  const vis=isSal
+    ? dem.filter(d=>d.mid===user?.id)
+    : dem;
+  const sorted=vis.slice().sort((a,b)=>(b.cr||"").localeCompare(a.cr||""));
+
+  // Compteurs
+  const enAtt=dem.filter(d=>d.st===ST.ATT&&(isSal?d.mid===user?.id:true)).length;
+  const app=dem.filter(d=>d.st===ST.APP&&(isSal?d.mid===user?.id:true)).length;
+
+  const kpiH=isDir?`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-bottom:14px">
+    <div class="kpi" style="background:#FEF3E2"><div class="val" style="font-size:24px;font-weight:800;color:#B8670A">${enAtt}</div><div style="font-size:12px;font-weight:600;color:#555">En attente</div></div>
+    <div class="kpi" style="background:#E8F5EE"><div class="val" style="font-size:24px;font-weight:800;color:#2E7D52">${app}</div><div style="font-size:12px;font-weight:600;color:#555">Approuvées</div></div>
+    <div class="kpi" style="background:#FAF7F0"><div class="val" style="font-size:24px;font-weight:800;color:#3A4425">${vis.length}</div><div style="font-size:12px;font-weight:600;color:#555">Total</div></div>
+  </div>`:"";
+
+  let listeH="";
+  if(!sorted.length){
+    listeH=`<div class="card" style="text-align:center;padding:40px">
+      <div style="font-size:32px;margin-bottom:10px">📨</div>
+      <p style="color:#888">Aucune demande${isSal?" — cliquez sur '+ Demande' pour en créer une":""}</p>
+    </div>`;
+  } else {
+    sorted.forEach(d=>{
+      const tc=TC[d.ty]||TC["Autre"];
+      const stCfg={
+        [ST.ATT]:{bg:"#FEF3E2",c:"#B8670A",b:"#E8A030",lb:"⏳ En attente"},
+        [ST.APP]:{bg:"#E8F5EE",c:"#2E7D52",b:"#5AAA80",lb:"✅ Approuvée"},
+        [ST.REF]:{bg:"#FDECEA",c:"#C0392B",b:"#E08080",lb:"✗ Refusée"},
+        [ST.ANN]:{bg:"#F0F0F0",c:"#888",b:"#CCC",lb:"Annulée"},
+      }[d.st]||{bg:"#EEE",c:"#888",b:"#CCC",lb:d.st};
+
+      const mb=isDir?eq.find(m=>m.id===d.mid):null;
+
+      listeH+=`<div class="card ca" style="border-left-color:${stCfg.b};margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+              <span style="font-size:18px">${tc.e||"📋"}</span>
+              <span style="font-weight:800;font-size:15px;color:#3A4425">${d.ty}</span>
+              <span style="background:${stCfg.bg};color:${stCfg.c};border:1.5px solid ${stCfg.b};border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700">${stCfg.lb}</span>
+              ${mb?`<span class="tsv">${mb.nom} ${mb.pr}</span>`:""}
+            </div>
+            <div style="font-size:14px;color:#555;margin-bottom:3px">
+              📅 <strong>${fD(d.dd)}</strong>${d.df&&d.df!==d.dd?` → <strong>${fD(d.df)}</strong>`:""}
+              ${d.fr?` · ${d.fr}`:""}
+              ${d.nj?` · <strong>${d.nj}j</strong>`:""}
+            </div>
+            ${d.co?`<div style="font-size:13px;color:#888">💬 ${d.co}</div>`:""}
+            ${d.mo?`<div style="font-size:13px;color:#C0392B;margin-top:3px">📩 Motif : ${d.mo}</div>`:""}
+            <div style="font-size:11px;color:#AAA;margin-top:3px">Soumise le ${fD(d.cr)}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end">
+            ${isDir&&d.st===ST.ATT?`
+              <button class="btn bs bsm" data-val-dem="${d.id}" data-val-st="${ST.APP}">✓ Approuver</button>
+              <button class="btn bd bsm" data-val-dem="${d.id}" data-val-st="${ST.REF}">✗ Refuser</button>
+            `:""}
+            ${(isSal||isDir)&&d.st===ST.ATT?`<button class="btn bw bsm" data-ann-dem="${d.id}">Annuler</button>`:""}
+          </div>
+        </div>
+      </div>`;
+    });
+  }
+
+  const sousOnglet=A.s.dmSousOnglet||"demandes";
+  const tabsH=`<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+    <button class="btn ${sousOnglet==="demandes"?"bp":"bl"} bsm" data-dm-tab="demandes">📨 Demandes</button>
+    <button class="btn ${sousOnglet==="absences"?"bp":"bl"} bsm" data-dm-tab="absences">📅 Absences enregistrées</button>
+  </div>`;
+
+  if(sousOnglet==="absences"){
+    return`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+      <h2 style="color:#3A4425;font-size:22px;font-weight:800">🗓 Congés & absences</h2>
+      ${isDir?`<button class="btn bp" id="btn-new-abs">+ Saisir une absence</button>`:""}
+    </div>${tabsH}${rABContenu()}`;
+  }
+
+  return`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+    <h2 style="color:#3A4425;font-size:22px;font-weight:800">🗓 Congés & absences</h2>
+    <button class="btn bp" id="btn-new-dem">+ Nouvelle demande</button>
+  </div>
+  ${tabsH}${kpiH}${listeH}`;
+}
+
+function bDM(){
+  const {dem,abs,eq,user,role}=A.s;
+  const isSal=role==="salarie";
+
+  const bn=document.getElementById("btn-new-dem");
+  if(bn) bn.onclick=()=>A.set({modal:{ty:"nd",data:{}}});
+
+  // Approuver / Refuser (direction)
+  document.querySelectorAll("[data-val-dem]").forEach(b=>{
+    b.onclick=()=>{
+      const id=b.dataset.valDem;
+      const st=b.dataset.valSt;
+      const d=dem.find(x=>x.id===id);
+      if(!d) return;
+      let mo="";
+      if(st===ST.REF){
+        mo=prompt("Motif du refus (obligatoire) :");
+        if(!mo) return;
+      }
+      // Si approuvée → créer l'absence correspondante
+      let newAbs=A.s.abs;
+      if(st===ST.APP){
+        const absEntry={id:uid(),mid:d.mid,nm:d.nm,ty:d.ty,dd:d.dd,df:d.df||d.dd,nj:d.nj||1,fr:d.fr,cr:today2(),demId:id};
+        newAbs=[...A.s.abs,absEntry];
+        A.s.abs=newAbs;
+        K.s("abs",newAbs);
+        // Déduire du solde CP ou récup
+        const mb=eq.find(m=>m.id===d.mid);
+        if(mb){
+          const nj=d.nj||1;
+          let newMb={...mb};
+          if(d.ty==="Congés payés") newMb.cpp=(mb.cpp||0)+nj;
+          if(d.ty==="Récupération") newMb.rp=(mb.rp||0)+nj;
+          const newEq=eq.map(m=>m.id===mb.id?newMb:m);
+          A.s.eq=newEq;K.s("eq",newEq);
+        }
+      }
+      const newDem=dem.map(x=>x.id===id?{...x,st,mo:mo||"",dateRep:today2()}:x);
+      A.save("dem",newDem);
+      A.toast(st===ST.APP?"✅ Demande approuvée":"✗ Demande refusée",st===ST.APP?"success":"error");
+    };
+  });
+
+  // Annuler (salarié ou direction)
+  document.querySelectorAll("[data-ann-dem]").forEach(b=>{
+    b.onclick=()=>{
+      if(!confirm("Annuler cette demande ?")) return;
+      const newDem=dem.map(x=>x.id===b.dataset.annDem?{...x,st:ST.ANN}:x);
+      A.save("dem",newDem);
+      A.toast("Demande annulée","warn");
+    };
+  });
+  // Sous-onglets Demandes/Absences
+  document.querySelectorAll("[data-dm-tab]").forEach(b=>{
+    b.onclick=()=>{A.s.dmSousOnglet=b.dataset.dmTab;A.r();};
+  });
+  // Saisie absence (direction)
+  const bna=document.getElementById("btn-new-abs");
+  if(bna) bna.onclick=()=>A.set({modal:{ty:"sa",data:{}}});
+  // Suppression absence
+  document.querySelectorAll("[data-del-abs]").forEach(b=>{
+    b.onclick=()=>{
+      if(!confirm("Supprimer cette absence ?"))return;
+      A.save("abs",A.s.abs.filter(a=>a.id!==b.dataset.delAbs));
+      A.toast("Absence supprimée","warn");
+    };
+  });
+}
+
+// ── Modal nouvelle demande ────────────────────────────────────────
+function rMdlND(){
+  const {user,eq,role}=A.s;
+  const mb=eq.find(m=>m.id===user?.id);
+  const cp=mb?Math.max(0,(mb.cp||0)-(mb.cpp||0)):0;
+  const rc=mb?Math.max(0,(mb.ra||0)-(mb.rp||0)):0;
+  const types=role==="direction"?DEM_TYPES_DIR:DEM_TYPES_SAL;
+
+  return mdl("+ Nouvelle demande",`
+    ${role==="salarie"?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+      <div style="background:#FBF5E0;border-radius:8px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:800;color:#C8A84B">${cp}j</div><div style="font-size:12px;color:#888">CP restants</div></div>
+      <div style="background:#EEF2E6;border-radius:8px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:800;color:#5C6B3A">${fH(rc*7)}</div><div style="font-size:12px;color:#888">Récup. dispo.</div></div>
+    </div>`:""}
+    ${fld("Type de demande *",sel("nd-ty",types,"","-- Choisir --"))}
+    <div class="g2">
+      ${fld("Date de début *",`<input type="date" id="nd-dd" value="${today2()}" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px;width:100%">`)}
+      ${fld("Date de fin",`<input type="date" id="nd-df" value="${today2()}" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px;width:100%">`)}
+    </div>
+    ${fld("Fraction",sel("nd-fr",DEM_FRACTIONS,"Journée entière"))}
+    ${fld("Commentaire (optionnel)",`<input id="nd-co" placeholder="Précisions éventuelles…" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px;width:100%">`)}
+    <div class="dvd"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn bl" id="nd-cancel">Annuler</button>
+      <button class="btn bp" id="nd-submit">📤 Soumettre</button>
+    </div>`);
+}
+
+function bMdlND(){
+  document.getElementById("nd-cancel").onclick=()=>A.set({modal:null});
+  document.getElementById("nd-submit").onclick=()=>{
+    const ty=document.getElementById("nd-ty").value;
+    const dd=document.getElementById("nd-dd").value;
+    const df=document.getElementById("nd-df").value||dd;
+    const fr=document.getElementById("nd-fr").value;
+    const co=document.getElementById("nd-co").value;
+    if(!ty||!dd){alert("Renseignez le type et la date.");return;}
+    const mb=A.s.eq.find(m=>m.id===A.s.user?.id);
+    // Calculer nb jours ouvrables
+    const nj=nJO(dd,df,fr==="Journée entière"?1:0.5);
+    const d={id:uid(),cr:today2(),ty,dd,df,fr,nj,co,st:ST.ATT,
+      mid:mb.id,nm:`${mb.nom} ${mb.pr}`,sv:mb.sv};
+    A.save("dem",[...A.s.dem,d]);
+    A.set({modal:null});
+    A.toast(`Demande de ${ty} soumise ✓ — en attente de validation`,"success");
+  };
+}
+
+// ── Modal validation demande (direction) ─────────────────────────
+function rMdlVD(){
+  const {d}=A.s.modal.data||{};
+  if(!d) return mdl("Erreur","Demande introuvable");
+  const tc=TC[d.ty]||TC["Autre"];
+  return mdl(`${tc.e||"📋"} Demande — ${d.ty}`,`
+    <div style="background:${tc.bg};border:1.5px solid ${tc.b};border-radius:10px;padding:12px 14px;margin-bottom:14px">
+      <div style="font-weight:800;font-size:16px;color:${tc.c};margin-bottom:4px">${d.ty}</div>
+      <div style="font-size:14px">👤 ${d.nm} · 📅 ${fD(d.dd)}${d.df&&d.df!==d.dd?" → "+fD(d.df):""} · ${d.nj||1}j · ${d.fr||"Journée entière"}</div>
+      ${d.co?`<div style="font-size:13px;color:#555;margin-top:4px">💬 ${d.co}</div>`:""}
+    </div>
+    <div class="dvd"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn bl" id="vd-cancel">Fermer</button>
+      ${d.st===ST.ATT?`<button class="btn bd bsm" data-val-dem="${d.id}" data-val-st="${ST.REF}">✗ Refuser</button>
+      <button class="btn bs" data-val-dem="${d.id}" data-val-st="${ST.APP}">✓ Approuver</button>`:""}
+    </div>`);
+}
+function bMdlVD(){
+  const vdc=document.getElementById("vd-cancel");if(vdc)vdc.onclick=()=>A.set({modal:null});
+  document.querySelectorAll("[data-val-dem]").forEach(b=>{
+    b.onclick=()=>{
+      const id=b.dataset.valDem;const st=b.dataset.valSt;
+      let mo="";
+      if(st===ST.REF){mo=prompt("Motif :");if(!mo)return;}
+      if(st===ST.APP){
+        const d=A.s.dem.find(x=>x.id===id);
+        if(d){
+          const absEntry={id:uid(),mid:d.mid,nm:d.nm,ty:d.ty,dd:d.dd,df:d.df||d.dd,nj:d.nj||1,cr:today2(),demId:id};
+          const newAbs=[...A.s.abs,absEntry];A.s.abs=newAbs;K.s("abs",newAbs);
+          const mb=A.s.eq.find(m=>m.id===d.mid);
+          if(mb){const nj=d.nj||1;let nm={...mb};
+            if(d.ty==="Congés payés")nm.cpp=(mb.cpp||0)+nj;
+            if(d.ty==="Récupération")nm.rp=(mb.rp||0)+nj;
+            const ne=A.s.eq.map(m=>m.id===mb.id?nm:m);A.s.eq=ne;K.s("eq",ne);
+          }
+        }
+      }
+      const newDem=A.s.dem.map(x=>x.id===id?{...x,st,mo,dateRep:today2()}:x);
+      A.save("dem",newDem);A.set({modal:null});
+      A.toast(st===ST.APP?"✅ Approuvée":"✗ Refusée",st===ST.APP?"success":"error");
+    };
+  });
+}
+
+// ── Modal annuler demande ──────────────────────────────────────────
+function rMdlAD(){
+  const {id}=A.s.modal.data||{};
+  const d=A.s.dem.find(x=>x.id===id);
+  if(!d) return mdl("Erreur","Demande introuvable");
+  return mdl("Annuler la demande",`
+    <p style="font-size:17px;margin-bottom:12px">Annuler la demande de <strong>${d.nm}</strong> ?</p>
+    <div style="background:#FEF3E2;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:14px">
+      ${TC[d.ty]?.e||"📋"} <strong>${d.ty}</strong> · ${fD(d.dd)}${d.df&&d.df!==d.dd?" → "+fD(d.df):""}
+    </div>
+    <div class="dvd"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn bl" id="ad-cancel">Garder</button>
+      <button class="btn bd" id="ad-confirm">Annuler la demande</button>
+    </div>`);
+}
+function bMdlAD(){
+  document.getElementById("ad-cancel").onclick=()=>A.set({modal:null});
+  document.getElementById("ad-confirm").onclick=()=>{
+    const {id}=A.s.modal.data||{};
+    const newDem=A.s.dem.map(x=>x.id===id?{...x,st:ST.ANN}:x);
+    A.save("dem",newDem);A.set({modal:null});
+    A.toast("Demande annulée","warn");
+  };
+}
+
+// ── Modal saisir absence (direction) ─────────────────────────────
+function rMdlSA(){
+  const {eq}=A.s;
+  const actifs=sortEq(eq.filter(m=>!m.archive));
+  return mdl("📅 Saisir une absence",`
+    ${fld("Salarié *",sel("sa-mb",actifs.map(m=>({v:m.id,l:`${m.nom} ${m.pr}`})),"","-- Choisir --"))}
+    ${fld("Type d'absence *",sel("sa-ty",Object.keys(TC).filter(t=>t!=="Présence"&&t!=="Annulée"),"","-- Choisir --"))}
+    <div class="g2">
+      ${fld("Date de début *",`<input type="date" id="sa-dd" value="${today2()}" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px;width:100%">`)}
+      ${fld("Date de fin",`<input type="date" id="sa-df" value="${today2()}" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px;width:100%">`)}
+    </div>
+    ${fld("Note",`<input id="sa-co" placeholder="Justificatif, arrêt n°…" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px;width:100%">`)}
+    <div class="dvd"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn bl" id="sa-cancel">Annuler</button>
+      <button class="btn bp" id="sa-submit">✓ Enregistrer</button>
+    </div>`);
+}
+function bMdlSA(){
+  document.getElementById("sa-cancel").onclick=()=>A.set({modal:null});
+  document.getElementById("sa-submit").onclick=()=>{
+    const mid=document.getElementById("sa-mb").value;
+    const ty=document.getElementById("sa-ty").value;
+    const dd=document.getElementById("sa-dd").value;
+    const df=document.getElementById("sa-df").value||dd;
+    const co=document.getElementById("sa-co").value;
+    if(!mid||!ty||!dd){alert("Renseignez le salarié, le type et la date.");return;}
+    const mb=A.s.eq.find(m=>m.id===mid);
+    const nj=nJO(dd,df,1);
+    const abs={id:uid(),mid,nm:mb?`${mb.nom} ${mb.pr}`:"",ty,dd,df,nj,co,cr:today2(),saisieDir:true};
+    A.save("abs",[...A.s.abs,abs]);A.set({modal:null});
+    A.toast(`Absence enregistrée ✓`,"success");
+  };
+}
+
+// ══ ABSENCES ═════════════════════════════════════════════════════
+
+
+function rABContenu(){
+  const {role,user,abs,eq}=A.s;
+  const isSal=role==="salarie";
+  const isDir=role==="direction";
+  const vis=isSal
+    ? abs.filter(a=>a.mid===user?.id&&a.ty!=="Annulée")
+    : abs.filter(a=>a.ty!=="Annulée");
+  const sorted=vis.slice().sort((a,b)=>(b.dd||"").localeCompare(a.dd||""));
+  if(!sorted.length){
+    return`<div class="card" style="text-align:center;padding:40px"><p style="color:#888">Aucune absence enregistrée</p></div>`;
+  }
+  let listeH="";
+  sorted.forEach(a=>{
+    const tc=TC[a.ty]||TC["Autre"];
+    const mb=isDir?eq.find(m=>m.id===a.mid):null;
+    listeH+=`<div class="card ca" style="border-left-color:${tc.b};margin-bottom:7px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
+            <span style="font-size:18px">${tc.e||"📋"}</span>
+            <span style="font-weight:800;font-size:15px;color:#3A4425">${a.ty}</span>
+            ${mb?`<span class="tsv">${mb.nom} ${mb.pr}</span>`:""}
+            <span style="background:${tc.bg};color:${tc.c};border:1.5px solid ${tc.b};border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700">${a.nj||1}j</span>
+          </div>
+          <div style="font-size:14px;color:#555">📅 ${fD(a.dd)}${a.df&&a.df!==a.dd?" → "+fD(a.df):""}</div>
+          ${a.co?`<div style="font-size:12px;color:#888;margin-top:2px">💬 ${a.co}</div>`:""}
+        </div>
+        ${isDir?`<button class="btn bd bsm" data-del-abs="${a.id}">✕</button>`:""}
+      </div>
+    </div>`;
+  });
+  return listeH;
+}
+
+function rAB(){
+  const {role,user,abs,eq}=A.s;
+  const isSal=role==="salarie";
+  const isDir=role==="direction";
+
+  const vis=isSal
+    ? abs.filter(a=>a.mid===user?.id&&a.ty!=="Annulée")
+    : abs.filter(a=>a.ty!=="Annulée");
+  const sorted=vis.slice().sort((a,b)=>(b.dd||"").localeCompare(a.dd||""));
+
+  const filtreMois=A.s.abFiltreMois||today2().substring(0,7);
+
+  let listeH="";
+  if(!sorted.length){
+    listeH=`<div class="card" style="text-align:center;padding:40px"><p style="color:#888">Aucune absence enregistrée</p></div>`;
+  } else {
+    sorted.forEach(a=>{
+      const tc=TC[a.ty]||TC["Autre"];
+      const mb=isDir?eq.find(m=>m.id===a.mid):null;
+      listeH+=`<div class="card ca" style="border-left-color:${tc.b};margin-bottom:7px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
+              <span style="font-size:18px">${tc.e||"📋"}</span>
+              <span style="font-weight:800;font-size:15px;color:#3A4425">${a.ty}</span>
+              ${mb?`<span class="tsv">${mb.nom} ${mb.pr}</span>`:""}
+              <span style="background:${tc.bg};color:${tc.c};border:1.5px solid ${tc.b};border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700">${a.nj||1}j</span>
+            </div>
+            <div style="font-size:14px;color:#555">📅 ${fD(a.dd)}${a.df&&a.df!==a.dd?" → "+fD(a.df):""}</div>
+            ${a.co?`<div style="font-size:12px;color:#888;margin-top:2px">💬 ${a.co}</div>`:""}
+          </div>
+          ${isDir?`<button class="btn bd bsm" data-del-abs="${a.id}">✕</button>`:""}
+        </div>
+      </div>`;
+    });
+  }
+
+  return`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+    <h2 style="color:#3A4425;font-size:22px;font-weight:800">📅 Absences</h2>
+    ${isDir?`<button class="btn bp" id="btn-new-abs">+ Saisir une absence</button>`:""}
+  </div>
+  ${listeH}`;
+}
+
+function bAB(){
+  const bn=document.getElementById("btn-new-abs");
+  if(bn) bn.onclick=()=>A.set({modal:{ty:"sa",data:{}}});
+  document.querySelectorAll("[data-del-abs]").forEach(b=>{
+    b.onclick=()=>{
+      if(!confirm("Supprimer cette absence ?"))return;
+      A.save("abs",A.s.abs.filter(a=>a.id!==b.dataset.delAbs));
+      A.toast("Absence supprimée","warn");
+    };
+  });
+}
+
+
 function rOM(){
   const {role,user,eq,ord}=A.s;const vis=(role==="salarie"?ord.filter(o=>o.mid===user?.id):ord).sort((a,b)=>(b.cr||"").localeCompare(a.cr||""));const enOM=ord.filter(o=>o.st===ST.ATT).length;
   let lH="";
@@ -283,23 +892,21 @@ function pdfOM(o){const w=window.open("","_blank","width=800,height=700");w.docu
 
 
 const FILIERES = {
-  "Orientation": {color:"#1A6B9A", bg:"#E3F1FA", classes:["4A","4B","3A","3B","3C"]},
+  "Orientation": {color:"#1A6B9A", bg:"#E3F1FA", classes:["4A","3A","3B"]},
   "SAPAT":       {color:"#2E7D52", bg:"#E8F5EE", classes:["2SAPAT","1SAPAT","TSAPAT"]},
   "EPC":         {color:"#B8670A", bg:"#FEF3E2", classes:["EPC1","EPC2"]},
 };
 const CLASSES_META = {
   "4A":     {filiere:"Orientation", label:"4ème A"},
-  "4B":     {filiere:"Orientation", label:"4ème B"},
   "3A":     {filiere:"Orientation", label:"3ème A"},
   "3B":     {filiere:"Orientation", label:"3ème B"},
-  "3C":     {filiere:"Orientation", label:"3ème C"},
   "2SAPAT": {filiere:"SAPAT",       label:"2nde SAPAT"},
   "1SAPAT": {filiere:"SAPAT",       label:"1ère SAPAT"},
   "TSAPAT": {filiere:"SAPAT",       label:"Term SAPAT"},
   "EPC1":   {filiere:"EPC",         label:"CAP EPC 1ère"},
   "EPC2":   {filiere:"EPC",         label:"CAP EPC 2nde"},
 };
-const CLASSES_ORDER = ["4A","4B","3A","3B","3C","2SAPAT","1SAPAT","TSAPAT","EPC1","EPC2"];
+const CLASSES_ORDER = ["4A","3A","3B","2SAPAT","1SAPAT","TSAPAT","EPC1","EPC2"];
 
 
 
@@ -311,24 +918,24 @@ const normalise = v => {
 
 const PLANNING_RAW = {
   "2025-2026": [
-    [35,"25/08/2025","29/08/2025","Vac","Vac","Vac","Vac","Vac","Vac","Vac","Stage","Stage","Stage"],
-    [36,"01/09/2025","05/09/2025","1","1","Vac","Vac","Vac","1","Stage","1","Stage","Stage"],
-    [37,"08/09/2025","12/09/2025","Stage","Stage","1","1","1","Stage","1","Stage","Stage","Stage"],
-    [38,"15/09/2025","19/09/2025","2","2","Stage","Stage","Stage","2","Stage","2","Stage","Stage"],
-    [39,"22/09/2025","26/09/2025","Stage","Stage","2","2","2","Stage","2","Stage","Ent","Ent"],
-    [40,"29/09/2025","03/10/2025","3","3","Stage","Stage","Stage","3","Stage","3","1","1"],
-    [41,"06/10/2025","10/10/2025","Stage","Stage","3","3","3","Stage","3","Stage","Ent","Ent"],
-    [42,"13/10/2025","17/10/2025","4","4","Stage","Stage","Stage","4","Stage","4","Ent","Ent"],
-    [43,"20/10/2025","24/10/2025","Vac","Vac","Vac","Vac","Vac","Vac","4","Stage","2","2"],
-    [44,"27/10/2025","31/10/2025","Vac","Vac","Vac","Vac","Vac","Vac","Vac","Vac","Vac","Vac"],
-    [45,"03/11/2025","07/11/2025","5","5","Stage","Stage","Stage","5","5","5","Ent","Ent"],
-    [46,"10/11/2025","14/11/2025","Stage","Stage","4","4","4","Stage","Stage","Stage","3","3"],
-    [47,"17/11/2025","21/11/2025","Stage","Stage","5","5","5","6","6","6","Ent","Ent"],
-    [48,"24/11/2025","28/11/2025","6","6","Stage","Stage","Stage","Stage","Stage","7","4","4"],
-    [49,"01/12/2025","05/12/2025","Stage","Stage","6","6","6","7","7","Stage","Ent","Ent"],
-    [50,"08/12/2025","12/12/2025","7","7","Stage","Stage","Stage","Stage","Stage","8","5","5"],
-    [51,"15/12/2025","19/12/2025","Stage","Stage","7","7","7","8","8","9","Ent","Ent"],
-    [52,"22/12/2025","26/12/2025","Vac","Vac","Vac","Vac","Vac","Vac","Vac","Vac","Vac","Vac"],
+    [35,"25/08/2025","29/08/2025","Vac","Vac","Vac","Vac","Vac","Stage","Stage","Stage"],
+    [36,"01/09/2025","05/09/2025","1","Vac","Vac","1","Stage","1","Stage","Stage"],
+    [37,"08/09/2025","12/09/2025","Stage","1","1","Stage","1","Stage","Stage","Stage"],
+    [38,"15/09/2025","19/09/2025","2","Stage","Stage","2","Stage","2","Stage","Stage"],
+    [39,"22/09/2025","26/09/2025","Stage","2","2","Stage","2","Stage","Ent","Ent"],
+    [40,"29/09/2025","03/10/2025","3","Stage","Stage","3","Stage","3","1","1"],
+    [41,"06/10/2025","10/10/2025","Stage","3","3","Stage","3","Stage","Ent","Ent"],
+    [42,"13/10/2025","17/10/2025","4","Stage","Stage","4","Stage","4","Ent","Ent"],
+    [43,"20/10/2025","24/10/2025","Vac","Vac","Vac","Vac","4","Stage","2","2"],
+    [44,"27/10/2025","31/10/2025","Vac","Vac","Vac","Vac","Vac","Vac","Vac","Vac"],
+    [45,"03/11/2025","07/11/2025","5","Stage","Stage","5","5","5","Ent","Ent"],
+    [46,"10/11/2025","14/11/2025","Stage","4","4","Stage","Stage","Stage","3","3"],
+    [47,"17/11/2025","21/11/2025","Stage","5","5","6","6","6","Ent","Ent"],
+    [48,"24/11/2025","28/11/2025","6","Stage","Stage","Stage","Stage","7","4","4"],
+    [49,"01/12/2025","05/12/2025","Stage","6","6","7","7","Stage","Ent","Ent"],
+    [50,"08/12/2025","12/12/2025","7","Stage","Stage","Stage","Stage","8","5","5"],
+    [51,"15/12/2025","19/12/2025","Stage","7","7","8","8","9","Ent","Ent"],
+    [52,"22/12/2025","26/12/2025","Vac","Vac","Vac","Vac","Vac","Vac","Vac","Vac"],
     [1, "29/12/2025","02/01/2026","Vac","Vac","Vac","Vac","Vac","Vac","Vac","Vac","Vac","Vac"],
     [2, "05/01/2026","09/01/2026","8","8","Stage","Stage","Stage","9","Stage","10","6","6"],
     [3, "12/01/2026","16/01/2026","Stage","Stage","8","8","8","Stage","9","Stage","Ent","Ent"],
@@ -338,44 +945,44 @@ const PLANNING_RAW = {
     [7, "09/02/2026","13/02/2026","Vac","Vac","Vac","Vac","Vac","Vac","11","Stage","7","7"],
     [8, "16/02/2026","20/02/2026","Vac","Vac","Vac","Vac","Vac","Vac","Vac","Vac","Vac","Vac"],
     [9, "23/02/2026","27/02/2026","Stage","Stage","10","10","10","11","Stage","13","Ent","Ent"],
-    [10,"02/03/2026","06/03/2026","11","11","Stage","Stage","Stage","Stage","12","Stage","8","8"],
-    [11,"09/03/2026","13/03/2026","Stage","Stage","11","11","11","12","13","14","Ent","Ent"],
-    [12,"16/03/2026","20/03/2026","12","12","Stage","Stage","Stage","Stage","Stage","Stage","Ent","Ent"],
-    [13,"23/03/2026","27/03/2026","Stage","Stage","12","12","12","13","Stage","Stage","Ent","Ent"],
-    [14,"30/03/2026","03/04/2026","Stage","Stage","13","13","13","Stage","14","15","Ent","Ent"],
-    [15,"06/04/2026","10/04/2026","Vac","Vac","Vac","Vac","Vac","Vac","Vac","Vac","Vac","Vac"],
-    [16,"13/04/2026","17/04/2026","Vac","Vac","Vac","Vac","Vac","Vac","Vac","Vac","Vac","Vac"],
-    [17,"20/04/2026","24/04/2026","13","13","Stage","Stage","Stage","14","15","Stage","Ent","Ent"],
-    [18,"27/04/2026","01/05/2026","Stage","Stage","14","14","14","Stage","Stage","16","9","9"],
-    [19,"04/05/2026","08/05/2026","14","14","Stage","Stage","Stage","Stage","16","Stage","Ent","Stage"],
-    [20,"11/05/2026","15/05/2026","Stage","Stage","15","15","15","15","Stage","17","Ent","Ent"],
-    [21,"18/05/2026","22/05/2026","15","15","Stage","Stage","Stage","Stage","17","Stage","10","10"],
-    [22,"25/05/2026","29/05/2026","Stage","Stage","16","16","16","16","18","18","11","Ent"],
-    [23,"01/06/2026","05/06/2026","16","16","Stage","Stage","Stage","Stage","Stage","Stage","Stage","Stage"],
-    [24,"08/06/2026","12/06/2026","Stage","Stage","17","17","17","17","Stage","19","Ent","11"],
-    [25,"15/06/2026","19/06/2026","17","17","Stage","Stage","Stage","Stage","19","20","Ent","12"],
-    [26,"22/06/2026","26/06/2026","Stage","Stage","18","18","18","18","20","Stage","12","Ent"],
-    [27,"29/06/2026","03/07/2026","18","18","Stage","Stage","Stage","Stage","Stage","Stage","Ent","Ent"],
+    [10,"02/03/2026","06/03/2026","11","Stage","Stage","Stage","12","Stage","8","8"],
+    [11,"09/03/2026","13/03/2026","Stage","11","11","12","13","14","Ent","Ent"],
+    [12,"16/03/2026","20/03/2026","12","Stage","Stage","Stage","Stage","Stage","Ent","Ent"],
+    [13,"23/03/2026","27/03/2026","Stage","12","12","13","Stage","Stage","Ent","Ent"],
+    [14,"30/03/2026","03/04/2026","Stage","13","13","Stage","14","15","Ent","Ent"],
+    [15,"06/04/2026","10/04/2026","Vac","Vac","Vac","Vac","Vac","Vac","Vac","Vac"],
+    [16,"13/04/2026","17/04/2026","Vac","Vac","Vac","Vac","Vac","Vac","Vac","Vac"],
+    [17,"20/04/2026","24/04/2026","13","Stage","Stage","14","15","Stage","Ent","Ent"],
+    [18,"27/04/2026","01/05/2026","Stage","14","14","Stage","Stage","16","9","9"],
+    [19,"04/05/2026","08/05/2026","14","Stage","Stage","Stage","16","Stage","Ent","Stage"],
+    [20,"11/05/2026","15/05/2026","Stage","15","15","15","Stage","17","Ent","Ent"],
+    [21,"18/05/2026","22/05/2026","15","Stage","Stage","Stage","17","Stage","10","10"],
+    [22,"25/05/2026","29/05/2026","Stage","16","16","16","18","18","11","Ent"],
+    [23,"01/06/2026","05/06/2026","16","Stage","Stage","Stage","Stage","Stage","Stage","Stage"],
+    [24,"08/06/2026","12/06/2026","Stage","17","17","17","Stage","19","Ent","11"],
+    [25,"15/06/2026","19/06/2026","17","Stage","Stage","Stage","19","20","Ent","12"],
+    [26,"22/06/2026","26/06/2026","Stage","18","18","18","20","Stage","12","Ent"],
+    [27,"29/06/2026","03/07/2026","18","Stage","Stage","Stage","Stage","Stage","Ent","Ent"],
   ],
   "2026-2027": [
-    [36,"31/08/2026","04/09/2026","1","1","Stage","Stage","Stage","1","1","1","Stage","Stage"],
-    [37,"07/09/2026","11/09/2026","Stage","Stage","1","1","1","Stage","Stage","2","Stage","Stage"],
-    [38,"14/09/2026","18/09/2026","2","2","Stage","Stage","Stage","2","2","Stage","Stage","Stage"],
-    [39,"21/09/2026","25/09/2026","Stage","Stage","2","2","2","Stage","Stage","3","Stage","Stage"],
-    [40,"28/09/2026","02/10/2026","3","3","Stage","Stage","Stage","3","3","Stage","1","1"],
-    [41,"05/10/2026","09/10/2026","Stage","Stage","3","3","3","Stage","Stage","4","Stage","Stage"],
-    [42,"12/10/2026","16/10/2026","4","4","Stage","Stage","Stage","4","4","Stage","2","2"],
-    [43,"19/10/2026","23/10/2026","Vac","Vac","Vac","Vac","Vac","Vac","Stage","Stage","Stage","Stage"],
-    [44,"26/10/2026","30/10/2026","Vac","Vac","Vac","Vac","Vac","Vac","Vac","Vac","Stage","Stage"],
-    [45,"02/11/2026","06/11/2026","Stage","Stage","4","4","4","Stage","Stage","5","Stage","Stage"],
-    [46,"09/11/2026","13/11/2026","5","5","Stage","Stage","Stage","5","5","Stage","Stage","Stage"],
-    [47,"16/11/2026","20/11/2026","Stage","Stage","5","5","5","Stage","Stage","6","3","3"],
-    [48,"23/11/2026","27/11/2026","6","6","Stage","Stage","Stage","6","6","Stage","Stage","Stage"],
-    [49,"30/11/2026","04/12/2026","Stage","Stage","6","6","6","Stage","Stage","7","Stage","4"],
-    [50,"07/12/2026","11/12/2026","7","7","Stage","Stage","Stage","7","7","Stage","Stage","Stage"],
-    [51,"14/12/2026","18/12/2026","Stage","Stage","7","7","7","Stage","Stage","8","4","5"],
-    [52,"21/12/2026","25/12/2026","Vac","Vac","Vac","Vac","Vac","Vac","Vac","Vac","Stage","Stage"],
-    [53,"28/12/2026","01/01/2027","Vac","Vac","Vac","Vac","Vac","Vac","Vac","Vac","Stage","Stage"],
+    [36,"31/08/2026","04/09/2026","1","Stage","Stage","1","1","1","Stage","Stage"],
+    [37,"07/09/2026","11/09/2026","Stage","1","1","Stage","Stage","2","Stage","Stage"],
+    [38,"14/09/2026","18/09/2026","2","Stage","Stage","2","2","Stage","Stage","Stage"],
+    [39,"21/09/2026","25/09/2026","Stage","2","2","Stage","Stage","3","Stage","Stage"],
+    [40,"28/09/2026","02/10/2026","3","Stage","Stage","3","3","Stage","1","1"],
+    [41,"05/10/2026","09/10/2026","Stage","3","3","Stage","Stage","4","Stage","Stage"],
+    [42,"12/10/2026","16/10/2026","4","Stage","Stage","4","4","Stage","2","2"],
+    [43,"19/10/2026","23/10/2026","Vac","Vac","Vac","Vac","Stage","Stage","Stage","Stage"],
+    [44,"26/10/2026","30/10/2026","Vac","Vac","Vac","Vac","Vac","Vac","Stage","Stage"],
+    [45,"02/11/2026","06/11/2026","Stage","4","4","Stage","Stage","5","Stage","Stage"],
+    [46,"09/11/2026","13/11/2026","5","Stage","Stage","5","5","Stage","Stage","Stage"],
+    [47,"16/11/2026","20/11/2026","Stage","5","5","Stage","Stage","6","3","3"],
+    [48,"23/11/2026","27/11/2026","6","Stage","Stage","6","6","Stage","Stage","Stage"],
+    [49,"30/11/2026","04/12/2026","Stage","6","6","Stage","Stage","7","Stage","4"],
+    [50,"07/12/2026","11/12/2026","7","Stage","Stage","7","7","Stage","Stage","Stage"],
+    [51,"14/12/2026","18/12/2026","Stage","7","7","Stage","Stage","8","4","5"],
+    [52,"21/12/2026","25/12/2026","Vac","Vac","Vac","Vac","Vac","Vac","Stage","Stage"],
+    [53,"28/12/2026","01/01/2027","Vac","Vac","Vac","Vac","Vac","Vac","Stage","Stage"],
     [1, "04/01/2027","08/01/2027","8","8","Stage","Stage","Stage","8","8","Stage","5","6"],
     [2, "11/01/2027","15/01/2027","Stage","Stage","8","8","8","Stage","Stage","9","Stage","Stage"],
     [3, "18/01/2027","22/01/2027","9","9","Stage","Stage","Stage","9","9","Stage","Stage","Stage"],
@@ -385,23 +992,23 @@ const PLANNING_RAW = {
     [7, "15/02/2027","19/02/2027","Vac","Vac","Vac","Vac","Vac","Vac","Stage","Stage","Stage","Stage"],
     [8, "22/02/2027","26/02/2027","Vac","Vac","Vac","Vac","Vac","Vac","Vac","Vac","Stage","Stage"],
     [9, "01/03/2027","05/03/2027","11","11","Stage","Stage","Stage","11","12","Stage","7","8"],
-    [10,"08/03/2027","12/03/2027","Stage","Stage","11","11","11","Stage","Stage","12","Stage","Stage"],
-    [11,"15/03/2027","19/03/2027","12","12","Stage","Stage","Stage","12","13","Stage","8","9"],
-    [12,"22/03/2027","26/03/2027","Stage","Stage","12","12","12","Stage","Stage","13","Stage","Stage"],
-    [13,"29/03/2027","02/04/2027","13","13","Stage","Stage","Stage","13","14","Stage","9","10"],
-    [14,"05/04/2027","09/04/2027","Stage","Stage","13","13","13","Stage","15","14","Stage","Stage"],
-    [15,"12/04/2027","16/04/2027","Vac","Vac","Vac","Vac","Vac","Vac","Vac","Vac","Stage","Stage"],
-    [16,"19/04/2027","23/04/2027","Vac","Vac","Vac","Vac","Vac","Vac","Vac","Vac","Stage","Stage"],
-    [17,"26/04/2027","30/04/2027","14","14","Stage","Stage","Stage","14","16","15","10","11"],
-    [18,"03/05/2027","07/05/2027","Stage","Stage","14","14","14","Stage","Stage","16","Stage","Stage"],
-    [19,"10/05/2027","14/05/2027","15","15","Stage","Stage","Stage","Stage","17","Stage","Stage","Stage"],
-    [20,"17/05/2027","21/05/2027","Stage","Stage","15","15","15","Stage","Stage","Stage","11","12"],
-    [21,"24/05/2027","28/05/2027","Stage","Stage","16","16","16","15","18","17","Stage","Stage"],
-    [22,"31/05/2027","04/06/2027","16","16","Stage","Stage","Stage","Stage","Stage","18","Stage","Stage"],
-    [23,"07/06/2027","11/06/2027","17","17","Stage","Stage","Stage","16","19","Stage","12","13"],
-    [24,"14/06/2027","18/06/2027","Stage","Stage","17","17","17","Stage","Stage","19","Stage","Stage"],
-    [25,"21/06/2027","25/06/2027","18","18","Stage","Stage","Stage","17","20","Stage","13","Stage"],
-    [26,"28/06/2027","02/07/2027","Stage","Stage","18","18","18","Stage","Stage","Stage","Stage","Stage"],
+    [10,"08/03/2027","12/03/2027","Stage","11","11","Stage","Stage","12","Stage","Stage"],
+    [11,"15/03/2027","19/03/2027","12","Stage","Stage","12","13","Stage","8","9"],
+    [12,"22/03/2027","26/03/2027","Stage","12","12","Stage","Stage","13","Stage","Stage"],
+    [13,"29/03/2027","02/04/2027","13","Stage","Stage","13","14","Stage","9","10"],
+    [14,"05/04/2027","09/04/2027","Stage","13","13","Stage","15","14","Stage","Stage"],
+    [15,"12/04/2027","16/04/2027","Vac","Vac","Vac","Vac","Vac","Vac","Stage","Stage"],
+    [16,"19/04/2027","23/04/2027","Vac","Vac","Vac","Vac","Vac","Vac","Stage","Stage"],
+    [17,"26/04/2027","30/04/2027","14","Stage","Stage","14","16","15","10","11"],
+    [18,"03/05/2027","07/05/2027","Stage","14","14","Stage","Stage","16","Stage","Stage"],
+    [19,"10/05/2027","14/05/2027","15","Stage","Stage","Stage","17","Stage","Stage","Stage"],
+    [20,"17/05/2027","21/05/2027","Stage","15","15","Stage","Stage","Stage","11","12"],
+    [21,"24/05/2027","28/05/2027","Stage","16","16","15","18","17","Stage","Stage"],
+    [22,"31/05/2027","04/06/2027","16","Stage","Stage","Stage","Stage","18","Stage","Stage"],
+    [23,"07/06/2027","11/06/2027","17","Stage","Stage","16","19","Stage","12","13"],
+    [24,"14/06/2027","18/06/2027","Stage","17","17","Stage","Stage","19","Stage","Stage"],
+    [25,"21/06/2027","25/06/2027","18","Stage","Stage","17","20","Stage","13","Stage"],
+    [26,"28/06/2027","02/07/2027","Stage","18","18","Stage","Stage","Stage","Stage","Stage"],
   ]
 };
 
@@ -525,6 +1132,50 @@ function tauxPresenceFiliere(equipe,absences,dateStr,filiere){
 
 
 let dbSemaineLundi = getLun(today2());
+
+
+
+
+// ── Anniversaires (dashboard Pascale uniquement) ────────────────
+function getAnniversaires(eq){
+  const today=new Date(); today.setHours(0,0,0,0);
+  const res=[];
+  eq.filter(m=>!m.archive&&m.naissance).forEach(m=>{
+    const nais=new Date(m.naissance+"T00:00:00");
+    const proch=new Date(today.getFullYear(),nais.getMonth(),nais.getDate());
+    if(proch<today) proch.setFullYear(proch.getFullYear()+1);
+    const diff=Math.round((proch-today)/(1000*60*60*24));
+    const age=proch.getFullYear()-nais.getFullYear();
+    if(diff<=30) res.push({...m,prochAnniv:proch.toISOString().split("T")[0],diffJours:diff,age});
+  });
+  return res.sort((a,b)=>a.diffJours-b.diffJours);
+}
+
+function rBlocAnniversaires(eq){
+  const annivs=getAnniversaires(eq);
+  if(!annivs.length) return "";
+  const td=today2();
+  return`<div class="card" style="margin-bottom:12px;border-left:4px solid #C8A84B">
+    <h3 style="font-size:16px;color:#3A4425;margin-bottom:10px">&#127874; Anniversaires — 30 prochains jours</h3>
+    ${annivs.map(m=>{
+      const isToday=m.prochAnniv===td;
+      const isWeek=m.diffJours<=7;
+      return`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:${isToday?"#FBF5E0":isWeek?"#FEF3E2":"#FAF7F0"};border:1px solid ${isToday?"#C8A84B":isWeek?"#E8A030":"#DDD5B8"};border-radius:9px;margin-bottom:6px;flex-wrap:wrap;gap:6px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div>
+            <div style="font-weight:700;font-size:14px;color:#3A4425">${m.nom} ${m.pr}</div>
+            <div style="font-size:12px;color:#888">${m.sv||""} &middot; ${m.age} ans</div>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:13px;font-weight:700;color:${isToday?"#C8A84B":isWeek?"#B8670A":"#555"}">${isToday?"Aujourd'hui !":m.diffJours===1?"Demain !":"Le "+fD(m.prochAnniv)}</div>
+          ${!isToday?`<div style="font-size:11px;color:#888">Dans ${m.diffJours}j</div>`:""}
+        </div>
+      </div>`;
+    }).join("")}
+  </div>`;
+}
+
 
 function rDB(){
   const {role,user,eq,abs,dem}=A.s;
@@ -718,7 +1369,7 @@ function rDB(){
 
     return`<h2 style="color:#3A4425;font-size:22px;font-weight:800;margin-bottom:4px">Bonjour, ${user?.pr||""} 👋</h2>
       <p style="color:#888;font-size:13px;margin-bottom:14px">Année scolaire ${getAS()} · 1er sept → 31 août</p>
-      ${A.s._cpRechargeInfo?`<div style="background:#E8F5EE;border:1.5px solid #5AAA80;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:14px;color:#2E7D52;font-weight:700">🎉 CP rechargés automatiquement — ${A.s._cpRechargeInfo.nb} salarié${A.s._cpRechargeInfo.nb>1?"s":""} mis à jour le ${fD(A.s._cpRechargeInfo.date)}</div>`:""}
+      ${A.s._cpRechargeInfo?`<div style="background:#E8F5EE;border:1.5px solid #5AAA80;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:14px;color:#2E7D52;font-weight:700">✅ CP mensuels crédités — ${A.s._cpRechargeInfo.nb} salarié${A.s._cpRechargeInfo.nb>1?"s":""} (${A.s._cpRechargeInfo.mois||""})</div>`:""}
 
     ${user?.id==="mfr001"?rBlocAnniversaires(eq):""}
         ${/* ── 1. AUJOURD'HUI ── */""}
@@ -742,7 +1393,8 @@ function rDB(){
         <span style="color:#FBF5E0;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1px">🔭 À venir & suivi</span>
       </div>
       ${absFilH}
-      ${anticipH}`;
+      ${anticipH}
+      ${rBlocActualites(3)}`;
   }
 
   
@@ -755,12 +1407,7 @@ function rDB(){
   mdH+=`</div>`;
   // Annonces récentes pour le salarié
   const annoncesRec=(A.s.affichage||[]).filter(x=>!x.archivé).sort((a,b)=>b.cr.localeCompare(a.cr)).slice(0,2);
-  const affBandeau=annoncesRec.length>0?`<div style="cursor:pointer" data-nav="af">
-    ${annoncesRec.map(m=>{const t=AFF_TYPES[m.type]||AFF_TYPES.Information;return`<div style="background:${t.bg};border:1.5px solid ${t.c};border-radius:10px;padding:10px 14px;margin-bottom:8px;display:flex;gap:10px;align-items:flex-start">
-      <span style="font-size:18px">${t.ic}</span>
-      <div><div style="font-weight:700;color:#2A2A2A">${m.titre}</div><div style="font-size:12px;color:#888">${fD(m.cr)}</div></div>
-    </div>`;}).join("")}
-  </div>`:"";
+  const affBandeau=rBlocActualites();
   return`<h2 style="color:#3A4425;font-size:22px;font-weight:800;margin-bottom:4px">Bonjour, ${user?.pr||""} 👋</h2>
     <p style="color:#888;font-size:13px;margin-bottom:14px">Période : ${getAS()}</p>
     ${affBandeau}
@@ -779,9 +1426,20 @@ function bDB(){
   if(nx)nx.onclick=()=>{const d=new Date(dbSemaineLundi+"T12:00:00");d.setDate(d.getDate()+7);dbSemaineLundi=d.toISOString().split("T")[0];A.r();};
   const td=document.getElementById("db-sem-today");
   if(td)td.onclick=()=>{dbSemaineLundi=getLun(today2());A.r();};
+
+  // Actualités sur le dashboard
+  const bna=document.getElementById("btn-new-actu");
+  if(bna) bna.onclick=()=>A.set({modal:{ty:"nAff",data:{}}});
+  document.querySelectorAll("[data-edit-aff]").forEach(b=>{
+    b.onclick=()=>{const m=(A.s.affichage||[]).find(x=>x.id===b.dataset.editAff);if(m)A.set({modal:{ty:"nAff",data:{edit:m}}});};
+  });
+  document.querySelectorAll("[data-arch-aff]").forEach(b=>{
+    b.onclick=()=>{if(!confirm("Archiver cette actualité ?"))return;const l=(A.s.affichage||[]).map(x=>x.id===b.dataset.archAff?{...x,archivé:true}:x);A.save("affichage",l);A.toast("Actualité archivée","warn");};
+  });
+  document.querySelectorAll("[data-preview-aff]").forEach(img=>{
+    img.onclick=()=>{const w=window.open("","_blank","width=800,height=600");w.document.write(`<img src="${img.dataset.previewAff}" style="max-width:100%;max-height:100vh">`);w.document.close();};
+  });
 }
-
-
 function rPLANNING_CLASSES(){
   const anneeSco=A.s.planAnneeSco||getAS()||"2025-2026";
   const data=PLANNING_RAW[anneeSco]||[];
@@ -1181,11 +1839,11 @@ function genEcheancesAuto(eq){
   const nowCP=new Date();const yyyyCP=nowCP.getFullYear();
   const dateRecharge=`${nowCP.getMonth()>=8?yyyyCP+1:yyyyCP}-09-01`;
   const auto_cp=[{
-    id:`cp_recharge_alerte_${yyyyCP}`,auto:true,mid:null,nm:"Toute l'équipe",
+    id:`cp_reset_alerte_${yyyyCP}`,auto:true,mid:null,nm:"Toute l'équipe",
     type:"Rappel",
-    label:`Recharge automatique des CP — 1er septembre ${dateRecharge.split("-")[0]}`,
+    label:`Nouvelle période CP — 1er septembre ${dateRecharge.split("-")[0]}`,
     date:dateRecharge,
-    note:`Les soldes CP de tous les salariés seront rechargés automatiquement au 1er septembre. Vérifiez les capitaux annuels dans les fiches membres avant cette date.`,
+    note:`Début d'une nouvelle période de référence CP (1er sept → 31 août). Les compteurs sont réinitialisés avec report des CP non pris (max 5j). L'acquisition mensuelle de 2,5j (5j direction) reprend automatiquement. Vérifiez le champ "CP acquis par mois" dans les fiches avant cette date.`,
   }];
   const auto=[];
   const today=new Date(); today.setHours(0,0,0,0);
@@ -2183,6 +2841,56 @@ const AFF_TYPES={
   "Rappel":     {ic:"🔔",c:"#B8670A",bg:"#FEF3E2"},
 };
 
+
+// ── Bloc actualités pour l'accueil (tous rôles) ──────────────────
+function rBlocActualites(limit=3){
+  initAffichage();
+  const msgs=(A.s.affichage||[]).filter(m=>!m.archivé).sort((a,b)=>b.cr.localeCompare(a.cr)).slice(0,limit);
+  const isDir=A.s.role==="direction";
+  if(!msgs.length&&!isDir) return "";
+
+  let html=`<div style="margin-bottom:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <h3 style="font-size:17px;color:#3A4425;font-weight:800">📰 Actualités</h3>
+      ${isDir?`<button class="btn bp bsm" id="btn-new-actu">+ Publier</button>`:""}
+    </div>`;
+
+  if(!msgs.length){
+    html+=`<div style="background:#FAF7F0;border:1px dashed #DDD5B8;border-radius:10px;padding:20px;text-align:center;color:#888;font-size:14px">Aucune actualité pour le moment.</div>`;
+  } else {
+    msgs.forEach(m=>{
+      const t=AFF_TYPES[m.type]||AFF_TYPES["Information"];
+      const isNew=m.cr>=new Date(Date.now()-7*24*3600*1000).toISOString().split("T")[0];
+      html+=`<div style="background:${t.bg};border:2px solid ${t.c};border-radius:12px;padding:13px 15px;margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
+              <span style="font-size:18px">${t.ic}</span>
+              <span style="font-weight:800;font-size:15px;color:#2A2A2A">${m.titre}</span>
+              <span style="background:${t.c};color:#fff;border-radius:20px;padding:1px 10px;font-size:11px;font-weight:700">${m.type}</span>
+              ${isNew?`<span style="background:#C0392B;color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;font-weight:700">NOUVEAU</span>`:""}
+            </div>
+            <div style="font-size:14px;color:#2A2A2A;line-height:1.5;white-space:pre-wrap">${m.corps}</div>
+            ${(m.pj||[]).length>0?`<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">
+              ${(m.pj||[]).map(p=>p.type&&p.type.startsWith("image/")
+                ?`<img src="${p.data}" style="max-width:160px;max-height:120px;object-fit:cover;border-radius:8px;border:1px solid #DDD;cursor:pointer" data-preview-aff="${p.data}" title="${p.name}">`
+                :`<a href="${p.data}" download="${p.name}" style="display:inline-flex;align-items:center;gap:6px;background:#fff;border:1.5px solid ${t.c};border-radius:8px;padding:6px 12px;font-size:13px;color:${t.c};font-weight:600;text-decoration:none">📄 ${p.name}</a>`
+              ).join("")}
+            </div>`:""}
+            <div style="font-size:12px;color:#888;margin-top:8px">Publié le ${fD(m.cr)} par ${m.auteur||"Direction"}</div>
+          </div>
+          ${isDir?`<div style="display:flex;gap:5px">
+            <button class="btn bl bsm" data-edit-aff="${m.id}">✏️</button>
+            <button class="btn bd bsm" data-arch-aff="${m.id}">📦</button>
+          </div>`:""}
+        </div>
+      </div>`;
+    });
+  }
+  html+=`</div>`;
+  return html;
+}
+
 function rAFFICHAGE(){
   initAffichage();
   const {role,user}=A.s;
@@ -2209,6 +2917,12 @@ function rAFFICHAGE(){
               ${isNew?`<span style="background:#C0392B;color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;font-weight:700">NOUVEAU</span>`:""}
             </div>
             <div style="font-size:14px;color:#2A2A2A;line-height:1.5;white-space:pre-wrap">${m.corps}</div>
+            ${(m.pj||[]).length>0?`<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">
+              ${(m.pj||[]).map(p=>p.type&&p.type.startsWith("image/")
+                ?`<img src="${p.data}" style="max-width:180px;max-height:140px;object-fit:cover;border-radius:8px;border:1px solid #DDD;cursor:pointer" data-preview-aff="${p.data}" title="${p.name}">`
+                :`<a href="${p.data}" download="${p.name}" style="display:inline-flex;align-items:center;gap:6px;background:#fff;border:1.5px solid ${t.c};border-radius:8px;padding:6px 12px;font-size:13px;color:${t.c};font-weight:600;text-decoration:none">📄 ${p.name}</a>`
+              ).join("")}
+            </div>`:""}
             <div style="font-size:12px;color:#888;margin-top:8px">Publié le ${fD(m.cr)} par ${m.auteur||"Direction"}</div>
           </div>
           ${isDir?`<div style="display:flex;gap:5px">
@@ -2221,8 +2935,8 @@ function rAFFICHAGE(){
   }
 
   return`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
-    <h2 style="color:#3A4425;font-size:22px;font-weight:800">📋 Panneau d'affichage</h2>
-    ${isDir?`<button class="btn bp" id="btn-new-aff">+ Publier une annonce</button>`:""}
+    <h2 style="color:#3A4425;font-size:22px;font-weight:800">📰 Actualités</h2>
+    ${isDir?`<button class="btn bp" id="btn-new-aff">+ Publier une actualité</button>`:""}
   </div>
   ${!isDir?`<div class="ibox">Les annonces sont publiées par la direction. Consultez régulièrement cet espace.</div>`:""}
   ${listeH}`;
@@ -2244,17 +2958,30 @@ function bAFFICHAGE(){
       A.save("affichage",l);A.toast("Annonce archivée","warn");
     };
   });
-}
 
+  document.querySelectorAll("[data-preview-aff]").forEach(img=>{
+    img.onclick=()=>{
+      const w=window.open("","_blank","width=800,height=600");
+      w.document.write(`<img src="${img.dataset.previewAff}" style="max-width:100%;max-height:100vh">`);
+      w.document.close();
+    };
+  });
+}
 function rMdlNAff(){
   const edit=A.s.modal.data.edit||null;
-  return mdl(edit?"✏️ Modifier l'annonce":"📋 Publier une annonce",`
+  return mdl(edit?"✏️ Modifier l'actualité":"📰 Publier une actualité",`
     <div class="g2">
       ${fld("Type",sel("aff-type",Object.keys(AFF_TYPES),edit?.type||"Information"))}
       ${fld("Visible jusqu'au (optionnel)",`<input type="date" id="aff-exp" value="${edit?.expiration||""}" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px;width:100%">`)}
     </div>
     ${fld("Titre *",`<input id="aff-titre" value="${edit?.titre||""}" placeholder="ex: Réunion d'équipe mardi 17h, Félicitations à Fanny…" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px;width:100%">`)}
-    ${fld("Corps du message *",`<textarea id="aff-corps" rows="4" placeholder="Détaillez votre annonce ici…" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px;width:100%;resize:vertical">${edit?.corps||""}</textarea>`)}
+    ${fld("Corps du message *",`<textarea id="aff-corps" rows="4" placeholder="Détaillez votre actualité ici…" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px;width:100%;resize:vertical">${edit?.corps||""}</textarea>`)}
+    <p style="font-size:13px;font-weight:700;color:#3A4425;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📎 Pièces jointes (PDF ou images)</p>
+    <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+      <label class="btn bl bsm" style="cursor:pointer">📷 Joindre un fichier<input type="file" id="aff-pj-input" accept="image/*,application/pdf" multiple style="display:none"></label>
+      <span style="font-size:12px;color:#888;align-self:center">Photos, affiches, documents PDF</span>
+    </div>
+    <div id="aff-pj-list">${(edit?.pj||[]).map((p,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 10px;background:#FAF7F0;border:1px solid #DDD;border-radius:8px;margin-bottom:4px"><span style="flex:1;font-size:13px">${p.name}</span>${p.type&&p.type.startsWith("image/")?`<img src="${p.data}" style="width:38px;height:28px;object-fit:cover;border-radius:3px">`:"<span>📄</span>"}</div>`).join("")}</div>
     <div class="dvd"></div>
     <div style="display:flex;gap:10px;justify-content:flex-end">
       <button class="btn bl" id="aff-cancel">Annuler</button>
@@ -2263,6 +2990,22 @@ function rMdlNAff(){
 }
 function bMdlNAff(){
   const edit=A.s.modal.data.edit||null;
+  let pj=[...(edit?.pj||[])];
+  const inp=document.getElementById("aff-pj-input");
+  if(inp) inp.onchange=async(e)=>{
+    const files=Array.from(e.target.files);
+    for(const f of files){
+      if(f.size>5*1024*1024){alert(`${f.name} trop volumineux (max 5 Mo).`);continue;}
+      const data=await new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.readAsDataURL(f);});
+      pj.push({name:f.name,type:f.type,size:f.size,data});
+    }
+    const list=document.getElementById("aff-pj-list");
+    if(list) list.innerHTML=pj.map((p,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 10px;background:#FAF7F0;border:1px solid #DDD;border-radius:8px;margin-bottom:4px">
+      <span style="flex:1;font-size:13px">${p.name}</span>
+      ${p.type&&p.type.startsWith("image/")?`<img src="${p.data}" style="width:38px;height:28px;object-fit:cover;border-radius:3px">`:"<span>📄</span>"}
+      <button class="btn bd bsm" onclick="pj.splice(${i},1);this.closest('div').remove()">✕</button>
+    </div>`).join("");
+  };
   document.getElementById("aff-cancel").onclick=()=>A.set({modal:null});
   document.getElementById("aff-submit").onclick=()=>{
     const type=document.getElementById("aff-type").value;
@@ -2271,11 +3014,11 @@ function bMdlNAff(){
     const exp=document.getElementById("aff-exp").value;
     if(!titre||!corps){alert("Renseignez le titre et le corps du message.");return;}
     const u=A.s.user;
-    const entry={id:edit?.id||uid(),type,titre,corps,expiration:exp,cr:today2(),
+    const entry={id:edit?.id||uid(),type,titre,corps,expiration:exp,pj,cr:today2(),
       auteur:u?`${u.nom} ${u.pr}`:"Direction",archivé:false};
     const l=edit?(A.s.affichage||[]).map(x=>x.id===edit.id?entry:x):[...(A.s.affichage||[]),entry];
     A.save("affichage",l);A.set({modal:null});
-    A.toast(`Annonce ${edit?"modifiée":"publiée"} ✓ — visible par toute l'équipe`,"success");
+    A.toast(`Actualité ${edit?"modifiée":"publiée"} ✓ — visible par toute l'équipe`,"success");
   };
 }
 
@@ -2943,12 +3686,11 @@ function rSYNTHESE(){
           ${actifs.map(m=>{
             // Heures théoriques annuelles depuis HOR
             const horM=HOR[m.id];
-            const hTheoHebdo=horM?Object.values(horM.j||{}).reduce((s,j)=>{
-              const[dm,fm,da,fa]=j||[];
-              return s+cH(dm||"",fm||"")+cH(da||"",fa||"");
-            },0):0;
+            const hTheoHebdo=cHebdoHOR(horM);
             // ~44 semaines par année scolaire
-            const hTheoAn=Math.round(hTheoHebdo*44);
+            const veil=estVeilleur(horM);
+            const annu=veil?calcAnnualisationNuit(horM,44):null;
+            const hTheoAn=veil?Math.round(annu.totalEquiv):Math.round(hTheoHebdo*44);
             // Heures réellement déclarées cette année
             const hDecl=(heu||[]).filter(x=>x.mid===m.id&&x.dt>=dateDebStr&&x.dt<=dateFinStr&&x.st==="Approuvée").reduce((s,x)=>s+(x.hr||0),0);
             // Heures sup validées
@@ -2956,7 +3698,7 @@ function rSYNTHESE(){
             const ecart=hDecl-hTheoAn;
             const ecartColor=ecart>10?"#C0392B":ecart<-10?"#B8670A":"#2E7D52";
             return`<tr style="border-bottom:1px solid #EDE8D8">
-              <td style="padding:6px 12px;font-weight:600">${m.nom} ${m.pr}</td>
+              <td style="padding:6px 12px;font-weight:600">${m.nom} ${m.pr}${veil?`<span style="display:block;font-size:11px;font-weight:400;color:#7050B0">🌙 Équiv. nuit : +${Math.round(annu.equiv+annu.major)}h</span>`:""}</td>
               <td style="padding:6px 8px;font-size:12px;color:#888">${m.sv||""}</td>
               <td style="padding:6px 8px;text-align:right">${hTheoAn>0?fH(hTheoAn):"—"}</td>
               <td style="padding:6px 8px;text-align:right;font-weight:700">${hDecl>0?fH(hDecl):"—"}</td>
@@ -3027,10 +3769,10 @@ function pdfSynthese(annee){
   // Tableau annualisation
   const annualRows=actifs.map(m=>{
     const horM=HOR[m.id];
-    const hTheoHebdo=horM?Object.values(horM.j||{}).reduce((s,j)=>{
-      const[dm,fm,da,fa]=j||[];return s+cH(dm||"",fm||"")+cH(da||"",fa||"");
-    },0):0;
-    const hTheoAn=Math.round(hTheoHebdo*44);
+    const hTheoHebdo=cHebdoHOR(horM);
+    const veil=estVeilleur(horM);
+            const annu=veil?calcAnnualisationNuit(horM,44):null;
+            const hTheoAn=veil?Math.round(annu.totalEquiv):Math.round(hTheoHebdo*44);
     const hDecl=(heu||[]).filter(x=>x.mid===m.id&&x.dt>=dateDebStr&&x.dt<=dateFinStr&&x.st==="Approuvée").reduce((s,x)=>s+(x.hr||0),0);
     const hSup=(heu||[]).filter(x=>x.mid===m.id&&x.dt>=dateDebStr&&x.dt<=dateFinStr&&x.st==="Approuvée"&&x.dep>0).reduce((s,x)=>s+(x.dep||0),0);
     const ecart=hDecl>0&&hTheoAn>0?hDecl-hTheoAn:null;
@@ -3125,34 +3867,47 @@ function pdfSynthese(annee){
 
 // ── Recharge automatique CP au 1er septembre ────────────────────
 function rechargerCPAnnuels(){
+  // ── Acquisition MENSUELLE progressive des CP ──
+  // Période de référence : 1er septembre → 31 août
+  // Chaque 1er du mois : +2,5j (ou montant custom par salarié, ex. direction = 5j)
   const today=new Date();
   const mm=today.getMonth()+1; // 1-12
-  const dd=today.getDate();
   const yyyy=today.getFullYear();
-  // Vérifier si on est entre le 1er et le 7 septembre (fenêtre de détection)
-  if(mm!==9||dd>7) return;
-  // Clé de la dernière recharge pour éviter de recharger 2 fois
-  const cleRecharge=`cp_recharge_${yyyy}`;
-  const dejaDone=K.g(cleRecharge);
-  if(dejaDone) return;
-  // Recharger les CP de chaque salarié actif
+
+  // Déterminer l'année de référence de la période en cours
+  // Sept-Déc → période yyyy/yyyy+1 ; Jan-Août → période yyyy-1/yyyy
+  const anneeRef = mm>=9 ? yyyy : yyyy-1;
+  const moisEcoules = mm>=9 ? (mm-9+1) : (mm+3+1); // sept=1, oct=2, ... août=12
+
   const eq=A.s.eq||[];
   let nb=0;
   const newEq=eq.map(m=>{
-    if(m.archive||!m.cpAnnuel) return m;
+    if(m.archive) return m;
+    const mensuel = (m.cpMensuel!=null ? m.cpMensuel : 2.5);
+    // CP théoriquement acquis depuis le 1er septembre
+    const acquisTheorique = mensuel * moisEcoules;
+    // Clé pour ne créditer qu'une fois par mois
+    const cleMois = `cp_${m.id}_${anneeRef}_${mm}`;
+    if(K.g(cleMois)) return m; // déjà crédité ce mois-ci
+
+    // Réinitialisation en septembre (nouvelle période)
+    if(mm===9){
+      const soldeActuel=Math.max(0,(m.cp||0)-(m.cpp||0));
+      const report=Math.min(5,soldeActuel); // report max 5j (CCN MFR)
+      K.s(cleMois,{date:today.toISOString()});
+      nb++;
+      return {...m, cp:mensuel+report, cpp:0, _cpAcquis:mensuel};
+    }
+    // Autres mois : créditer l'incrément mensuel
+    K.s(cleMois,{date:today.toISOString()});
     nb++;
-    // Reporter les CP non pris (dans la limite de 5j max selon CCN MFR)
-    const soldeActuel=Math.max(0,(m.cp||0)-(m.cpp||0));
-    const report=Math.min(5,soldeActuel); // report max 5j
-    return{...m, cp:(m.cpAnnuel||25)+report, cpp:0};
+    return {...m, cp:(m.cp||0)+mensuel, _cpAcquis:(m._cpAcquis||0)+mensuel};
   });
+
   if(nb>0){
     A.s.eq=newEq;
     K.s("eq",newEq);
-    K.s(cleRecharge,{date:today.toISOString(),nb});
-    console.log(`CP rechargés pour ${nb} salariés le 1er septembre ${yyyy}`);
-    // Afficher une notification direction
-    A.s._cpRechargeInfo={date:today.toISOString().split("T")[0],nb};
+    A.s._cpRechargeInfo={date:today.toISOString().split("T")[0],nb,mois:MNS[mm-1]};
   }
 }
 
@@ -4714,7 +5469,7 @@ function bEQ(){
   });
 }
 function rMdlSM(){const i=A.s.modal.data?.init||{};return mdl(i.id?"Modifier":"Ajouter un membre",`<div class="g2">${fld("Prénom *",`<input id="mbpr" value="${i.pr||""}">`)} ${fld("Nom *",`<input id="mbno" value="${i.nom||""}">`)}</div>${fld("Service *",sel("mbsv",SVC,i.sv||"","-- Choisir --"))}${fld("Poste",`<input id="mbpo" value="${i.po||""}" placeholder="ex: Formateur…">`)}${fld("Email",`<input type="email" id="mbem" value="${i.em||""}">`)}${fld("Date d'entrée",`<input id="mbde" value="${i.de||""}" placeholder="ex: 01/09/2025">`)}
-    ${fld("Mot de passe",`<input type="password" id="mbpw" placeholder="${i.id?"Laisser vide pour ne pas changer":"Définir un mot de passe"}">`,i.id?"Laisser vide = mot de passe inchangé":"")}<div class="dvd"></div><div class="g2">${fld("Capital CP annuel (j)",`<input type="number" id="mbcpan" value="${i.cpAnnuel??25}" min="0" step="0.5" title="Nombre de jours attribués automatiquement chaque 1er septembre">`,"Rechargé automatiquement le 1er septembre") } ${fld("Solde CP actuel (j)",`<input type="number" id="mbcp" value="${i.cp??0}" min="0" step="0.5">`)} ${fld("Plafond TT (h/mois)",`<input type="number" id="mbtt" value="${i.ttp??8}" min="0" step="0.5">`)}</div><div class="dvd"></div><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn bl" id="smcn">Annuler</button><button class="btn bp" id="smsb">${i.id?"Mettre à jour":"Ajouter"}</button></div>`);}
+    ${fld("Mot de passe",`<input type="password" id="mbpw" placeholder="${i.id?"Laisser vide pour ne pas changer":"Définir un mot de passe"}">`,i.id?"Laisser vide = mot de passe inchangé":"")}<div class="dvd"></div><div class="g2">${fld("CP acquis par mois (j)",`<input type="number" id="mbcpmens" value="${i.cpMensuel??2.5}" min="0" step="0.5" title="Jours de CP crédités automatiquement chaque 1er du mois">`,"2,5j standard · 5j direction · crédité chaque 1er du mois") } ${fld("Solde CP actuel (j)",`<input type="number" id="mbcp" value="${i.cp??0}" min="0" step="0.5">`)} ${fld("Plafond TT (h/mois)",`<input type="number" id="mbtt" value="${i.ttp??8}" min="0" step="0.5">`)}</div><div class="dvd"></div><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn bl" id="smcn">Annuler</button><button class="btn bp" id="smsb">${i.id?"Mettre à jour":"Ajouter"}</button></div>`);}
 function bMdlSM(){
   document.getElementById("smcn").onclick=()=>A.set({modal:null});
   document.getElementById("smsb").onclick=()=>{
@@ -4740,7 +5495,7 @@ function bMdlSM(){
         ttp:parseFloat(document.getElementById("mbtt").value)||0,
         ttu:i.ttu||0,
         pw:pwclair||(i.pw||""),
-        cpAnnuel:parseFloat(document.getElementById("mbcpan")?.value)||i.cpAnnuel||25,dernVisite,dateEssai,dateFinContrat,typeContrat,enfants,tauxHoraire:parseFloat(document.getElementById("mb-taux")?.value)||i.tauxHoraire||25
+        cpMensuel:parseFloat(document.getElementById("mbcpmens")?.value??2.5),dernVisite,dateEssai,dateFinContrat,typeContrat,enfants,tauxHoraire:parseFloat(document.getElementById("mb-taux")?.value)||i.tauxHoraire||25
       };
       const l=i.id?A.s.eq.map(m=>m.id===i.id?e:m):[...A.s.eq,e];
       A.save("eq",l);A.set({modal:null});
@@ -4850,12 +5605,11 @@ const A={
   s:{role:null,user:null,vue:"db",toast:null,tT:null,modal:null,eq:[],abs:[],dem:[],heu:[],ord:[],fr:[],budgets:[],devis:[],budAnneeSco:null,budFilter:null,echeances:[],alertFiltre:"all",locations:[],formations:[],affichage:[],maintenances:[],synthAnnee:null,maintFiltre:"all",maintAnnee:null,rcplOnglet:"soldes",pMo:undefined,pAn:undefined,formAnneeSco:null,eqFiltreArch:false,planAnneeSco:null},
   set(p){Object.assign(A.s,p);A.r();},
   toast(msg,ty="success"){if(A.s.tT)clearTimeout(A.s.tT);const t=setTimeout(()=>A.set({toast:null,tT:null}),3200);A.set({toast:{msg,ty},tT:t});},
-  save(k,v){K.s(k,v);A.set({[k]:v});},
+  save(k,v){K.s(k,v);A.set({[k]:v});if(fbReady&&FB_COLLECTIONS.includes(k))fbSave(k,v);},
   init(){
-    
-    
-    const VER="v43";
-    if(K.g("ver")!==VER){K.s("ver",VER);K.s("eq",null);K.s("abs",null);K.s("dem",null);K.s("heu",null);K.s("ord",null);K.s("ses",null);}
+    const VER="v59";
+    if(K.g("ver")!==VER){K.s("ver",VER);}
+    // Charger d'abord le cache local (affichage immédiat)
     const eq=K.g("eq");A.s.eq=eq&&eq.length>0?eq:JSON.parse(JSON.stringify(EQ0));if(!eq||!eq.length)K.s("eq",A.s.eq);
     const ab=K.g("abs");A.s.abs=ab&&ab.length>0?ab:JSON.parse(JSON.stringify(AB0));if(!ab||!ab.length)K.s("abs",A.s.abs);
     const dm=K.g("dem");if(dm)A.s.dem=dm;
@@ -4866,12 +5620,44 @@ const A={
     const dvr=K.g("devis");if(dvr)A.s.devis=dvr;
     const echr=K.g("echeances");if(echr)A.s.echeances=echr;
     const locr=K.g("locations");if(locr)A.s.locations=locr;
-    rechargerCPAnnuels(); // Recharge auto CP le 1er septembre
     const formr=K.g("formations");if(formr)A.s.formations=formr;
     const affr=K.g("affichage");if(affr)A.s.affichage=affr;
     const maintr=K.g("maintenances");if(maintr)A.s.maintenances=maintr;
     const se=K.g("ses");if(se){A.s.role=se.role;A.s.user=se.user;}
     A.r();
+    // Puis connecter Firebase et synchroniser
+    A.initFirebaseSync();
+  },
+  async initFirebaseSync(){
+    const ok=await initFirebase();
+    if(!ok){
+      console.warn("Firebase indisponible — mode local uniquement");
+      A.toast("⚠ Mode hors-ligne (pas de synchronisation)","warn");
+      rechargerCPAnnuels();
+      return;
+    }
+    // Charger les données depuis Firebase
+    const fbData=await fbLoadAll();
+    let firstInit=true;
+    FB_COLLECTIONS.forEach(key=>{
+      if(fbData[key]!==undefined&&fbData[key]!==null){
+        firstInit=false;
+        A.s[key]=fbData[key];
+        K.s(key,fbData[key]);
+      }
+    });
+    // Si Firebase est vide (toute première utilisation), y pousser les données locales
+    if(firstInit){
+      console.log("Firebase vide — initialisation avec les données locales");
+      for(const key of FB_COLLECTIONS){
+        if(A.s[key]&&A.s[key].length>0){ await fbSave(key,A.s[key]); }
+      }
+    }
+    rechargerCPAnnuels();
+    // Activer la synchronisation temps réel
+    fbActiverSync();
+    A.r();
+    A.toast("✅ Synchronisation activée","success");
   },
   r(){
     const el=document.getElementById("app");
@@ -4928,29 +5714,28 @@ function rMain(){
   const nu=user?`${user.pr||""} ${user.nom||""}`.trim():"";
   const navItems=[
     {id:"db",ic:"🏠",lb:"Accueil"},
-    {id:"rc",ic:"📋",lb:"Équipe"},
-    {id:"dm",ic:"📨",lb:"Demandes",bdg:role==="direction"?nAtt:0},
-    {id:"ab",ic:"📅",lb:"Absences"},
+    {id:"rc",ic:"📋",lb:"Planning"},
+    {id:"dm",ic:"📨",lb:"Congés & absences",bdg:role==="direction"?nAtt:0},
     
     {id:"hr",ic:"⏱",lb:"Heures"},
     {id:"om",ic:"🗺️",lb:"Missions"},
-    {id:"fr",ic:"💶",lb:"Frais"},{id:"bu",ic:"💰",lb:"Budget"},{id:"al",ic:"🔔",lb:"Alertes"},...(canSeeSynth(role,user?.id)?[{id:"sy",ic:"📊",lb:"Bilan RH"}]:[]),{id:"lo",ic:"🏠",lb:"Locations"},{id:"fo",ic:"🎓",lb:"Formations"},{id:"af",ic:"📋",lb:"Affichage"},...(canSeeMaint(role,user?.id)?[{id:"mt",ic:"🔧",lb:"Entretien"}]:[]),
-    ...(role==="direction"?[{id:"pc",ic:"🎓",lb:"Classes"},{id:"fi",ic:"📚",lb:"Filières"},{id:"im",ic:"🖨️",lb:"Imprimer"},{id:"eq",ic:"👥",lb:"Équipe"},{id:"pr",ic:"⚙️",lb:"Réglages"}]:[])
+    {id:"fr",ic:"💶",lb:"Frais"},{id:"bu",ic:"💰",lb:"Budget"},...(canSeeSynth(role,user?.id)?[{id:"al",ic:"🔔",lb:"Alertes"}]:[]),...(canSeeSynth(role,user?.id)?[{id:"sy",ic:"📊",lb:"Bilan RH"}]:[]),{id:"lo",ic:"🏠",lb:"Locations"},...(canSeeSynth(role,user?.id)?[{id:"fo",ic:"🎓",lb:"Formations"}]:[]),...(canSeeMaint(role,user?.id)?[{id:"mt",ic:"🔧",lb:"Entretien"}]:[]),
+    ...(role==="direction"?[{id:"pc",ic:"🎓",lb:"Classes"},{id:"fi",ic:"📚",lb:"Filières"},{id:"im",ic:"🖨️",lb:"Imprimer"},{id:"eq",ic:"👥",lb:"Personnel"},{id:"pr",ic:"⚙️",lb:"Réglages"}]:[])
   ];
-  const nav=navItems.map(n=>`<button class="nb${vue===n.id?" on":""}" data-v="${n.id}"><span class="ic">${n.ic}</span><span class="lb">${n.lb}</span>${n.bdg>0?`<span class="bdg">${n.bdg}</span>`:""}</button>`).join("");
+  const nav=navItems.map(n=>`<button class="nb${vue===n.id?" on act":""}" data-v="${n.id}"><span class="nb-ic">${n.ic}</span><span class="nb-lb">${n.lb}</span>${n.bdg>0?`<span class="nb-bdg">${n.bdg}</span>`:""}</button>`).join("");
   let content="";
   if(vue==="db")content=rDB();
   else if(vue==="rc")content=rRCPL();
   else if(vue==="dm")content=rDM();
-  else if(vue==="ab")content=rAB();
+  else if(vue==="ab"){A.s.dmSousOnglet="absences";content=rDM();}
   else if(vue==="hr")content=rHR();
   else if(vue==="om")content=rOM();
   else if(vue==="fr")content=rFR();
   else if(vue==="bu")content=rBUDGET();
-  else if(vue==="al")content=rALERTES();
+  else if(vue==="al"&&canSeeSynth(role,user?.id))content=rALERTES();
   else if(vue==="sy")content=rSYNTHESE();
   else if(vue==="lo")content=rLOCATIONS();
-  else if(vue==="fo")content=rFORMATIONS();
+  else if(vue==="fo"&&canSeeSynth(role,user?.id))content=rFORMATIONS();
   else if(vue==="af")content=rAFFICHAGE();
   else if(vue==="mt")content=rMAINTENANCE();
   else if(vue==="pc")content=rPLANNING_CLASSES();
@@ -4967,7 +5752,7 @@ function rMain(){
   <div style="display:flex;align-items:center;gap:8px">
     ${role==="salarie"?`<button class="btn bgo bsm" id="bnd">+ Demande</button>`:""}
     <button class="btn bd bsm" id="btn-logout-hdr" title="Se déconnecter">⬡ Quitter</button>
-  </div></div><div class="app">${content}</div><nav class="nav">${nav}</nav>${tst}${modal}`;
+  </div></div><div class="app">${content}</div><nav class="nav"><div style="padding:16px 14px 10px;border-bottom:1px solid rgba(200,168,75,.3);margin-bottom:6px"><div style="font-size:13px;font-weight:800;color:#C8A84B;letter-spacing:.5px;text-transform:uppercase">MFR Néracais</div><div style="font-size:11px;color:rgba(250,247,240,.5);margin-top:2px">${nu||""}</div></div>${nav}</nav>${tst}${modal}`;
 }
 function bMain(){
   document.querySelectorAll(".nb[data-v]").forEach(b=>b.onclick=()=>A.set({vue:b.dataset.v,modal:null}));
@@ -4980,7 +5765,7 @@ function bMain(){
   const mc=document.getElementById("mcl");if(mc)mc.onclick=()=>A.set({modal:null});
   const ov=document.getElementById("mov");if(ov)ov.onclick=e=>{if(e.target===ov)A.set({modal:null});};
   const v=A.s.vue;
-  if(v==="db")bDB();else if(v==="rc")bRCPL();else if(v==="dm")bDM();else if(v==="ab")bAB();else if(v==="hr")bHR();else if(v==="om")bOM();
+  if(v==="db")bDB();else if(v==="rc")bRCPL();else if(v==="dm")bDM();else if(v==="ab")bDM();else if(v==="hr")bHR();else if(v==="om")bOM();
   else if(v==="fr")bFR();
   else if(v==="bu")bBUDGET();
   else if(v==="al")bALERTES();
@@ -5203,15 +5988,25 @@ function rHR(){
     JK.forEach(jk=>{
       const ds=getDJ(hLun,jk);
       const dc=heu.find(x=>x.mid===mb.id&&x.dt===ds);
-      totalTheo+=gHT(mb.id,jk);
+      const estVeillee=dc?.veillee||false;
+      // Théorique : si veillée, le matin est banalisé → on ne compte que la veillée (remplace la journée)
+      if(estVeillee){
+        totalTheo+=CRENEAUX_SPECIAUX.veillee.duree; // 7h30, remplace la journée normale
+      } else {
+        totalTheo+=gHT(mb.id,jk);
+      }
       if(dc){
-        totalReel+=dc.hr||0;
+        if(estVeillee){
+          // La veillée remplace : on compte 7h30, pas les heures habituelles
+          totalReel+=CRENEAUX_SPECIAUX.veillee.duree;
+        } else {
+          totalReel+=dc.hr||0;
+        }
         totalDep+=dc.dep||0;
         totalRecup+=dc.rc||0;
-        
-        if(dc.svcMidi)totalSvc+=CRENEAUX_SPECIAUX.svc_midi.duree;
-        if(dc.svcSoir)totalSvc+=CRENEAUX_SPECIAUX.svc_soir.duree;
-        if(dc.veillee)totalReel+=CRENEAUX_SPECIAUX.veillee.duree;
+        // Services midi et étude : s'AJOUTENT au temps de travail (comptent dans les 1599h)
+        if(dc.svcMidi){totalSvc+=CRENEAUX_SPECIAUX.svc_midi.duree;totalReel+=CRENEAUX_SPECIAUX.svc_midi.duree;}
+        if(dc.svcSoir){totalSvc+=CRENEAUX_SPECIAUX.svc_soir.duree;totalReel+=CRENEAUX_SPECIAUX.svc_soir.duree;}
       }
     });
 
