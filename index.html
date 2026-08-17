@@ -105,6 +105,7 @@ input,select,textarea{font-size:16px!important}/* évite zoom auto iOS */
 <script>
 
 
+const OM_TYPES=["Visite de stage","Rencontre partenaire","Formation","Réunion institutionnelle","Recrutement / entretien","Achat / approvisionnement","Déchetterie","Transport de jeunes","Salon / forum","Portes ouvertes","Prospection","Rendez-vous administratif","Maintenance / intervention technique","Événement pédagogique","Autre"];
 const SVC=["Pédagogie","Administratif","Vie résidentielle","Direction","AESH"];
 const CRENEAUX_SPECIAUX={
   svc_midi:{label:"Service midi",horaire:"12h00-13h00",duree:1},
@@ -220,6 +221,13 @@ const AB0=[
   {id:"ab2",cr:today2(),as:"2025-2026",mid:"mfr012",nm:"Stéphanie ST LAMBERT",sv:"Pédagogie",ty:"Congé maternité",dd:"2026-02-01",df:"2026-07-31",dj:"journee",cj:1,nj:0,co:"Congé maternité — en cours"}
 ];
 function today2(){return new Date().toISOString().split("T")[0];}
+
+// Nom de l'utilisateur connecté (pour traçabilité des validations)
+function nomValidateur(){
+  const u=A.s.user;if(!u)return "Direction";
+  const mb=A.s.eq.find(m=>m.id===u.id);
+  return mb?`${mb.nom} ${mb.pr}`:"Direction";
+}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 function fD(d){if(!d)return"";const dt=new Date(d+"T12:00:00");return`${String(dt.getDate()).padStart(2,"0")}/${String(dt.getMonth()+1).padStart(2,"0")}/${dt.getFullYear()}`;}
 function nJO(d1,d2,c=1){if(!d1)return 0;let n=0,cur=new Date(d1+"T12:00:00");const end=new Date((d2||d1)+"T12:00:00");while(cur<=end){if(cur.getDay()!==0&&cur.getDay()!==6)n++;cur.setDate(cur.getDate()+1);}return Math.round(n*c*2)/2;}
@@ -503,7 +511,7 @@ function rDM(){
               ${d.nj?` · <strong>${d.nj}j</strong>`:""}
             </div>
             ${d.co?`<div style="font-size:13px;color:#888">💬 ${d.co}</div>`:""}
-            ${d.mo?`<div style="font-size:13px;color:#C0392B;margin-top:3px">📩 Motif : ${d.mo}</div>`:""}
+            ${d.mo?`<div style="font-size:13px;color:#C0392B;margin-top:3px">📩 Motif : ${d.mo}</div>`:""}${d.valPar&&d.st!==ST.ATT?`<div style="font-size:12px;color:#5C6B3A;margin-top:3px">✓ Traité par ${d.valPar}${d.dateRep?` le ${fD(d.dateRep)}`:""}</div>`:""}
             <div style="font-size:11px;color:#AAA;margin-top:3px">Soumise le ${fD(d.cr)}</div>
           </div>
           <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end">
@@ -575,7 +583,7 @@ function bDM(){
           A.s.eq=newEq;K.s("eq",newEq);
         }
       }
-      const newDem=dem.map(x=>x.id===id?{...x,st,mo:mo||"",dateRep:today2()}:x);
+      const newDem=dem.map(x=>x.id===id?{...x,st,mo:mo||"",dateRep:today2(),valPar:nomValidateur()}:x);
       A.save("dem",newDem);
       A.toast(st===ST.APP?"✅ Demande approuvée":"✗ Demande refusée",st===ST.APP?"success":"error");
     };
@@ -858,7 +866,7 @@ function rOM(){
   const {role,user,eq,ord}=A.s;const vis=(role==="salarie"?ord.filter(o=>o.mid===user?.id):ord).sort((a,b)=>(b.cr||"").localeCompare(a.cr||""));const enOM=ord.filter(o=>o.st===ST.ATT).length;
   let lH="";
   if(!vis.length)lH=`<div class="card" style="text-align:center;padding:40px"><p style="color:#888">Aucun ordre de mission${role==="salarie"?" — cliquez sur '+ Nouvel OM'":""}</p></div>`;
-  else vis.forEach(o=>{const ac=o.st===ST.APP?"#2E7D52":o.st===ST.REF?"#C0392B":"#B8670A";lH+=`<div class="card ca" style="border-left-color:${ac}"><div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px"><div style="flex:1"><div style="display:flex;align-items:center;gap:7px;margin-bottom:5px;flex-wrap:wrap">${role==="direction"?`<span style="font-weight:800;font-size:17px;color:#3A4425">${o.nm}</span>`:""}<span class="tsv">${o.sv||""}</span>${sBdg(o.st)}</div><div style="font-size:17px;font-weight:600;margin-bottom:3px">📋 ${o.ob}</div><div style="font-size:16px;color:#555">📅 ${fD(o.dd)} · ${o.hd} de ${o.ld}${o.hr?` · retour ${o.hr}`:""}</div><div style="font-size:15px;color:#888;margin-top:2px">🚗 Véhicule : ${o.ve==="oui"?"Oui":"Non"} · ${(o.dests||[]).length} dest.</div>${o.st===ST.APP?`<div style="font-size:15px;color:#2E7D52;margin-top:3px">✅ Validé le ${fD(o.dv||"")}</div>`:""}<div style="font-size:15px;color:#888;margin-top:2px">Soumis le ${fD(o.cr)}</div></div><div style="display:flex;gap:6px;flex-wrap:wrap">${o.st===ST.APP?`<button class="btn bg bsm" data-pom="${o.id}">🖨 PDF</button>`:""} ${role==="direction"&&o.st===ST.ATT?`<button class="btn bs bsm" data-vom="${o.id}" data-voms="${ST.APP}">✓</button><button class="btn bd bsm" data-vom="${o.id}" data-voms="${ST.REF}">✗</button>`:""} <button class="btn bl bsm" data-dom="${o.id}">Détail</button></div></div></div>`;});
+  else vis.forEach(o=>{const ac=o.st===ST.APP?"#2E7D52":o.st===ST.REF?"#C0392B":"#B8670A";lH+=`<div class="card ca" style="border-left-color:${ac}"><div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px"><div style="flex:1"><div style="display:flex;align-items:center;gap:7px;margin-bottom:5px;flex-wrap:wrap">${role==="direction"?`<span style="font-weight:800;font-size:17px;color:#3A4425">${o.nm}</span>`:""}<span class="tsv">${o.sv||""}</span>${sBdg(o.st)}</div><div style="font-size:17px;font-weight:600;margin-bottom:3px">📋 ${o.ob}${o.ty?` <span style="background:#EEF2E6;color:#3A5220;border:1px solid #7A9A4A;border-radius:12px;padding:1px 9px;font-size:12px;font-weight:700;margin-left:6px">${o.ty}</span>`:""}</div><div style="font-size:16px;color:#555">📅 ${fD(o.dd)} · ${o.hd} de ${o.ld}${o.hr?` · retour ${o.hr}`:""}</div><div style="font-size:15px;color:#888;margin-top:2px">🚗 Véhicule : ${o.ve==="oui"?"Oui":"Non"} · ${(o.dests||[]).length} dest.</div>${o.st===ST.APP?`<div style="font-size:15px;color:#2E7D52;margin-top:3px">✅ Validé le ${fD(o.dv||"")}</div>`:""}<div style="font-size:15px;color:#888;margin-top:2px">Soumis le ${fD(o.cr)}</div></div><div style="display:flex;gap:6px;flex-wrap:wrap">${o.st===ST.APP?`<button class="btn bg bsm" data-pom="${o.id}">🖨 PDF</button>`:""} ${role==="direction"&&o.st===ST.ATT?`<button class="btn bs bsm" data-vom="${o.id}" data-voms="${ST.APP}">✓</button><button class="btn bd bsm" data-vom="${o.id}" data-voms="${ST.REF}">✗</button>`:""} <button class="btn bl bsm" data-dom="${o.id}">Détail</button></div></div></div>`;});
   return`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px"><h2 style="color:#3A4425;font-size:22px;font-weight:800">🗺️ Ordres de mission</h2><div style="display:flex;gap:8px;align-items:center">${role==="direction"&&enOM>0?`<span style="background:#FEF3E2;color:#B8670A;border:1.5px solid #E8A030;border-radius:20px;padding:3px 12px;font-size:15px;font-weight:700">${enOM} en attente</span>`:""} ${role==="salarie"?`<button class="btn bp" id="bnom">+ Nouvel OM</button>`:""}</div></div>${lH}`;
 }
 function bOM(){
@@ -867,17 +875,17 @@ function bOM(){
   document.querySelectorAll("[data-pom]").forEach(b=>{b.onclick=()=>{const o=A.s.ord.find(x=>x.id===b.dataset.pom);if(o)pdfOM(o);};});
   document.querySelectorAll("[data-dom]").forEach(b=>{b.onclick=()=>{const o=A.s.ord.find(x=>x.id===b.dataset.dom);if(o)A.set({modal:{ty:"do",data:{o}}});};});
 }
-function rMdlNO(){const dr=omD.map((d,i)=>`<div class="odr"><input placeholder="Destination (nom, commune)" value="${d.dest||""}" data-di="${i}" data-df="dest" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px"><input placeholder="Jeune (optionnel)" value="${d.jeu||""}" data-di="${i}" data-df="jeu" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px">${omD.length>1?`<button class="btn bd bsm" data-rmd="${i}">✕</button>`:`<div></div>`}</div>`).join("");return mdl("Nouvel ordre de mission",`<div class="ibox">ℹ️ Cet OM doit être validé par la direction avant le départ.</div>${fld("Objet du déplacement *",'<textarea id="omob" rows="2" placeholder="Ex: Visite entreprise — Jean DUPONT — Nérac"></textarea>')}<div class="g2">${fld("Date du déplacement *",'<input type="date" id="omdd">')} ${fld("Véhicule personnel *",sel("omve",[{v:"oui",l:"☑ Oui"},{v:"non",l:"☐ Non"}],"","-- Choisir --"))}</div><div class="g2">${fld("Heure départ *",'<input type="time" id="omhd">')} ${fld("Lieu de départ *",'<input id="omld" placeholder="ex: 200 route de Bordeaux Barbaste 47230">')}</div><div class="g2">${fld("Heure retour",'<input type="time" id="omhr">')} ${fld("Lieu de retour",'<input id="omlr" placeholder="ex: 200 route de Bordeaux Barbaste 47230">')}</div><div class="dvd"></div><p style="font-size:15px;font-weight:700;color:#3A4425;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Destinations</p><div id="omde">${dr}</div>${omD.length<5?`<button class="btn bg bsm" id="omad" style="margin-bottom:10px">+ Destination</button>`:""}<div class="dvd"></div><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn bl" id="omcn">Annuler</button><button class="btn bp" id="omsb">Soumettre ✉</button></div>`,600);}
+function rMdlNO(){const dr=omD.map((d,i)=>`<div class="odr"><input placeholder="Destination (nom, commune)" value="${d.dest||""}" data-di="${i}" data-df="dest" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px"><input placeholder="Jeune (optionnel)" value="${d.jeu||""}" data-di="${i}" data-df="jeu" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px">${omD.length>1?`<button class="btn bd bsm" data-rmd="${i}">✕</button>`:`<div></div>`}</div>`).join("");return mdl("Nouvel ordre de mission",`<div class="ibox">ℹ️ Cet OM doit être validé par la direction avant le départ.</div>${fld("Type de mission *",sel("omty",OM_TYPES,"","-- Choisir le type --"))}${fld("Objet du déplacement *",'<textarea id="omob" rows="2" placeholder="Ex: Visite entreprise — Jean DUPONT — Nérac"></textarea>')}<div class="g2">${fld("Date du déplacement *",'<input type="date" id="omdd">')} ${fld("Véhicule personnel *",sel("omve",[{v:"oui",l:"☑ Oui"},{v:"non",l:"☐ Non"}],"","-- Choisir --"))}</div><div class="g2">${fld("Heure départ *",'<input type="time" id="omhd">')} ${fld("Lieu de départ *",'<input id="omld" placeholder="ex: 200 route de Bordeaux Barbaste 47230">')}</div><div class="g2">${fld("Heure retour",'<input type="time" id="omhr">')} ${fld("Lieu de retour",'<input id="omlr" placeholder="ex: 200 route de Bordeaux Barbaste 47230">')}</div><div class="dvd"></div><p style="font-size:15px;font-weight:700;color:#3A4425;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Destinations</p><div id="omde">${dr}</div>${omD.length<5?`<button class="btn bg bsm" id="omad" style="margin-bottom:10px">+ Destination</button>`:""}<div class="dvd"></div><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn bl" id="omcn">Annuler</button><button class="btn bp" id="omsb">Soumettre ✉</button></div>`,600);}
 function bMdlNO(){
   document.getElementById("omcn").onclick=()=>{omD=[{dest:"",jeu:""}];A.set({modal:null});};
   const ad=document.getElementById("omad");if(ad)ad.onclick=()=>{omD.push({dest:"",jeu:""});A.set({modal:{ty:"no"}});};
   document.querySelectorAll("[data-rmd]").forEach(b=>{b.onclick=()=>{omD.splice(parseInt(b.dataset.rmd),1);A.set({modal:{ty:"no"}});};});
   document.querySelectorAll("[data-di]").forEach(inp=>{inp.oninput=()=>{omD[parseInt(inp.dataset.di)][inp.dataset.df]=inp.value;};});
   document.getElementById("omsb").onclick=()=>{
-    const ob=document.getElementById("omob").value,dd=document.getElementById("omdd").value,hd=document.getElementById("omhd").value,ld=document.getElementById("omld").value,ve=document.getElementById("omve").value,hr=document.getElementById("omhr").value,lr=document.getElementById("omlr").value;
-    if(!ob||!dd||!hd||!ld||!ve)return;
+    const ty=document.getElementById("omty").value,ob=document.getElementById("omob").value,dd=document.getElementById("omdd").value,hd=document.getElementById("omhd").value,ld=document.getElementById("omld").value,ve=document.getElementById("omve").value,hr=document.getElementById("omhr").value,lr=document.getElementById("omlr").value;
+    if(!ty||!ob||!dd||!hd||!ld||!ve){alert("Merci de renseigner le type, l'objet, la date, l'heure et le lieu de départ, et le véhicule.");return;}
     const mb=A.s.eq.find(m=>m.id===A.s.user?.id);
-    const o={id:uid(),cr:today2(),st:ST.ATT,mid:mb.id,nm:`${mb.nom} ${mb.pr}`,sv:mb.sv,em:mb.em,ob,dd,hd,ld,hr,lr,ve,dests:omD.filter(d=>d.dest.trim()),as:getAS()};
+    const o={id:uid(),cr:today2(),st:ST.ATT,mid:mb.id,nm:`${mb.nom} ${mb.pr}`,sv:mb.sv,em:mb.em,ty,ob,dd,hd,ld,hr,lr,ve,dests:omD.filter(d=>d.dest.trim()),as:getAS()};
     A.save("ord",[...A.s.ord,o]);omD=[{dest:"",jeu:""}];A.set({modal:null});A.toast("Ordre de mission soumis ✓ — en attente de validation");
   };
 }
@@ -1702,7 +1710,7 @@ function bMdlClassFiliere(){
 const TAUX_KM = 0.48; 
 
 
-const TYPES_FRAIS = ["Repas","Hébergement","Péage","Parking","Fournitures","Autre"];
+const TYPES_FRAIS = ["Repas","Hébergement","Péage","Parking","Carburant","Billet train / transport","Affranchissement / timbres","Fournitures pédagogiques","Fournitures administratives","Matériel","Frais d'accueil / réception","Inscription formation","Autre"];
 const TYPES_AVANCES = ["Avance de frais","Remboursement kilométrique","Frais divers"];
 const ST_FR = {
   BROUILLON:"Brouillon",SOUMISE:"Soumise",ATT_DIR:"En attente Direction",
@@ -1764,7 +1772,7 @@ function logAction(ficheId, action, user){
 const COORD_PEDA_ID = "mfr002"; // Benoît BOURSINHAC
 
 // Postes budgétaires par défaut
-const BUDGET_POSTES = ["Sorties pédagogiques","Matériel pédagogique","Intervenants","Documentation","Numériques/Logiciels","Animation","Projets spéciaux","Divers"];
+const BUDGET_POSTES = ["Sorties pédagogiques","Matériel pédagogique","Intervenants","Documentation","Numériques/Logiciels","Animation","Option sport","Option art et culture","Projets spéciaux","Divers"];
 
 // Types de sources de financement
 const BUDGET_SOURCES = ["Budget établissement","Pass Culture","Subvention régionale","FDVA","Mécénat","LEADER","Autre subvention"];
@@ -3669,48 +3677,54 @@ function rSYNTHESE(){
     </div>
   </div>`;
 
-  // ── Section annualisation heures ──
+  // ── Section annualisation heures (objectif 1599h ajusté quotité) ──
+  const OBJ_TEMPS_PLEIN=1599; // Durée annuelle de référence (accord MFR)
   const annualH=`<div class="card" style="margin-bottom:12px">
-    <h3 style="font-size:16px;color:#3A4425;margin-bottom:12px">⏱ Annualisation des heures — ${annee}</h3>
+    <h3 style="font-size:16px;color:#3A4425;margin-bottom:6px">⏱ Annualisation du temps de travail — ${annee}</h3>
+    <p style="font-size:12px;color:#888;margin-bottom:12px">Objectif temps plein : <strong>${OBJ_TEMPS_PLEIN}h</strong> · ajusté à la quotité de chaque salarié · réalisé = heures déclarées et approuvées à ce jour.</p>
     <div style="overflow-x:auto">
       <table style="border-collapse:collapse;width:100%;font-size:13px">
         <thead><tr style="background:#3A4425">
           <th style="padding:8px 12px;color:#fff;text-align:left">Salarié</th>
-          <th style="padding:8px 8px;color:#fff;text-align:left">Service</th>
-          <th style="padding:8px 8px;color:#fff;text-align:right">Volume contrat</th>
-          <th style="padding:8px 8px;color:#fff;text-align:right">Déclaré</th>
-          <th style="padding:8px 8px;color:#fff;text-align:right">Écart</th>
-          <th style="padding:8px 8px;color:#fff;text-align:right">H. sup validées</th>
+          <th style="padding:8px 8px;color:#fff;text-align:center">Quotité</th>
+          <th style="padding:8px 8px;color:#fff;text-align:right">Objectif</th>
+          <th style="padding:8px 8px;color:#fff;text-align:right">Réalisé</th>
+          <th style="padding:8px 8px;color:#fff;text-align:right">Reste</th>
+          <th style="padding:8px 12px;color:#fff;text-align:left">Avancement</th>
         </tr></thead>
         <tbody>
           ${actifs.map(m=>{
-            // Heures théoriques annuelles depuis HOR
-            const horM=HOR[m.id];
-            const hTheoHebdo=cHebdoHOR(horM);
-            // ~44 semaines par année scolaire
-            const veil=estVeilleur(horM);
-            const annu=veil?calcAnnualisationNuit(horM,44):null;
-            const hTheoAn=veil?Math.round(annu.totalEquiv):Math.round(hTheoHebdo*44);
-            // Heures réellement déclarées cette année
+            const quot=m.quotite??100;
+            const objectif=Math.round(OBJ_TEMPS_PLEIN*quot/100);
+            // Réalisé = heures déclarées et approuvées cette année scolaire
             const hDecl=(heu||[]).filter(x=>x.mid===m.id&&x.dt>=dateDebStr&&x.dt<=dateFinStr&&x.st==="Approuvée").reduce((s,x)=>s+(x.hr||0),0);
-            // Heures sup validées
-            const hSup=(heu||[]).filter(x=>x.mid===m.id&&x.dt>=dateDebStr&&x.dt<=dateFinStr&&x.st==="Approuvée"&&x.dep>0).reduce((s,x)=>s+(x.dep||0),0);
-            const ecart=hDecl-hTheoAn;
-            const ecartColor=ecart>10?"#C0392B":ecart<-10?"#B8670A":"#2E7D52";
+            const reste=Math.max(0,objectif-hDecl);
+            const pct=objectif>0?Math.min(100,Math.round(hDecl/objectif*100)):0;
+            const veil=estVeilleur(HOR[m.id]);
+            // Couleur de la barre selon avancement
+            const barColor=pct>=100?"#C0392B":pct>=90?"#B8670A":"#5C6B3A";
             return`<tr style="border-bottom:1px solid #EDE8D8">
-              <td style="padding:6px 12px;font-weight:600">${m.nom} ${m.pr}${veil?`<span style="display:block;font-size:11px;font-weight:400;color:#7050B0">🌙 Équiv. nuit : +${Math.round(annu.equiv+annu.major)}h</span>`:""}</td>
-              <td style="padding:6px 8px;font-size:12px;color:#888">${m.sv||""}</td>
-              <td style="padding:6px 8px;text-align:right">${hTheoAn>0?fH(hTheoAn):"—"}</td>
-              <td style="padding:6px 8px;text-align:right;font-weight:700">${hDecl>0?fH(hDecl):"—"}</td>
-              <td style="padding:6px 8px;text-align:right;font-weight:700;color:${ecartColor}">${hDecl>0&&hTheoAn>0?(ecart>0?"+":"")+fH(ecart):"—"}</td>
-              <td style="padding:6px 8px;text-align:right;color:#B8670A">${hSup>0?fH(hSup):"—"}</td>
+              <td style="padding:6px 12px;font-weight:600">${m.nom} ${m.pr}${veil?`<span style="display:block;font-size:11px;font-weight:400;color:#7050B0">🌙 Veilleur (équiv. nuit)</span>`:""}</td>
+              <td style="padding:6px 8px;text-align:center;color:${quot<100?"#B8670A":"#555"}">${quot}%</td>
+              <td style="padding:6px 8px;text-align:right;color:#555">${fH(objectif)}</td>
+              <td style="padding:6px 8px;text-align:right;font-weight:700;color:#1A6B9A">${hDecl>0?fH(hDecl):"—"}</td>
+              <td style="padding:6px 8px;text-align:right;font-weight:600;color:#5C6B3A">${hDecl>0?fH(reste):"—"}</td>
+              <td style="padding:6px 12px;min-width:130px">
+                <div style="display:flex;align-items:center;gap:6px">
+                  <div style="flex:1;background:#EDE8D8;border-radius:6px;height:14px;overflow:hidden">
+                    <div style="width:${pct}%;background:${barColor};height:100%;border-radius:6px;transition:width .3s"></div>
+                  </div>
+                  <span style="font-size:11px;font-weight:700;color:${barColor};min-width:32px;text-align:right">${pct}%</span>
+                </div>
+              </td>
             </tr>`;
           }).join("")}
         </tbody>
       </table>
     </div>
-    <div style="font-size:12px;color:#888;margin-top:6px">Écart = heures déclarées − volume contractuel théorique annuel (44 semaines). Rouge = dépassement, orange = sous-déclaration.</div>
+    <div style="font-size:12px;color:#888;margin-top:8px">🟢 En cours · 🟠 Proche de l'objectif (≥90%) · 🔴 Objectif atteint ou dépassé. Le réalisé n'inclut que les heures approuvées. Pour le veilleur, le calcul officiel reste le fichier Excel (équivalence nuit et semaines d'internat).</div>
   </div>`;
+
 
   // ── Section maintenance ──
   const maintAnnee=(A.s.maintenances||[]).filter(m=>m.annee===annee);
@@ -4514,7 +4528,7 @@ function bFR(){
     b.onclick=()=>{
       const id=b.dataset.valFr,st=b.dataset.vstFr;
       const rep=st==="Refusée"||st===ST.REF?prompt("Motif du refus (optionnel) :"):"";
-      const user=A.s.user?`${A.s.user.pr} ${A.s.user.nom}`:"Direction";
+      const user=nomValidateur();
       const actionLabel={
         "Validée Direction":"Validée par la direction",
         "Refusée":"Refusée par la direction"+(rep?` : ${rep}`:""),
@@ -4552,7 +4566,7 @@ Sandrine GRODECOEUR sera notifiée.`))return;
       const id=b.dataset.archFr;
       const f=(A.s.fr||[]).find(x=>x.id===id);
       if(!f)return;
-      const user=A.s.user?`${A.s.user.pr} ${A.s.user.nom}`:"Direction";
+      const user=nomValidateur();
       const hist=[...(f.historique||[]),{date:today2(),user,action:"Demande archivée"}];
       const list=(A.s.fr||[]).map(x=>x.id===id?{...x,st:"Archivée",historique:hist}:x);
       A.save("fr",list);A.toast("Fiche archivée 📦","success");
@@ -4575,6 +4589,9 @@ function rMdlNF(){
   const lignesKm=d.lignesKm||[{depart:"MFR Barbaste",arrivee:"",km:0,ar:false,calcEnCours:false}];
   const lignesFrais=d.lignesFrais||[];
   const pj=d.pj||[];
+  // Ordres de mission validés du salarié (pour rattachement)
+  const monId=A.s.user?.id;
+  const mesOM=(A.s.ord||[]).filter(o=>o.mid===monId&&o.st===ST.APP).sort((a,b)=>(b.dd||"").localeCompare(a.dd||""));
 
   // Rendu des justificatifs existants
   let pjH=pj.map((p,i)=>`
@@ -4639,6 +4656,7 @@ let frH=lignesFrais.map((l,i)=>`
 
     ${fld("Objet du remboursement *",'<input id="fr-ob" placeholder="ex: Déplacement visite entreprise Agen" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px;width:100%">')}
     ${fld("Date du déplacement *",`<input type="date" id="fr-dt" value="${today2()}" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px;width:100%">`)}
+    ${mesOM.length>0?fld("Rattacher à un ordre de mission (optionnel)",sel("fr-om",[{v:"",l:"— Aucun —"},...mesOM.map(o=>({v:o.id,l:`${fD(o.dd)} · ${o.ty||""} ${o.ob||""}`.substring(0,55)}))],d.omId||"","")):""}
 
     <div class="dvd"></div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
@@ -4655,7 +4673,7 @@ let frH=lignesFrais.map((l,i)=>`
     <div id="fr-frais-list">${frH||'<p style="font-size:13px;color:#888;margin-bottom:8px">Aucun frais divers</p>'}</div>
 
     <div class="dvd"></div>
-    <p style="font-size:13px;font-weight:700;color:#3A4425;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">📎 Justificatifs</p>
+    <p style="font-size:13px;font-weight:700;color:#3A4425;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">📎 Justificatifs</p><p style="font-size:12px;color:#C0392B;font-weight:600;margin-bottom:8px">⚠ Obligatoire pour tout frais (repas, péage, fournitures…). Non requis pour les seuls km.</p>
     <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
       <label class="btn bl bsm" style="cursor:pointer">📷 Photo / Fichier<input type="file" id="fr-pj-input" accept="image/*,application/pdf" multiple capture="environment" style="display:none"></label>
       <span style="font-size:12px;color:#888;align-self:center">Images ou PDF — max 5 Mo chacun</span>
@@ -4806,16 +4824,23 @@ Conseils :
     const ob=document.getElementById("fr-ob").value;
     const dt=document.getElementById("fr-dt").value;
     const co=document.getElementById("fr-co").value;
+    const omId=document.getElementById("fr-om")?.value||"";
     if(!ob||!dt){alert("Renseignez l'objet et la date.");return;}
     
     for(let i=0;i<lignesKm.length;i++) syncKm(i);
     for(let i=0;i<lignesFrais.length;i++) syncFrais(i);
+    // Justificatif obligatoire dès qu'il y a des frais divers (hors km)
+    const aFraisDivers=lignesFrais.some(l=>(parseFloat(l.montant)||0)>0);
+    if(aFraisDivers&&pj.length===0){
+      alert("⚠ Un justificatif est obligatoire pour tout frais (repas, péage, fournitures…).\nAjoutez au moins une pièce jointe avant de soumettre.");
+      return;
+    }
     const mb=A.s.eq.find(m=>m.id===A.s.user?.id);
     const km=lignesKm.reduce((s,l)=>s+(l.km||0)*(l.ar?2:1)*TAUX_KM,0);
     const frais=lignesFrais.reduce((s,l)=>s+(parseFloat(l.montant)||0),0);
     const total=km+frais;
     const now=new Date();const horodatage=`${today2()} ${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}:${String(now.getSeconds()).padStart(2,"0")}`;const fiche={id:uid(),cr:today2(),horodatage,st:"En attente Direction",mid:mb.id,nm:`${mb.nom} ${mb.pr}`,sv:mb.sv,em:mb.em||"",
-      objet:ob,date:dt,lignesKm,lignesFrais,pj,commentaire:co,total,tauxKm:TAUX_KM,
+      objet:ob,date:dt,omId,lignesKm,lignesFrais,pj,commentaire:co,total,tauxKm:TAUX_KM,
       historique:[{date:today2(),user:`${mb.nom} ${mb.pr}`,action:"Demande soumise à la direction"}]};
     A.save("fr",[...(A.s.fr||[]),fiche]);
     A.set({modal:null});
@@ -5469,7 +5494,8 @@ function bEQ(){
   });
 }
 function rMdlSM(){const i=A.s.modal.data?.init||{};return mdl(i.id?"Modifier":"Ajouter un membre",`<div class="g2">${fld("Prénom *",`<input id="mbpr" value="${i.pr||""}">`)} ${fld("Nom *",`<input id="mbno" value="${i.nom||""}">`)}</div>${fld("Service *",sel("mbsv",SVC,i.sv||"","-- Choisir --"))}${fld("Poste",`<input id="mbpo" value="${i.po||""}" placeholder="ex: Formateur…">`)}${fld("Email",`<input type="email" id="mbem" value="${i.em||""}">`)}${fld("Date d'entrée",`<input id="mbde" value="${i.de||""}" placeholder="ex: 01/09/2025">`)}
-    ${fld("Mot de passe",`<input type="password" id="mbpw" placeholder="${i.id?"Laisser vide pour ne pas changer":"Définir un mot de passe"}">`,i.id?"Laisser vide = mot de passe inchangé":"")}<div class="dvd"></div><div class="g2">${fld("CP acquis par mois (j)",`<input type="number" id="mbcpmens" value="${i.cpMensuel??2.5}" min="0" step="0.5" title="Jours de CP crédités automatiquement chaque 1er du mois">`,"2,5j standard · 5j direction · crédité chaque 1er du mois") } ${fld("Solde CP actuel (j)",`<input type="number" id="mbcp" value="${i.cp??0}" min="0" step="0.5">`)} ${fld("Plafond TT (h/mois)",`<input type="number" id="mbtt" value="${i.ttp??8}" min="0" step="0.5">`)}</div><div class="dvd"></div><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn bl" id="smcn">Annuler</button><button class="btn bp" id="smsb">${i.id?"Mettre à jour":"Ajouter"}</button></div>`);}
+    ${fld("Mot de passe",`<input type="password" id="mbpw" placeholder="${i.id?"Laisser vide pour ne pas changer":"Définir un mot de passe"}">`,i.id?"Laisser vide = mot de passe inchangé":"")}<div class="dvd"></div><div class="g2">${fld("CP acquis par mois (j)",`<input type="number" id="mbcpmens" value="${i.cpMensuel??2.5}" min="0" step="0.5" title="Jours de CP crédités automatiquement chaque 1er du mois">`,"2,5j standard · 5j direction · crédité chaque 1er du mois") } ${fld("Solde CP actuel (j)",`<input type="number" id="mbcp" value="${i.cp??0}" min="0" step="0.5">`)} ${fld("Plafond TT (h/mois)",`<input type="number" id="mbtt" value="${i.ttp??8}" min="0" step="0.5">`)}</div>
+    <div class="g2">${fld("Quotité temps de travail (%)",`<input type="number" id="mbquot" value="${i.quotite??100}" min="0" max="100" step="1" title="100% = temps plein (1599h/an) · 80% = 1279h...">`,"100% = 1599h/an · sert au tableau d'annualisation")}<div></div></div><div class="dvd"></div><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn bl" id="smcn">Annuler</button><button class="btn bp" id="smsb">${i.id?"Mettre à jour":"Ajouter"}</button></div>`);}
 function bMdlSM(){
   document.getElementById("smcn").onclick=()=>A.set({modal:null});
   document.getElementById("smsb").onclick=()=>{
@@ -5495,7 +5521,7 @@ function bMdlSM(){
         ttp:parseFloat(document.getElementById("mbtt").value)||0,
         ttu:i.ttu||0,
         pw:pwclair||(i.pw||""),
-        cpMensuel:parseFloat(document.getElementById("mbcpmens")?.value??2.5),dernVisite,dateEssai,dateFinContrat,typeContrat,enfants,tauxHoraire:parseFloat(document.getElementById("mb-taux")?.value)||i.tauxHoraire||25
+        cpMensuel:parseFloat(document.getElementById("mbcpmens")?.value??2.5),quotite:parseFloat(document.getElementById("mbquot")?.value)||100,dernVisite,dateEssai,dateFinContrat,typeContrat,enfants,tauxHoraire:parseFloat(document.getElementById("mb-taux")?.value)||i.tauxHoraire||25
       };
       const l=i.id?A.s.eq.map(m=>m.id===i.id?e:m):[...A.s.eq,e];
       A.save("eq",l);A.set({modal:null});
@@ -5607,7 +5633,7 @@ const A={
   toast(msg,ty="success"){if(A.s.tT)clearTimeout(A.s.tT);const t=setTimeout(()=>A.set({toast:null,tT:null}),3200);A.set({toast:{msg,ty},tT:t});},
   save(k,v){K.s(k,v);A.set({[k]:v});if(fbReady&&FB_COLLECTIONS.includes(k))fbSave(k,v);},
   init(){
-    const VER="v61";
+    const VER="v66";
     if(K.g("ver")!==VER){K.s("ver",VER);}
     // Charger d'abord le cache local (affichage immédiat)
     const eq=K.g("eq");A.s.eq=eq&&eq.length>0?eq:JSON.parse(JSON.stringify(EQ0));if(!eq||!eq.length)K.s("eq",A.s.eq);
@@ -6323,7 +6349,7 @@ function bHR(){
       const l=A.s.heu.map(x=>{
         if(x.mid!==mid||x.lun!==lun||x.st!==ST.ATT||x.dep<=0)return x;
         neq=neq.map(m=>{if(m.id!==mid)return m;return{...m,ra:(m.ra||0)+(x.rc||0)/7};});
-        return{...x,st:ST.APP};
+        return{...x,st:ST.APP,valPar:nomValidateur(),dateVal:today2()};
       });
       K.s("eq",neq);A.s.eq=neq;
       A.save("heu",l);A.toast("Récupérations créditées ✓","success");
@@ -6332,7 +6358,7 @@ function bHR(){
   document.querySelectorAll("[data-ref-sem]").forEach(b=>{
     b.onclick=()=>{
       const[mid,lun]=b.dataset.refSem.split("_");
-      const l=A.s.heu.map(x=>x.mid===mid&&x.lun===lun&&x.st===ST.ATT&&x.dep>0?{...x,st:ST.REF}:x);
+      const l=A.s.heu.map(x=>x.mid===mid&&x.lun===lun&&x.st===ST.ATT&&x.dep>0?{...x,st:ST.REF,valPar:nomValidateur(),dateVal:today2()}:x);
       A.save("heu",l);A.toast("Dépassements refusés","error");
     };
   });
