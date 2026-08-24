@@ -394,6 +394,7 @@ const K={
 //  FIREBASE — Synchronisation temps réel multi-postes
 // ══════════════════════════════════════════════════════════════════
 // Configuration du projet MFR-Neracais-RH
+const APP_VERSION="v97";
 const firebaseConfig = {
   apiKey: "AIzaSyAJNsp-EY6DkT8AWa0824HuZh2Wu2Frce4",
   authDomain: "gestion-rh-mfr-du-neracais.firebaseapp.com",
@@ -1540,6 +1541,37 @@ function bMdlHorEdit(){
 }
 function m_nom(mid){const m=(A.s.eq||[]).find(x=>x.id===mid);return m?`${m.nom} ${m.pr}`:"";}
 
+// ══════════ NOTE RGPD DANS L'APPLICATION + ACCUSÉ DE LECTURE ══════════
+const RGPD_NOTE_LIGNES = [
+  "La MFR utilise cette application pour gérer les congés, les heures et la vie de l'établissement. Elle contient des informations qui vous concernent (identité, coordonnées, horaires, absences).",
+  "Ces informations servent <strong>uniquement</strong> à la gestion du personnel. Elles ne sont jamais vendues ni transmises à l'extérieur.",
+  "Seules la direction et l'administration y ont accès, par mot de passe personnel. L'hébergement est sécurisé, en Europe.",
+  "Vous pouvez à tout moment demander à <strong>consulter, corriger ou supprimer</strong> vos données : il suffit d'en parler à la direction."
+];
+
+// Carte accueil salarié : note + bouton de confirmation (tant que non confirmée)
+function rBlocRgpdAck(){
+  const u=A.s.user;
+  if(!u || A.s.role==="direction") return "";
+  const perso=(A.s.eq||[]).find(x=>x.id===u.id);
+  if(perso && perso.rgpdAck) return ""; // déjà confirmé
+  return `<div style="background:#FFFDF7;border:2px solid #C8A84B;border-radius:12px;padding:16px 18px;margin-bottom:14px">
+    <div style="font-size:16px;font-weight:800;color:#3A4425;margin-bottom:8px">🔒 Vos données personnelles — information importante</div>
+    ${RGPD_NOTE_LIGNES.map(l=>`<div style="font-size:13px;color:#333;margin-bottom:7px;line-height:1.5">${l}</div>`).join("")}
+    <div style="font-size:12px;color:#888;margin:10px 0 12px">En cliquant ci-dessous, vous confirmez avoir été informé(e). Cette confirmation tient lieu d'accusé de réception.</div>
+    <button class="btn bp" id="btn-rgpd-ack">✓ J'ai lu et compris</button>
+  </div>`;
+}
+
+// Suivi direction : qui a confirmé la lecture de la note RGPD
+function rSuiviRgpd(){
+  const membres=(A.s.eq||[]).filter(m=>!m.archive && m.id!=="mfr001");
+  const lus=membres.filter(m=>m.rgpdAck);
+  const attente=membres.filter(m=>!m.rgpdAck);
+  return `<div style="font-size:14px;color:#3A4425;margin-bottom:8px"><strong>${lus.length}/${membres.length}</strong> membres ont confirmé avoir lu l'information RGPD.</div>
+    ${attente.length?`<div style="font-size:13px;color:#8A5A10"><strong>En attente :</strong> ${attente.map(m=>`${m.nom} ${m.pr}`).join(", ")}</div>`:`<div style="font-size:13px;color:#5C6B3A">✓ Tout le personnel a été informé.</div>`}`;
+}
+
 // ── Configuration éditable (messages anniversaires) ───────────────
 const CONFIG_DEFAUT = {
   annivAucun: "Aucun anniversaire à fêter tout de suite — en attendant, un sourire ou un mot gentil font toujours plaisir ! \u{1F337}",
@@ -1849,6 +1881,7 @@ function rDB(){
   const affBandeau=rBlocActualites();
   return`<h2 style="color:#3A4425;font-size:22px;font-weight:800;margin-bottom:4px">Bonjour, ${user?.pr||""} 👋</h2>
     <p style="color:#888;font-size:13px;margin-bottom:14px">Période : ${getAS()}</p>
+    ${rBlocRgpdAck()}
     ${affBandeau}
     ${rBlocRappelPointageSalarie()}
     ${rBlocAlertesMaint()}
@@ -1870,6 +1903,14 @@ function bDB(){
   if(bsig) bsig.onclick=()=>A.set({modal:{ty:"signalement",data:{}}});
   const bpoint=document.getElementById("btn-aller-pointage");
   if(bpoint) bpoint.onclick=()=>A.set({vue:"hr"});
+  const brgpd=document.getElementById("btn-rgpd-ack");
+  if(brgpd) brgpd.onclick=()=>{
+    const u=A.s.user; if(!u)return;
+    const l=A.s.eq.map(x=>x.id===u.id?{...x,rgpdAck:today2()}:x);
+    A.s.user={...u,rgpdAck:today2()};
+    A.save("eq",l);
+    A.toast("Merci ✓ Votre lecture est enregistrée","success");
+  };
   const bsv=document.getElementById("btn-sauvegarde-rapide");
   if(bsv) bsv.onclick=()=>exporterDonnees();
   const bv2=document.getElementById("btn-voie2-fait");
@@ -6741,6 +6782,12 @@ function rPR(){
       <p><strong>Conservation :</strong> Durée du contrat + 5 ans après archivage</p>
       <p><strong>Droits :</strong> Accès, rectification, effacement → <a href="mailto:mfr.barbaste@mfr.asso.fr" style="color:#5C6B3A">mfr.barbaste@mfr.asso.fr</a></p>
       <p><strong>Hébergement :</strong> Base synchronisée via Google Firebase (région Europe) ; application diffusée via GitHub Pages. Aucune transmission à des tiers à des fins commerciales.</p>
+    </div>
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid #E8E2CE">
+      <p style="font-weight:700;color:#3A4425;margin-bottom:6px">📋 Information du personnel — accusés de lecture</p>
+      ${rSuiviRgpd()}
+    </div>
+    <div style="font-size:14px;color:#555;line-height:1.8">
       <p><strong>Sécurité :</strong> Mots de passe chiffrés SHA-256, accès par authentification individuelle</p>
     </div>
     <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
@@ -6853,7 +6900,7 @@ const A={
   toast(msg,ty="success"){if(A.s.tT)clearTimeout(A.s.tT);const t=setTimeout(()=>A.set({toast:null,tT:null}),3200);A.set({toast:{msg,ty},tT:t});},
   save(k,v){K.s(k,v);A.set({[k]:v});if(fbReady&&FB_COLLECTIONS.includes(k))fbSave(k,v);},
   init(){
-    const VER="v88";
+    const VER=APP_VERSION;
     if(K.g("ver")!==VER){K.s("ver",VER);}
     // Charger d'abord le cache local (affichage immédiat)
     const eq=K.g("eq");A.s.eq=eq&&eq.length>0?eq:JSON.parse(JSON.stringify(EQ0));if(!eq||!eq.length)K.s("eq",A.s.eq);
@@ -6927,6 +6974,7 @@ function rLogin(){return`<div class="lgbg"><div class="lgbox"><div class="lglogo
       🔒 Vos données sont traitées dans le cadre de votre contrat de travail conformément au RGPD.<br>
       Responsable de traitement : MFR du Néracais · <a href="mailto:mfr.barbaste@mfr.asso.fr" style="color:#5C6B3A">mfr.barbaste@mfr.asso.fr</a>
     </div>
+    <div style="text-align:center;margin-top:10px;font-size:11px;color:#B0A88F">Application MFR-RH &middot; ${APP_VERSION}</div>
   </div></div></div>`;}
 function bLogin(){
   const eq=A.s.eq;
