@@ -4044,6 +4044,38 @@ function bMAINTENANCE(){
 }
 
 // ── Modal signalement simple (accessible à tous) ────────────────
+// Modal : réinitialiser les données de test (direction, avant mise en service)
+const RESET_COLLECTIONS = ["abs","dem","heu","ord","fr","budgets","devis","echeances","locations","formations","affichage","maintenances"];
+function rMdlResetTest(){
+  return mdl("🧹 Réinitialiser les données de test",`
+    <div style="background:#FDECEA;border:1.5px solid #C0392B;border-radius:8px;padding:12px 14px;margin-bottom:12px">
+      <div style="font-size:13px;color:#8A2318;font-weight:700;margin-bottom:6px">⚠️ Action irréversible</div>
+      <div style="font-size:13px;color:#333">Cette opération efface toutes les données de mouvement (tests) pour repartir sur une base propre.</div>
+    </div>
+    <div style="font-size:13px;color:#333;margin-bottom:6px"><strong>Sera effacé :</strong> absences, demandes, heures pointées, ordres de mission, frais, budgets, devis, échéances, locations, formations, actualités, signalements et interventions.</div>
+    <div style="font-size:13px;color:#3A4425;margin-bottom:12px"><strong>Sera conservé :</strong> le personnel, les horaires, les véhicules et les réglages.</div>
+    <div style="background:#EEF2E6;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:#3A4425">💾 Une sauvegarde complète sera téléchargée automatiquement avant l'effacement, par sécurité.</div>
+    ${fld('Pour confirmer, écrivez REINITIALISER ci-dessous :',`<input id="reset-confirm" placeholder="REINITIALISER" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px;width:100%;text-transform:uppercase">`)}
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">
+      <button class="btn bl" id="reset-cancel">Annuler</button>
+      <button class="btn bd" id="reset-go">Effacer les données de test</button>
+    </div>`);
+}
+function bMdlResetTest(){
+  const c=document.getElementById("reset-cancel"); if(c)c.onclick=()=>A.set({modal:null});
+  const g=document.getElementById("reset-go");
+  if(g) g.onclick=()=>{
+    const saisie=(document.getElementById("reset-confirm").value||"").trim().toUpperCase();
+    if(saisie!=="REINITIALISER"){alert("Veuillez écrire REINITIALISER pour confirmer.");return;}
+    // 1. Sauvegarde de sécurité automatique
+    try{ exporterDonnees(); }catch(e){}
+    // 2. Vider les collections de mouvement
+    RESET_COLLECTIONS.forEach(k=>{ A.save(k, []); });
+    A.set({modal:null});
+    A.toast("Données de test effacées ✓ — base prête pour la mise en service","success");
+  };
+}
+
 // Modal : changer son propre mot de passe (tous les utilisateurs)
 function rMdlChangePwd(){
   return mdl("🔑 Changer mon mot de passe",`
@@ -6762,6 +6794,12 @@ function rPR(){
     </div>
     <div style="font-size:12px;color:#888">Format : fichier JSON horodaté · Restauration écrase les données actuelles</div>
   </div>
+  <div class="card" style="border-left:4px solid #C0392B;margin-bottom:12px">
+    <h3 style="font-size:17px;color:#3A4425;margin-bottom:10px">🧹 Mise en service — données de test</h3>
+    <p style="font-size:13px;color:#888;margin-bottom:12px">Avant d'ouvrir l'application à l'équipe, effacez les données de mouvement saisies pendant vos essais (absences, heures, demandes, signalements…). Le personnel, les horaires, les véhicules et les réglages sont conservés. Une sauvegarde est téléchargée automatiquement avant l'effacement.</p>
+    <button class="btn bd bsm" id="btn-reset-test">🧹 Réinitialiser les données de test</button>
+  </div>
+
   <div class="card" style="border-left:4px solid #C8A84B;margin-bottom:12px">
     <h3 style="font-size:17px;color:#3A4425;margin-bottom:10px">&#127874; Messages d'anniversaire</h3>
     <p style="font-size:13px;color:#888;margin-bottom:12px">Personnalisez les messages affichés sur l'accueil de tous. Le signe astrologique s'affiche automatiquement (l'âge n'apparaît pas).</p>
@@ -6782,6 +6820,8 @@ function rPR(){
 }
 
 function bPR(){
+  const bReset=document.getElementById("btn-reset-test");
+  if(bReset) bReset.onclick=()=>A.set({modal:{ty:"resetTest",data:{}}});
   const blo=document.getElementById("btn-logout");
   if(blo)blo.onclick=()=>{A.s.role=null;A.s.user=null;K.s("ses",null);A.r();};
   const bp=document.getElementById("btn-purge");
@@ -6996,8 +7036,8 @@ function bMain(){
   else if(v==="eq")bEQ();else if(v==="pr")bPR();
   if(A.s.modal)bMdl();
 }
-function rMdl(){const {modal}=A.s;if(!modal)return"";const m={"nd":rMdlND,"vd":rMdlVD,"ad":rMdlAD,"sa":rMdlSA,"sm":rMdlSM,"dp":rMdlDP,"no":rMdlNO,"do":rMdlDO,"nf":rMdlNF,"df":rMdlDF,"class-filiere":rMdlClassFiliere,"ndevis":rMdlNDevis,"allocuer":rMdlAllocuer,"detailBud":rMdlDetailBud,"paiementDevis":rMdlPaiementDevis,"nEch":rMdlNEch,"nLoc":rMdlNLoc,"nForm":rMdlNForm,"nAff":rMdlNAff,"nMaint":rMdlNMaint,"signalement":rMdlSignalement,"vehEdit":rMdlVehEdit,"vehAno":rMdlVehAno,"changePwd":rMdlChangePwd,"horEdit":rMdlHorEdit}[modal.ty];return m?m():"";} 
-function bMdl(){const {modal}=A.s;const mc=document.getElementById("mcl");if(mc)mc.onclick=()=>A.set({modal:null});const m={"nd":bMdlND,"vd":bMdlVD,"ad":bMdlAD,"sa":bMdlSA,"sm":bMdlSM,"dp":bMdlDP,"no":bMdlNO,"do":bMdlDO,"nf":bMdlNF,"df":bMdlDF,"class-filiere":bMdlClassFiliere,"ndevis":bMdlNDevis,"allocuer":bMdlAllocuer,"detailBud":bMdlDetailBud,"paiementDevis":bMdlPaiementDevis,"nEch":bMdlNEch,"nLoc":bMdlNLoc,"nForm":bMdlNForm,"nAff":bMdlNAff,"nMaint":bMdlNMaint,"signalement":bMdlSignalement,"vehEdit":bMdlVehEdit,"vehAno":bMdlVehAno,"changePwd":bMdlChangePwd,"horEdit":bMdlHorEdit}[modal.ty];if(m)m();}
+function rMdl(){const {modal}=A.s;if(!modal)return"";const m={"nd":rMdlND,"vd":rMdlVD,"ad":rMdlAD,"sa":rMdlSA,"sm":rMdlSM,"dp":rMdlDP,"no":rMdlNO,"do":rMdlDO,"nf":rMdlNF,"df":rMdlDF,"class-filiere":rMdlClassFiliere,"ndevis":rMdlNDevis,"allocuer":rMdlAllocuer,"detailBud":rMdlDetailBud,"paiementDevis":rMdlPaiementDevis,"nEch":rMdlNEch,"nLoc":rMdlNLoc,"nForm":rMdlNForm,"nAff":rMdlNAff,"nMaint":rMdlNMaint,"signalement":rMdlSignalement,"vehEdit":rMdlVehEdit,"vehAno":rMdlVehAno,"changePwd":rMdlChangePwd,"horEdit":rMdlHorEdit,"resetTest":rMdlResetTest}[modal.ty];return m?m():"";} 
+function bMdl(){const {modal}=A.s;const mc=document.getElementById("mcl");if(mc)mc.onclick=()=>A.set({modal:null});const m={"nd":bMdlND,"vd":bMdlVD,"ad":bMdlAD,"sa":bMdlSA,"sm":bMdlSM,"dp":bMdlDP,"no":bMdlNO,"do":bMdlDO,"nf":bMdlNF,"df":bMdlDF,"class-filiere":bMdlClassFiliere,"ndevis":bMdlNDevis,"allocuer":bMdlAllocuer,"detailBud":bMdlDetailBud,"paiementDevis":bMdlPaiementDevis,"nEch":bMdlNEch,"nLoc":bMdlNLoc,"nForm":bMdlNForm,"nAff":bMdlNAff,"nMaint":bMdlNMaint,"signalement":bMdlSignalement,"vehEdit":bMdlVehEdit,"vehAno":bMdlVehAno,"changePwd":bMdlChangePwd,"horEdit":bMdlHorEdit,"resetTest":bMdlResetTest}[modal.ty];if(m)m();}
 
 
 function rRCPL(){
