@@ -121,18 +121,28 @@ function isSvcSpecial(mb){
 }
 
 const ANN=[];for(let y=2025;y<=2034;y++)ANN.push(`${y}-${y+1}`);
-const ADM=[{id:"mfr001",pwd:"mfr2024"},{id:"mfr015",pwd:"grodecoeur2024"}];
+const ADM=[{id:"mfr001",pwdh:"26b34023ff800f137b2ae6ad98dd3a7f1db795313a9de56947306720e16464ca"},{id:"mfr015",pwdh:"b3f369a415a701184686121f473fcb78f5db4277e91d466f73d1de8a8efdb6e0"}];
 const TAMPON_B64="data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCACzAU8DASIAAhEBAxEB/8QAHAABAAIDAQEBAAAAAAAAAAAAAAYHBAUIAwEC/8QAORAAAQMEAgEDAgUCBQMEAwAAAQIDBAAFBhEHEiETIjEUQQgVMlFhI4EWJDNCcUNSYhclcsGRkqH/xAAUAQEAAAAAAAAAAAAAAAAAAAAA/8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAwDAQACEQMRAD8A7KpSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlApSlAqt+VuYMdwWS3ZWGJWQZRJQTEsttQXX1HR0XNb9NBPjZ8/fR0asitZa8fsdqnzZ9ttEGJLnvF+W+ywlLj7h8FSlAbJoI1xarkmc07e8+VabcmYy2YtkhNFSoR8k+q8T71ka2AAAd/NTivGXJjRGC/LkNR2gQCt1YSkb+PJr1BBGwdg0H2lQDKOTY1j5XsfHiceutwm3eMZSZEUtFthtJUFKWCsK0nrs+POwE9j4qf0ClKUClKUClKUClKUClKUClKUClKUClKUCla3IL/Y8ehGbfrxAtcYf9WXIS0n+xURs/wAVApHOGGvOehjUTIcskdin07NaHnUg70NuKSlABP37aP23QWfSqpczDl+8OAY7xdFtTHqa9fILolCijZBPps9iD8HW/wB/4rDesHONzT69z5OxmwxxodbXavU6ub6lJW6rz8n9vIFBcVfh11ppPZ1xDY/dSgKqQcTOTnE2zI+Xs2usn0lOOR27i3FKkE67dGkhQTvxvf8AFYg4s4Lk3hu0ypzFyuDayz9FKyV550qA0UFtTpJP7jVBZ1wy7Fbc2lydklojIUrqkuTGwCdb18/waj03mTimFJXGk8hY426j9STOQSP/AMGtK5gnAGMyE2qXY8Ft8nsCGJimA8So+3w4ex39qkC4fFUGRIaVb8QjPQH2WX0/Sx0qYdcI9JJGvapRI6/v9qDTTOfuIYz5ZVmsF0gA9mUrcT5/8kgivyn8QHEqiQnK0KKRsgRXjofufbW+TmvGq8obxhN+x9V7deWwmD3R63qJBKkFP2Pg+DWzh5NisjIb1Y4s6Kq6WVpC7mwlshTCHE+okqOtEEHfgn5oInB574hlqWBnNsY6gEmQVNA/8FQANbuw8pccX6UYtnzewTXx/wBNuajfwT+/8GsS85txzE44ZzieqMvGpqUBp825ag6HD1T/AE+nbRP7gD4/etFZnOFM3xK65DFxOzzLZZiv6su2ENuNlDQdUAgoClexQIAB3ugtKJLiS0d4kpiQj/uacCh//K965cjjgCdYrllOHnJsVk261puTyLMH4T/0yvaXEtK/puJBI2U7GwPNSm0yOUoGRzMdxHOo+UyLfCjzHoWT230Vem/26ASWD5VpPkFP2+aC+qVQWP8A4nMeVCiOZZjt0sYdlvwFzkFL8D6hlJK0pdSd62E62kfrB+ATXhYuaJUSNlGa3G1ZO9bJsBF0sdvnIjxmzFabSFiNpRW6pXcurJGkpCfjxsOhKVVFj5kTJs2UvXzErnj12x62i5O2+W4hZdYWlRbUHEe0dikjR8jXxWqd5zeuHDONZjjOOfmN9yWYLfb7UXtJ+oHfuFLIHtT6avP/ABQXZWuya8Qsex24364rKIdvjOSXiPnqhJUdfz4rkfkD8RnIcHMrPJjYzMtz1iQ9Ev8AY3QpTMiUpBO0LSCVIQhPqj40PPkHZnf4j88n3PBrxZosSG9YLphJvSJaHFd+31DKQg617FBzXjzQa2+xs/uPFDPKz+X5Das0u86KqxWeHOKYKEPvobYjriqHVZ6KKlk7V4J89dV8ueV5Tn/N9lcxjKLxCtib+qLbYkZYbjvwYiAZ8t5P/WSp3TLfbxsHXnYrDs+V5NfcCy7Ir29ZLevCMfc/w7Js8tKrcH3o60h1Ktk/UJQUtpSoDr3+Pearvj/OLbhuPDH7fPl2bkC6sJtfeZAe641bUFbhSlAT3cfWdu6SnSlugkgJ8he/MbY5i5Bi8SWwMuWOzvN3DKZvXsWVDy1GQd/rX57EeQP7irstMy1yG1xbZKjOphn0HG2nAoslPjqofII/mqM4slXfH8TRj3E/GF426ovyr7lahCTKfV+p5xO1POKPzrSdDQ8VYHFOA3LGrve8pyW9M3bJr8GROdixUx4yEtBQQlCB5Oux2pRJPiglU7GrBOyODkcu0Q3bxAQpuLOLY9ZpKvlIV86Oz4+PJ/c1t6UoFKUoFKUoFKUoFKUoFeE9EhcGQiG6lmSppQZcUnYQvR6kj7gHVe9fh9BcZW2lxbSlJIC0a7J2PkbBGx/INByzg3MWX3lXEcK5ZS2i43Ca6MmZZgtqUUO6VCDnVOmUututhJAG+297QoCUwORMmcvnJLU27sm3PWyfNxQoea9RCYiVNO6CBvw4N7JJ8H4Pit1ZuCI9tk2iSMpkvvW1uzNhSoaB3FuCwn4PjuFJH31189idhbPw+43AsdqZZlobvsYSkXC9NRAiRc25LbqHUvaV7t+olWyVaKBrW6CBX/Lc1tl6xS85Hl2RWe0fl9rchXVuGldokLcSkS03IpSOi1EqCCAEpBSrxomt/fX83jv3zlJ7L76x+TZE5AZxthKTBegtvhnqpv5U64klwOb2nska9oqRS+A7PMt0SBIyvI24y7bEt16ZjPJabvDccBLanRolKilISSkglICagOVY/i9x5jy1nOsnuuHY29NjPpsiZjzDN6fShG5hX+lKT7WylsgktgqKSBQaZvlK9WrkRGExLxdclvEfOJD0OFGuQU5KgqQ6DHdcWoISEOaKULI0B9tCvl+tGf5VzvIjZTLzSyOPIty/pMNnesxb23u7aXJDjhAQQW9qLaFJ9qjvet3xZuH8OtCbGi3tzWW7FdXrnbkesCGVuoKVN/p2pvR++1bGyo1JoeMW6Jm1xy5tyUbhcIbEJ5Jd/pBtlTik6SB+rbitk7/jXnYcqcft4S7znlVtlPw8l+pi3KNEbu61TJ0B2CA2pXquFWw/t9wAa8JHxrqMTjmVcjknGFmuc+ZLRZLU7CldJCg0XZsdx6N1OwVhLHgnXgjQ+N103b+MMLt1hsFijQFts2R9UiCr1iHVOKQtLi1qHlwqDq+2977f8V42Xivj61XBhyBakplwxHU2DKcUpHotKZbOu3/YpQ8/O6CuvwzJdF7szqklaF8d2ZRcUVHqr1ZKdeVa2oJ+w89R8aO68zRaFYZkmJzU3q2C48jXqXKdhR3Zb7rbCPqWXUNpB0juYqD46jyokHZF35DxDwq+3aYWR2a2OG1QUQoSZlwcQpthKysJ16g37ifJGzsj48VM7HhWJWq9Lv8AabPGYnPuypCpDa1HuuUptT69b1tZZbJOv9vjQJ2FRYVm1ru3I+F5jeLnboInYI4ZT7shLbYeTIbDiSpWhtK+w0fiodxxHiMc9X6fKZ4qjx15pMbak3Z8pvjjhUOqYye3X5WgJHz7t6Oxu/rrxXx1dojEW6YdaZzUdx5xkSGfULanVlbnUnyApRKiPjZrMTg2Ayrui/JxLG5FyafS6if+XsreS62dJV6nXt2SUjR3sEfuKDnb8TkV48s5PJjWjGpkdrC4j1zcnwy/MYimW+269FT2SnulKgT2I/SkCsTMrvjFrm5VjbV1ZL9xuGLO2ZDyv6s6Mj0EpdQSPf4TskfzvVdXOWm1Oz3p7lshLmPxxFefUwkuOMgkhpStbKNqUep8eT+9ai2xsKnXT8tg2+zOzcYKGm2kxW+1t7oBSG/H9MFGv068Cg5kjRJo5OlT5z9ubxT/ANU1tT1sW4Kmsy0OJcieo8fhlTpSkka6hWiT3OvbCL3eF8kf46VY2YNgze7XWyfm4miQbj3UUQSGkb9JLZjen2JIV6iiAAd10/ldwsONYvc73ekMs2uG2qXMV6Pfwn3FXUD3K2Af33qtBxxylg+c3GRacYnvLkRmRI9F6G5H7tEgFbYWkd0gqSCR8FSd/IoKEuefYlevwvRcOsN+kyLxYYls+tUzbZALCW5LSC8nu2Er0RsAE7I15q2uM7oLpgWVRm8oyLKX20O/5u62dUBfuZ8IbQW0FQGvnXyT/FWiJ8ExlyhNjFhBIU6HU9E6+dnehWnyHLrXZ5Nrje+c9cJ7MMIiKS4pn1QopdWN7Dft/V/5Cg5qt7F7z3j22WzH8VvyXLBxnKssp2ZCVGQ/NdaipTHaK9FwgsKJPwNp8+asfhK7ycg5JyXMG7Zd7NZPySDDlIvEIxVplsd+/Xt8oSkkE+NH7ferlauNvdceaanxVrj/AOslLySW/wD5Dfj+9Uv+JrlPFYnDeRwbJmljN4mRTHYabmpU4pKlBDnUJ2SQlSqCoeP8KuF2OLzk4febRhk++S5EqdbLo64p1tMaQBJ6pSHGm3krDfbeylGv96Nwq0Y7Kucxm3YfgF2s+Qv4XLXcYl3BUl9K2kMrVCaUsLaUs+p13vwse0pIroSyc54tj+KWqwYdimSX1qDCDDbiIX0kbTJS0s+o70BCVEdikHr5J0ATUUxnjblzMryxyRGvGPYrcrlOXcmbrGlquDyYjrXppYQgpLSm+iW1eT5Pnx4CQiCYrmROTsC48hzrtGy96DOelTJvZ+FFjkNy4c0uKLqAhYBCd7PbQ34rBtlxgYPYrlGjSLbZnsSyxi72iyXu8oU+txaCxJghAIWlCSQ4h8p6EKBVod1Cc8TcQxsm5R5AlXrOsqvDMeawzLuFvkC2sXGR0KnG1oZJ7hG0eUqTo78fveOK8M8X406JFswu1Lld/U+qmNmW/wBz8q9R0qUCf4IoOW7UvLr5ItSLau45FdHb1eLxdbrh9u7oivSI4bYYEp9IYcQduhXuVpPVCTtIqV4vxFzyhVmWJlltarVZZlogO3N9uUuMw4QWwUNI130AkkrdSPkJGtHrdICUhKQEpA0AB4ArW5XeomN4xc8gn9vpbdFclOhIJJShJUQNf8UHE3HHEl1vv4gLpx/nNxs8C3i3s3K72PH3VMR5Ab0llCkoSkdk9wsq8n373tRI7Kw/B8RxGMpjHcfgW8KUVLW20C4sn7qWfcfsPJ+AB9qoHgSDKi872N2ez/7pPwiTeLq56YKvqJk9L3VTmtqAR1SkEkAJOvPauoKBSlKBSlKBSlKBSlKBSlKBSlKBSlKBSlKBXxQCklKgFJI0QRsEV9pQKpj8QMKwO3mG7c3btfLxKhKiWPG4twVEa9YqJXMWtBSUBI6guKOkhPtBUoA3PUZyrj/CMruLdxybFbReJbbIYQ7MjJdUlsEqCRseBtRP96Chsxgy7fAyXIr1dfzTLcUFlYs8/wCrV26+iwpbnpJUAfVe+oJ2D2Hj4T4ybLCjWzL8UvqZSk5Zcc4nwLo/9Tt+TGSJBS04jsR0ShLOhodQEnxvzd6+PcFXJtUlWI2VT1oSlFucMNBVFSk7SEHXtAPka+K1V9l8V4rf7xmNyRYYN5gNNC53BMcKksoeIS36hSCsBXj+w2fAoK25Vxifd+dLyqzYjh2UTP8ADEKSpjIdlSCl6WlKWAB/u0OxVoAhHnzUfxm7Q4eE4hjcXlSVi1nZsU+4tzkpRGU9NTJ0qIr1+xCWC4pPo/qIA86T5t1nlfit2LcMqj3hl5cN5q1vvN298yXFqCnG2W0en6joIKljoFDXZXwCax7jyHxSu1QHxFXdmJbkia2zEsMiStktOBMh91tLRUyULUOxWEnZ+DQVkvlG+R4M9i9ZsxAv0849NtUQoDSnmnlNh9LTah2AXpZIO+oP2+aj1xuknFbXKskPI5lssIza9C+zX57yFMqBSqM2XGkKWyHO5X4TpRQST51V/wBz5IwNu+woTiXpi3W4zn1zNscdjRUv6+nLr4T1a77HXsR8j96zeS85xPAYLMnI2n1Inrd6txYSpC1+k0XHFqQkE9UtpUpSj4ABJ0KCvrrNya4fhWhzbhd7jImD0fzCdb2XWpMiEiUEuLbBAc7KYTvtoE77aG6r66QmIUbL2bI9cZGJqv8Abi9JmJmPNLjfSKCu7jen1NBYT7klQB1vxViyvxLYTIx5+7YrY8oyZmM2pckxLWttmMlHlfqOudUDQ6nQKie6RrZ8RnIOTuY7tidvv9qsljxWyXiW3b4QaCbjdEvLWpIT6bi2mEnaFBQcI6715IOg39st90vX4Rsmt8uTc71IctVzTC9SE+y+4lIcLDaW3NuqHtSE9vcpOvuaqLJM8x2HJkyW89vzl1awyZF9G8x1RPoVqbaSBF2lKvVW40lJ8K8djsaqQXxlTTV6b5XvvK93n2yFFlOWUvRIMaaiRIEdv00xH1gn1SQduDQP31VjcL2vEbVlcvHF8QHD7rHgiYxKluMTVyY2whSlvoUvSwskdSokj3b8kAKTun5dfmU2vijibJX8QmP299+3yIrjEeVIadWXAtalnSS2pIJHgkefjdb1vHuVF5wwwzxzAsc5eQMTE3ZqEiWuJFV3DZ9fuhCkMIWGvRCfhJUPIG744+5SgZTbskfRY7hCVYlLcRFCQt2ZFAX6bzSfH+oW1gJ/gefNQxjnqTCjQLrk0fDLZZ7zAekWx1GRl1xp5KAptmSgNdh23oqbS4Eka8kpBCrbVwblky43B282nIpt3h2uU0445JjxLdcZCVFTI7NH1XkOL96vU6kb0f42Np4kvbYkXWPxqyxbmG7XLFtkx4qZMpxh1f1LSEpJSgKSsnSlEK0Nkb0JRivPXJeR3yfFsXFcS+W+3FIlXCNcHojCezQcB3JYQvwk7I9PZ8aBCkk6rDs5zjly92q2SuVsNsFvuLPrO2vFn3Bdeuu/plxxBLawNBRSR8ECgjOeceWuLiH1GRWi34V9VdJk2Km6XVcpcOOVAoisxm1kqU+tYDnp70gEbPt1aeN3nljlXFYEe2WVPGdidipRJmvJDkx0ABJTGa8BpGt6Uvz4Gh96n2F8TYRilxVdodscn3heu9zub65cpRA1sLcJKfn/AG6FTqg0OBYnZsJxaJjthjBiHGBP/k4tR2paj91Ekmt9SlArX5JZ4OQY/cLFc21OQrhGcjSEpVolC0lJ0fsdGthSggPF/F1pwS43G6tXe8Xu5zmmo6pl0keq43HaGm2U6AASAf8Ak/JqfUpQKUpQKUpQKUpQKUpQKUpQKUpQKUpQKUpQKUpQKVhXm7WqzQ1TbxcodujJ/U9KfS0gf3UQKq2bz/ist0xcHtGQZvKIOhaYCywDo6CnlgJT5Gt+fv8AtQWne13BuzzHLSyy9cEsLMVt46QpzR6hR8eN63XPvFVvzPD+Tcmu+UWBtuT/AIURLuM6PMXJRNlh1xe/cB7tbQEf7UpSNn5r5/6lcw5TmacajQ8ewQCQtt5uQ6mbckoDZX2SySkKTsAd0gpT3BPgE1D8mFoj29i68gzr7mCEWtNzdj3zKWrc04FFe22YjY/qqASoa3r3AfeglMPkrFON+L7LDmToN+z+TKEuWgj6t+JMkBfrSXQgFfVtC1o0n3FOkDwfGjvGTZexxivG8P4r5Ak/XyHhLv7oEGS7Ifc9R51KAl1SELcPlOgNeN7G6leM8g8b4Nlsi0Wu04JjlmjLQ2ZDM5K7g6VISQkMNIUsn3EbKj5B3o1kWHnjL7tk9zttt4pu17iRWmw2/BWWj6y2w4Euh8J9MFKkkb8686OwKCu7pgvMzkFyxXVcphzIY9vCYWO2ptMJsMhtOpctfvYU2lHwknZ11P2qeZ5wbj9luuL3jGcdv8+UxcXHbvOh3h0XJbf0ziEdX1uBSQFlvwkj2j/mpA9mHNM+wSr+cVxXC7ZGQ486q+TnX322myeylpaSAkaST8nY8j5qp7hlHLVxu2JwsvzWfbGrw3DenxbNBEf6ZmW8tlHd4JUWigALJc6hXYJSdgmgmMbFMylYg5ZLw3Kx7HrjlbUtxN6uLUuXEgtNJcUp1xSyHC7JbAIWpekuEaI1UQzq4YrFfvNivHIkPJrJKv0G/oahOhcoL7KEloIjkLSCChYKda8+QfmXcb8eY3cuUL3YsmsEfKW7aj6g3F+fJmIiPqd2mI8XVdHH+p7nqkBIGiBsVlW3Ib3ZEZRaLRitixWTbLyxCD1nsy564sR1pSkOKbaAU8skJPtGh20f3oIOxb5kpGd2TjPjXJbxY8qhstpn3dKoy2XAShTZfkq9VbHp9FJBJKSpX9t/YeM+Wo8653bD8Zw7jD6qAu3vwI8pcsS0qKSl4pSQ0lxv+p1XrfuIII1W3xzlrLb5l2FzU9o1jn/RRblthoRQ7IjLc0tZPqoeLno+mkApKVjZ2dVIMnyzLLdylNiuZE1b7YJaIcOM5CbXFDS4iXDIde7dkuJd9T2HXtSD8K3QaE/h4uERywsIzvJbvEajuW+4+rc1Q+kf01eitpLKQVlt3SglxZBr3474byKx5/j12lWnA7RFsTrzjlwssd1E26d46mgHAr2oSSrsobV7kjWvJrX2TKs9gYVmMJGexJ0uwzYkhu8XCO24H4byArsgtEt6cX2CAfKU/PyCJfzxdpnr2SzHMHMTgzbRcpzstl1DLjkmOmOphtLivAG3FrKf9wbI+N0EixvBZttznkTIZFybcYytUQR2EBX+XDMUMlSt+OyiT8fZKfP2Gh4t48zvDY9itb19w2XbLWyiOtbWPrbmOtpGv9X1tBXx56/2qs8yzrIoP5ldYWY3GRkTyZsWTZGlpAtsf8tEhuUhnXYdVNoV3879Uj58VgXfJrS1HTa08s3RbEO9OsY/JF8bSyttIaWuXJkePXQ12UgN7PbegD5IDralU5xnaPrObcpurF/v0yBY224SW5NwU9HflSG0PuuJQfCEpSWkpSNjyo7+KuOgUpSgUpSgUpSgUpSgUpSgUpSgUpSgUpSgUpWPPmw7fFXLny2IsdsdluvOBCUj9yT4oMilVreOb+PokhcK03GTktwSroIljirmKK/HtKkAoSfI/URUFybnPKUL+nasuN4apwKLSsmuoXJOh4/ycbu5vynYJGvI/cgOhKiub8i4LhLCncpyq12wpG/RcfBeV/8AFpO1q/sDXP0xWZZq8gvL5Vy4KX2DEKOjGbUU6T7FKcPrKSdnezs/bXzUowbi/PYTSHLPYOPON0uNrBeYhLu92aUSdFUhwpSo70dkq/8Aqgk45ZyfIj1494ryG5sqOkXG8lNriFOv1p9Tbix5TrSBvZ/7TUXzGdmKC6jkrnjFcDYWFBVrx8ITI6+NFD759bt1IJ6oH6v+Kl73DDd5Sj/G/IGaZMOpDkZU9MKKsnr5LUdKP+3WiogbP3O6lOH8bYDiCUjG8Qs1ucSkI9ZuKkvEDWtuEFZ/SD5J8+fmgoGxI4XcltXGy4FyByzcn97u0u2vy23FeSHFLklDSdkEdkp+1WhAu/M8+MmPYeNcVw5hCwAq8Xb6g+nv5DMVOgdbOi4PP3q2qUFEXLi3K5AfvnInMIgwo85N0R+W2+PERAdG9dZD/qKDYPX2kgfOwd+PG58GcNsRlNZvkUm7zWobduTLvl9Jdjhwq9HoFKAQonfUAaJB0PmrG53tVxvnEOSWi1QTPlzIZaRGCdl0EjaR5Gjrejvx81EMe45uC+Tr4zkEFyTirlpiNwZPr+m86pt9biGnVNqCyWgroNnqpGgd+6g3Vj4ggWG/IuNgyi9WuIXmH3rbHZiCM+ptCEK2CyVJ9QI2rqpPlSiNbqWW2z2fHL3e70ZxaeyCay68l91IR6yWUMIS38HZS2nx5JPxVY/iBs3IF2yW2s4pY7rJgNQCWpNvu5ilmWHQU7R6zaAAhP6lpeBKgOg0d6ZrBs0dmpMnE5S34WTs3SZcpF+Li7j1m9wuO0FBDaEsK+FBBT5SEk+6gtKVasZVxrdIdyu1wudguYeXIkSHlvrLby/ckEAq6DtoD/aP4FYGQ4tx7dLxZ7lJMl16U83a2/oJb3oylR0uuoakJaV0WGy24duD2ka2N6qIwuPs5ZuSv8y6bai3uS2m/wAwc9RV0c02tKtr6+mEIC0jWgSfkmodeOFMuLbUZq2OTUpnS0xnE3Bpv6Jbk9b6Lgkr7nv6S0p0B3BbHzugu3BeOcNwm9zJ2PonMS5SXFvtvXV99B9RYUtfpuLKQSpI2oDf23ULye+cLXdjJfzG1XK5vPSIrtyjps81Lz7oJZYU0lSE9z4UAW97AJ+KsoW14cim8JstpDCrV9Mu59f86pXqhSWd6/0gOyvJ/UR/NV5fOMLrOtOUTbjaceya63a/ouKIdzeeTGXGZR0YZJTvqpKex8hSdqOwfsGxfs3EDGR4dc5eNxIl8mMhFijvW5xuSlMZkuD+gU9kqbQnQKk7B6pHkgVoEZpxrc8muOWuca5GrKYTyLY03KsXpTpinGVuaZQ4ob0yhwkr6kI/hQ3+8a4aySA7g9wkZalmTY5EdyVDZYSthpltmQgsR1qT6pSS+Ue9X6ST+oCtg5xjkbdgizotxti8si5PMyDvILhiyFveq0lCjrulKY7iEjW9FtI+KDysGU8OxWY2HY1jUZyHerS9e3IVvtrZbLbeiUutA9vVJSQlHUnaCPHiv1eORLXkVlVb3uL7teLnFuiYy7HLRG7MBDSH1PKcUssoKWXEkIKgruoI8eSNnYeLZVmhYs1b8hdju2G3T4yVekHB68rz6yQdD2K3oEeR4JqPy+GLhLtE83W5Ya9c511ZmqJxwoiBSUemHA0HwoPqPuKwvSj7SCKDLx3lPFb5zC7ZbXjttUl+A0td7XPiokPtriJlJAjE+utr01Ne8AjfYHXXzqbhyi4jjZWQYtxdBkRYl0dtqYc2SmIsKLiA0W2i0VKLocSvrpOgdkmtw3xBDuDkTGLnmLl0xS0RYjP5EhlDD6VtRBHQpyQypLulJBXo62SRvp7a2GOcL2TH1x27bc5yIkfJBfm47jrjwCgyWktbcWo6Gye3yfG/gUFlQUq+mQ47GbjPuJSp5tB7BKtDY7aHbXxvX2r3pSgUpSgUpSgUpSgUpSgUpSgUpXwnQJAJ/gfeg+0qqLjm/LlxnuxMX4gMSOFLbTcb/eWWEAgkbLLRWsp+DsHyBWnvHFfKOayHf8cctP263L0PyzF4v0retDe3FlSled+FA/8A0AsfMuQ8Hw5Czk2VWq2LQAVMuyAXdHej6Y2sjwftVO5J+LLD0zDbsHx2/ZlNG/ESOpCP4I8FR/8A1qQ4p+GHiKxvtSpVjfv0ttIHq3WSp8K0PJKPCDs+f0/fxoVbFksdmscRESzWmDb2GxpDcZhLaQNa+AKDnN3MvxL5ypQs2DnELavaUOLW2JBBUAlRU7vWgFb0j7jW69Y34f8AM78+1PyzIraH3CHXvq1P3ZxtX7JDyksjyd+G9ePjRrpilBUto4ExNhoN3a65BdmzrtGVOMWKfjf9GP0Rrx9wfFTfEsEwzE9HG8XtNrcCenqsRkh0j+V67H4+5qR0oFKUoFKUoFKUoFKUoKt5dyfLLDyNhUTG2/rY8iNcpNwtiUguTWmRH9rZPw4A4pSfIBI6n5rW8LPZvlzljzpWctzMbKblGegCJ1+rUmfJQ08FHRSA2lkAEbAQR/uNW1It8CRPi3B+Gw7LiBYjPqQCtoLACwk/I2AN6+dCv1boMO3RREgRWYscLWsNMoCUhS1FSjofcqUSf5JoKAyPkea0cwxxrLfRyFnN4US3Qg8gSfpFrjFSG0a7KQUl3Z0fHbzWC3yDl06dmM5D14i2rJ4c+Jic94NtwWpLDLpjKYXvuPVbbW4SpI9yPG+w10Uq2W1VxTclW+KqahPVMgsp9QD9grW69UxYyWW2Ex2Q01/poCB1R9vA+1BCoOToLXHfS/x22r4wFek7FWty4D6QuDorx6ZB0slQ8gEfeqtXl2UWjki+iG1kt7ydF0m+njoJTGct4ZR9O4lSwGwkL0rYV2O1DRror0m/Z/TR/T/R7R7fGvH7eK+9U9u/Udta3rzQcz2NvIMy4/smP5CcniXmdmMu3LluzSy+zHacdkOr2ySnslLRYT/tClbGwBRFwmzMwyKE7DyeZLH58clYdVJYjLhtOr+gEZfhIWR6ASWzspU4TuumAhA+EpHkn4+5+TX0gH5A80HH2cWPIMZxLDYKIuYz5DtnE71IzcqTuc5JaeUx2Q4CyoIHppWvsOu/bvZqaZvYL9GybPLjDtmTXcuJxu8NxS6XF+o1PUt9qOTpAKGka6j++910dSgqbhRT175BzvPGsduVltl7RbWY35lG+nkSFx23Q4tTZ8hOnEJBPz1P7VbNKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUClKUH/2Q==";
 const LOGO_B64="data:image/png;base64,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";
 
-const PWDS_CLAIRS={
-  mfr001:"pascale8746",mfr002:"benoit7645",mfr003:"claire8575",mfr004:"mathieu0300",
-  mfr005:"teddy4542",mfr006:"celine8291",mfr007:"fanny9573",mfr008:"aurelie8723",
-  mfr009:"amelie9609",mfr010:"cannelle9771",mfr011:"marie2246",mfr012:"stephanie5294",
-  mfr013:"iric4230",mfr014:"claire0300",mfr015:"sandrine4504",mfr016:"melissa9252",
-  mfr017:"gabriel1315",mfr018:"loic4428",mfr019:"melina4885",mfr020:"marc2201",
-  mfr021:"caroline2906",mfr022:"romain0615",mfr023:"caroline4327",mfr024:"oceane3676",
-  mfr025:"laura7974",mfr026:"asmae9528",mfr027:"dominique5127",mfr028:"isia8340"
+const PWD_SEL="MFR-Neracais-2026";
+// Hachage SHA-256 d'un mot de passe (asynchrone, natif navigateur)
+async function hashPwd(pwd){
+  const data=new TextEncoder().encode(PWD_SEL+pwd);
+  const buf=await crypto.subtle.digest("SHA-256",data);
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+const PWDS_HASH={
+  mfr001:"089bfc211769b911ce3ee29915f09eab7343d3b33282b136962ae5fef0ec7323",mfr002:"df6363fffc9927241cd7291cc2fcaf5da06ccd5cd4e4ae0aeb44c64d9e81d31c",mfr003:"a399c7b2bc888b835a75ff65a4d8c3cf8ee8384fc58851151b60a2461b6ffd49",
+  mfr004:"9ba181fe981a80fbe9030209aec36df9c9af592084a8872ed1878a7f2450935b",mfr005:"7730c12bf252eaea0f0a0c13d9e02666ba65468b779146a3900f7eed0de9ed10",mfr006:"457260af346124473ffb44bfbfbe32818baf38c803fc7903f0ae4034b9a1b4ff",
+  mfr007:"8940ee4c862a26a63c2556e045b2d3f123608984cb60d26a429fdbead1453fbf",mfr008:"def9a86a58576172a91175c67707c0f9592c9bedcc3b8bb7326154756c7b4ca7",mfr009:"e87d45fdbfbded6f3c77f1a9fbd17203c794c95db3f3c24fb816e38d15236dbb",
+  mfr010:"7e13ae36c786142cb28991e3d3893bd9963248d01ee9b849cccaf3577013040d",mfr011:"312037e2594344b8f7f44d9e5945aa3fd333333f63d26a44bbf9f793983cf1cb",mfr012:"297e5bbf8e85230807d2ee32cc9508d847eb01d6878928a8dfe809600a1e6464",
+  mfr013:"ebcc6af433e4c58a3e533d28595616aa97b7481840795daee42d76e0d596c16b",mfr014:"6d14b82c8262d1ebb12b3904b563040f14483c7d520b1a15ba5a58249700ab9f",mfr015:"94e87cd5299c44226b346fab586659604e1fa57405166bfbe29080494221f1e3",
+  mfr016:"e640d09aa03619da99af40bb436b28197fc8037670ffda0130a80b012922cab0",mfr017:"2dd9b3b8e94b6790d0af07b832222d2e2e92f6dce871c6ac55f7306413dcf026",mfr018:"a1475fd3c9a632fde001580d9524166faad61c0666e9b9de4c1b231f12f3e4ee",
+  mfr019:"1c803c3c70c1416c788ed5ae14a5ed4e91c2ad436991b2b177ea3b3d853dd9e2",mfr020:"f6cbd942b85c2346ff570e856d4d7e80fd8c149ad9db55fc055c382b25237962",mfr021:"aa1b1fcd2107eaae9be702dcab3f3c1a1a2b36fd8c9c0d6583ed33d3519c63bd",
+  mfr022:"89357b18f42db4ce9fcb5b3a7920e784caa011343baad797d39d3fc381873898",mfr023:"1d65fce036ccbf00a5543614a419f2994330759128263d882d9af49a4614473d",mfr024:"f03bcd4c2bd8925f61ebc7befae32d058c083036a367a347a355a0433eee8f78",
+  mfr025:"b4d4b85228b082dacbb345d06d9a9c4b738cce5603ea97090663fd6e6e164619",mfr026:"f55d14171864e43721fe85eba3b4d6eb1d65b0467d283091f4698dff94262f35",mfr027:"6f1ecb58d62307fb277a0b8ffb36096645309d1bb20cdcdac6776e2f2d0662bb",
+  mfr028:"ab851bc5c0f5110e6eed00399809452f15f9a8ead38db264f42b2ebee5ce72cc"
 };
 const MNS=["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
 const JL={lun:"Lundi",mar:"Mardi",mer:"Mercredi",jeu:"Jeudi",ven:"Vendredi",sam:"Samedi"};
@@ -153,19 +163,20 @@ const TC={
   "Congé maternité":{bg:"#FCE8F5",c:"#7A1060",b:"#C060A0",e:"🤱"},
   "Accident du travail":{bg:"#FFF0DC",c:"#7A4A00",b:"#C08030",e:"🩹"},
   "Veillée":{bg:"#EAE0F8",c:"#3A1A6A",b:"#7050B0",e:"🌙"},
+  "Congé sans solde":{bg:"#ECEEF2",c:"#3A4A6A",b:"#8090B0",e:"📄"},
   "Annulée":{bg:"#F0F0F0",c:"#888",b:"#CCC",e:"❌"},
   "Autre":{bg:"#F5F5F5",c:"#555",b:"#BBB",e:"📌"}
 };
 const TSAL=["Congés payés","Récupération","Récupération veillée","Télétravail","Heures supp.","Formation","Absence autorisée","Événement familial"];
 const TDIR=Object.keys(TC).filter(t=>t!=="Annulée");
 
-const HOR={
+const HOR_DEFAUT={
   mfr001:{lb:"Directrice",j:{lun:null,mar:null,mer:null,jeu:null,ven:null,sam:null}},
   mfr002:{lb:"Moniteur",j:{lun:["08:00","12:00","13:30","17:30"],mar:["08:00","12:00","13:30","17:30"],mer:["08:00","12:00","13:30","17:30"],jeu:["08:00","12:00","13:30","17:30"],ven:["08:00","12:00","13:30","16:30"],sam:null}},
   mfr003:{lb:"Monitrice",j:{lun:["08:00","12:00","13:30","17:30"],mar:["08:00","12:00","13:30","17:30"],mer:null,jeu:["08:00","12:00","13:30","17:30"],ven:["08:00","12:00","13:30","16:30"],sam:null}},
   mfr004:{lb:"Moniteur",j:{lun:["08:00","12:00","13:30","17:30"],mar:["08:00","12:00","13:30","17:30"],mer:["08:00","12:00","13:30","17:30"],jeu:["08:00","12:00","13:30","17:30"],ven:["08:00","12:00","13:30","16:30"],sam:null}},
   mfr005:{lb:"Moniteur",j:{lun:["08:00","12:00","13:30","17:30"],mar:["08:00","12:00","13:30","17:30"],mer:["08:00","12:00","13:30","17:30"],jeu:["08:00","12:00","13:30","17:30"],ven:["08:00","12:00","13:30","16:30"],sam:null}},
-  mfr006:{lb:"Monitrice",j:{lun:["08:00","12:00","13:30","17:30"],mar:["08:00","12:00","13:30","17:30"],mer:["08:00","12:00","13:30","17:30"],jeu:null,ven:null,sam:null}},
+  mfr006:{lb:"Monitrice",j:{lun:["08:00","12:00","13:30","17:30"],mar:["08:00","12:00","13:30","17:30"],mer:["08:00","12:00",null,null],jeu:["08:00","12:00","13:30","17:30"],ven:["08:00","12:00","13:30","17:30"],sam:null}},
   mfr007:{lb:"Monitrice",j:{lun:["08:00","12:00","13:30","17:30"],mar:["08:00","12:00","13:30","17:30"],mer:["08:00","12:00","13:30","17:30"],jeu:["08:00","12:00","13:30","17:30"],ven:["08:00","12:00","13:30","16:30"],sam:null}},
   mfr008:{lb:"Monitrice",j:{lun:["08:00","12:00","13:30","17:30"],mar:["08:00","12:00","13:30","17:30"],mer:["08:00","12:00","13:30","17:30"],jeu:["08:00","12:00","13:30","17:30"],ven:["08:00","12:00","13:30","16:30"],sam:null}},
   mfr010:{lb:"Monitrice",j:{lun:["08:00","12:00","13:30","17:30"],mar:["08:00","12:00","13:30","17:30"],mer:["08:00","12:00","13:30","17:30"],jeu:["08:00","12:00","13:30","17:30"],ven:["08:00","12:00","13:30","16:30"],sam:null}},
@@ -185,6 +196,36 @@ const HOR={
   mfr027:{lb:"Moniteur",j:{lun:["08:00","12:00","13:30","17:30"],mar:["08:00","12:00","13:30","17:30"],mer:["08:00","12:00","13:30","17:30"],jeu:["08:00","12:00","13:30","17:30"],ven:["08:00","12:00","13:30","16:30"],sam:null}},
   mfr028:{lb:"Apprentie administrative",j:{lun:["08:00","12:00","13:30","17:30"],mar:["08:00","12:00","13:30","17:30"],mer:["08:00","12:00","13:30","17:30"],jeu:["08:00","12:00","13:30","17:30"],ven:["08:00","12:00","13:30","15:30"],sam:null}},
 };
+
+// HOR est reconstruit dynamiquement : socle par défaut + modifications enregistrées (avec aménagements temporaires)
+let HOR = JSON.parse(JSON.stringify(HOR_DEFAUT));
+function rebuildHOR(){
+  const base = JSON.parse(JSON.stringify(HOR_DEFAUT));
+  const mods = A.s.horaires || {};
+  const auj = today2();
+  Object.keys(mods).forEach(mid=>{
+    const m = mods[mid];
+    if(!m) return;
+    // Ne pas toucher aux veilleurs de nuit (structure jm complexe)
+    if(base[mid] && base[mid].jm) return;
+    if(!base[mid]) base[mid] = {lb:m.lb||"", j:{}};
+    // Aménagement temporaire actif ? (date de fin non dépassée)
+    const tempActif = m.temporaire && m.tempJusqu && auj <= m.tempJusqu && m.jTemp;
+    if(tempActif){
+      base[mid].j = {...(m.jNormal||base[mid].j), ...m.jTemp};
+    } else if(m.jNormal){
+      base[mid].j = m.jNormal;
+    }
+    if(m.lb) base[mid].lb = m.lb;
+  });
+  // Aménagement temporaire de Céline Lacaze (jeudi/vendredi off jusqu'au 30/11/2026),
+  // appliqué par calcul tant que la direction n'a pas défini son propre horaire pour elle.
+  if(!mods.mfr006 && auj <= "2026-11-30" && base.mfr006){
+    base.mfr006.j = {...base.mfr006.j, jeu:null, ven:null};
+  }
+  HOR = base;
+}
+
 
 const EQ0=[
   {id:"mfr001",nom:"DAUGE",pr:"Pascale",po:"Directrice",sv:"Direction",em:"pascale.dauge@mfr.asso.fr",de:"19/08/2020",cp:32,cpp:0,ra:0,rp:0,ttp:8,ttu:0},
@@ -230,7 +271,31 @@ function nomValidateur(){
 }
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 function fD(d){if(!d)return"";const dt=new Date(d+"T12:00:00");return`${String(dt.getDate()).padStart(2,"0")}/${String(dt.getMonth()+1).padStart(2,"0")}/${dt.getFullYear()}`;}
-function nJO(d1,d2,c=1){if(!d1)return 0;let n=0,cur=new Date(d1+"T12:00:00");const end=new Date((d2||d1)+"T12:00:00");while(cur<=end){if(cur.getDay()!==0&&cur.getDay()!==6)n++;cur.setDate(cur.getDate()+1);}return Math.round(n*c*2)/2;}
+function estFerie(dateStr){return !!JOURS_FERIES[dateStr];}
+function fmtISO(d){return d.toISOString().split("T")[0];}
+// Décompte en JOURS OUVRABLES : samedi compté, dimanche et jours fériés exclus.
+// Piège du samedi : si le congé se termine un vendredi, le samedi suivant est décompté
+// (dernier jour ouvrable avant la reprise du lundi), sauf s'il est férié.
+function nJO(d1,d2,c=1){
+  if(!d1)return 0;
+  let n=0;
+  const debut=new Date(d1+"T12:00:00");
+  const fin=new Date((d2||d1)+"T12:00:00");
+  let cur=new Date(debut);
+  while(cur<=fin){
+    const j=cur.getDay(); // 0=dim, 6=sam
+    if(j!==0 && !estFerie(fmtISO(cur))) n++; // ouvrable = tout sauf dimanche et férié
+    cur.setDate(cur.getDate()+1);
+  }
+  // Piège du samedi : congé finissant un vendredi OUVRABLE → ajouter le samedi suivant
+  // (dernier jour ouvrable avant la reprise du lundi ; sauf si vendredi ou samedi fériés,
+  //  ou demi-journée qui reste une fraction d'un seul jour)
+  if(c===1 && fin.getDay()===5 && !estFerie(fmtISO(fin))){
+    const sam=new Date(fin); sam.setDate(sam.getDate()+1);
+    if(!estFerie(fmtISO(sam))) n++;
+  }
+  return Math.round(n*c*2)/2;
+}
 function hStr(h){if(!h&&h!==0)return"—";const hh=Math.floor(Math.abs(h)),mm=Math.round((Math.abs(h)-hh)*60);return`${h<0?"-":""}${hh}h${mm>0?String(mm).padStart(2,"0"):"00"}`;}
 function getAS(){const n=new Date(),m=n.getMonth(),y=n.getFullYear();return m>=8?`${y}-${y+1}`:`${y-1}-${y}`;}
 function getMC(){const n=new Date();return`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,"0")}`;}
@@ -339,7 +404,7 @@ const firebaseConfig = {
 };
 
 // Collections synchronisées (une par type de donnée)
-const FB_COLLECTIONS = ["eq","abs","dem","heu","ord","fr","budgets","devis","echeances","locations","formations","affichage","maintenances"];
+const FB_COLLECTIONS = ["eq","abs","dem","heu","ord","fr","budgets","devis","echeances","locations","formations","affichage","maintenances","vehicules","config","horaires"];
 
 let fbDB = null;          // instance Firestore
 let fbReady = false;      // Firebase initialisé ?
@@ -352,7 +417,18 @@ async function initFirebase(){
     // Import dynamique du SDK Firebase (modules ES)
     const appMod = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
     const fsMod = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    const authMod = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
     const app = appMod.initializeApp(firebaseConfig);
+    // Authentification anonyme : indispensable pour les règles de sécurité renforcées
+    const auth = authMod.getAuth(app);
+    try {
+      await authMod.signInAnonymously(auth);
+      console.log("🔐 Connexion sécurisée établie");
+    } catch(authErr){
+      console.error("⚠️ Échec de la connexion sécurisée Firebase :", authErr);
+      // Si l'authentification anonyme n'est pas activée dans la console, on prévient clairement
+      A.toast("⚠️ Sécurité Firebase à activer (voir la procédure)","error");
+    }
     fbDB = fsMod.getFirestore(app);
     // Exposer les fonctions Firestore utilisées
     window._fs = {
@@ -454,8 +530,93 @@ let hLun=getLun(today2()); // Lundi de la semaine courante (module Heures)
 // ══ DEMANDES DE CONGÉS / RÉCUPÉRATION ═══════════════════════════
 
 const DEM_TYPES_SAL = ["Congés payés","Récupération","Télétravail","Formation"];
-const DEM_TYPES_DIR = ["Congés payés","Récupération","Télétravail","Formation","Maladie","Absence autorisée","Événement familial","Congé maternité","Autre"];
+const DEM_TYPES_DIR = ["Congés payés","Récupération","Télétravail","Formation","Maladie","Absence autorisée","Congé sans solde","Événement familial","Congé maternité","Autre"];
 const DEM_FRACTIONS = ["Journée entière","Matin","Après-midi"];
+
+// ── Télétravail : plafond annuel unique, calcul dynamique ──────────
+const TT_PLAFOND_ANNUEL = 160;   // heures/an, période 1er sept → 31 août, identique pour tous
+const TT_H_JOURNEE = 7;          // 1 journée = 7h
+const TT_H_DEMI = 3.5;           // 1 demi-journée = 3,5h
+
+// Bornes de la période de référence télétravail (année scolaire en cours)
+function ttPeriode(){
+  const a=getAS();                         // ex "2026-2027"
+  const [y1]=a.split("-").map(Number);
+  return {debut:`${y1}-09-01`, fin:`${y1+1}-08-31`};
+}
+// Heures de télétravail déjà approuvées pour un salarié sur la période
+function ttHeuresUtilisees(mid){
+  const {debut,fin}=ttPeriode();
+  return (A.s.dem||[])
+    .filter(d=>d.mid===mid && d.ty==="Télétravail" && d.st===ST.APP && d.dd>=debut && d.dd<=fin)
+    .reduce((s,d)=>s+(Number(d.th)||0),0);
+}
+// Heures restantes (jamais négatif)
+function ttRestant(mid){ return Math.max(0, TT_PLAFOND_ANNUEL - ttHeuresUtilisees(mid)); }
+
+
+
+
+// Récapitulatif des absents sur une période (aide à la validation, respect des effectifs)
+// Retourne, par service : liste des absents (hors demandeur) et nb de présents restants.
+function recapEffectifsPeriode(dd, df, exclureMid){
+  const eq=A.s.eq||[], abs=A.s.abs||[];
+  const actifs=eq.filter(m=>!m.archive);
+  // Effectif total par service
+  const effectifParSv={};
+  actifs.forEach(m=>{ const s=m.sv||"Autre"; effectifParSv[s]=(effectifParSv[s]||0)+1; });
+  // Absences confirmées qui chevauchent la période [dd, df]
+  const finP = df||dd;
+  const absencesPeriode=abs.filter(a=>{
+    if(a.mid===exclureMid) return false;      // on exclut le demandeur lui-même
+    if(a.ty==="Annulée") return false;
+    const add=a.dd, adf=a.df||a.dd;
+    return add<=finP && adf>=dd;               // chevauchement
+  });
+  // Regrouper les absents par service
+  const absentsParSv={};
+  absencesPeriode.forEach(a=>{
+    const s=a.sv||"Autre";
+    if(!absentsParSv[s]) absentsParSv[s]=[];
+    absentsParSv[s].push(a);
+  });
+  return {effectifParSv, absentsParSv};
+}
+
+
+// Affichage du récapitulatif des effectifs pour une demande en attente
+function rBlocEffectifs(d){
+  const {effectifParSv, absentsParSv} = recapEffectifsPeriode(d.dd, d.df, d.mid);
+  const demandeur = (A.s.eq||[]).find(m=>m.id===d.mid);
+  const svDemandeur = demandeur?.sv || "Autre";
+  // Services concernés : tous ceux ayant des absents + le service du demandeur
+  const services = Array.from(new Set([...Object.keys(absentsParSv), svDemandeur])).sort();
+  const totalAbsents = Object.values(absentsParSv).reduce((s,arr)=>s+arr.length,0);
+
+  const lignes = services.map(sv=>{
+    const absents = absentsParSv[sv] || [];
+    const effectif = effectifParSv[sv] || 0;
+    // présents restants SI on approuve cette demande (le demandeur s'absente aussi si c'est son service)
+    const absentsAvecDemandeur = absents.length + (sv===svDemandeur ? 1 : 0);
+    const presents = Math.max(0, effectif - absentsAvecDemandeur);
+    const tauxPresent = effectif>0 ? presents/effectif : 1;
+    const couleur = tauxPresent<0.5 ? "#C0392B" : tauxPresent<0.7 ? "#B8670A" : "#2E7D52";
+    const estDemandeurSv = sv===svDemandeur;
+    return `<div style="padding:6px 8px;border-radius:6px;background:${estDemandeurSv?"#FFF9EC":"#FAFAF7"};margin-bottom:4px;border-left:3px solid ${couleur}">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <span style="font-size:12px;font-weight:700;color:#3A4425">${sv}${estDemandeurSv?" ⬅ demande":""}</span>
+        <span style="font-size:12px;font-weight:800;color:${couleur}">${presents}/${effectif} présent${presents>1?"s":""}</span>
+      </div>
+      ${absents.length>0?`<div style="font-size:11px;color:#888;margin-top:2px">Déjà absent(s) : ${absents.map(a=>`${a.nm} (${a.ty})`).join(", ")}</div>`:`<div style="font-size:11px;color:#AAA;margin-top:2px">Personne d'autre absent</div>`}
+    </div>`;
+  }).join("");
+
+  return `<div style="margin-top:8px;padding:8px 10px;background:#F4F1E8;border-radius:8px;border:1px solid #E0D9C0">
+    <div style="font-size:12px;font-weight:800;color:#5C6B3A;margin-bottom:6px">👥 Effectifs sur la période ${totalAbsents>0?`— ${totalAbsents} déjà absent(s)`:"— personne d'autre absent"}</div>
+    ${lignes}
+    <div style="font-size:10px;color:#AAA;margin-top:4px;font-style:italic">Présents restants calculés en incluant cette demande si elle est approuvée.</div>
+  </div>`;
+}
 
 function rDM(){
   const {role,user,dem,eq}=A.s;
@@ -513,6 +674,7 @@ function rDM(){
             ${d.co?`<div style="font-size:13px;color:#888">💬 ${d.co}</div>`:""}
             ${d.mo?`<div style="font-size:13px;color:#C0392B;margin-top:3px">📩 Motif : ${d.mo}</div>`:""}${d.valPar&&d.st!==ST.ATT?`<div style="font-size:12px;color:#5C6B3A;margin-top:3px">✓ Traité par ${d.valPar}${d.dateRep?` le ${fD(d.dateRep)}`:""}</div>`:""}
             <div style="font-size:11px;color:#AAA;margin-top:3px">Soumise le ${fD(d.cr)}</div>
+            ${isDir&&d.st===ST.ATT?rBlocEffectifs(d):""}
           </div>
           <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end">
             ${isDir&&d.st===ST.ATT?`
@@ -580,7 +742,7 @@ function bDM(){
           if(d.ty==="Congés payés") newMb.cpp=(mb.cpp||0)+nj;
           if(d.ty==="Récupération") newMb.rp=(mb.rp||0)+nj;
           const newEq=eq.map(m=>m.id===mb.id?newMb:m);
-          A.s.eq=newEq;K.s("eq",newEq);
+          A.s.eq=newEq;A.save("eq",newEq);
         }
       }
       const newDem=dem.map(x=>x.id===id?{...x,st,mo:mo||"",dateRep:today2(),valPar:nomValidateur()}:x);
@@ -621,12 +783,14 @@ function rMdlND(){
   const mb=eq.find(m=>m.id===user?.id);
   const cp=mb?Math.max(0,(mb.cp||0)-(mb.cpp||0)):0;
   const rc=mb?Math.max(0,(mb.ra||0)-(mb.rp||0)):0;
+  const ttr=mb?ttRestant(mb.id):TT_PLAFOND_ANNUEL;
   const types=role==="direction"?DEM_TYPES_DIR:DEM_TYPES_SAL;
 
   return mdl("+ Nouvelle demande",`
-    ${role==="salarie"?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
-      <div style="background:#FBF5E0;border-radius:8px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:800;color:#C8A84B">${cp}j</div><div style="font-size:12px;color:#888">CP restants</div></div>
-      <div style="background:#EEF2E6;border-radius:8px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:800;color:#5C6B3A">${fH(rc*7)}</div><div style="font-size:12px;color:#888">Récup. dispo.</div></div>
+    ${role==="salarie"?`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+      <div style="background:#FBF5E0;border-radius:8px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:800;color:#C8A84B">${cp}j</div><div style="font-size:11px;color:#888">Congés payés restants</div></div>
+      <div style="background:#EEF2E6;border-radius:8px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:800;color:#5C6B3A">${fH(rc*7)}</div><div style="font-size:11px;color:#888">Récup. disponible</div></div>
+      <div style="background:#E8F0F5;border-radius:8px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:800;color:#1A6B9A">${fH(ttr)}</div><div style="font-size:11px;color:#888">Télétravail restant</div></div>
     </div>`:""}
     ${fld("Type de demande *",sel("nd-ty",types,"","-- Choisir --"))}
     <div class="g2">
@@ -634,6 +798,12 @@ function rMdlND(){
       ${fld("Date de fin",`<input type="date" id="nd-df" value="${today2()}" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px;width:100%">`)}
     </div>
     ${fld("Fraction",sel("nd-fr",DEM_FRACTIONS,"Journée entière"))}
+    <div id="nd-tth-wrap" style="display:none">
+      ${fld("Télétravail : mode de saisie",sel("nd-ttmode",["Journée entière (7h)","Demi-journée (3,5h)","Nombre d'heures précis"],"Journée entière (7h)"))}
+      <div id="nd-tth-input" style="display:none">
+        ${fld("Nombre d'heures",`<input type="number" id="nd-tth" min="0" step="0.5" placeholder="ex: 3.5" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px;width:100%">`)}
+      </div>
+    </div>
     ${fld("Commentaire (optionnel)",`<input id="nd-co" placeholder="Précisions éventuelles…" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px;width:100%">`)}
     <div class="dvd"></div>
     <div style="display:flex;gap:10px;justify-content:flex-end">
@@ -643,6 +813,32 @@ function rMdlND(){
 }
 
 function bMdlND(){
+  const tyEl=document.getElementById("nd-ty");
+  const frWrap=()=>document.getElementById("nd-fr")?.closest(".fld")||document.getElementById("nd-fr")?.parentElement;
+  const tthWrap=document.getElementById("nd-tth-wrap");
+  const ttModeEl=document.getElementById("nd-ttmode");
+  const tthInput=document.getElementById("nd-tth-input");
+
+  // Affichage conditionnel : si Télétravail → montrer le bloc heures, masquer la fraction classique
+  function majAffichage(){
+    const estTT = tyEl && tyEl.value==="Télétravail";
+    const frField = document.getElementById("nd-fr");
+    if(frField){ const wrap=frField.closest("div")?.parentElement||frField.parentElement; }
+    if(tthWrap) tthWrap.style.display = estTT ? "block" : "none";
+    // Masquer la fraction classique pour le télétravail (on utilise le mode TT à la place)
+    const frBlock = document.getElementById("nd-fr");
+    if(frBlock){
+      const container = frBlock.parentElement; // le fld wrapper
+      if(container) container.style.display = estTT ? "none" : "block";
+    }
+  }
+  function majModeTT(){
+    if(tthInput) tthInput.style.display = (ttModeEl && ttModeEl.value==="Nombre d'heures précis") ? "block" : "none";
+  }
+  if(tyEl) tyEl.onchange=majAffichage;
+  if(ttModeEl) ttModeEl.onchange=majModeTT;
+  majAffichage(); majModeTT();
+
   document.getElementById("nd-cancel").onclick=()=>A.set({modal:null});
   document.getElementById("nd-submit").onclick=()=>{
     const ty=document.getElementById("nd-ty").value;
@@ -652,7 +848,34 @@ function bMdlND(){
     const co=document.getElementById("nd-co").value;
     if(!ty||!dd){alert("Renseignez le type et la date.");return;}
     const mb=A.s.eq.find(m=>m.id===A.s.user?.id);
-    // Calculer nb jours ouvrables
+
+    // Cas TÉLÉTRAVAIL : calcul en heures
+    if(ty==="Télétravail"){
+      const mode=ttModeEl?ttModeEl.value:"Journée entière (7h)";
+      let th=0, frLabel="";
+      if(mode==="Journée entière (7h)"){
+        const nbJours=nJO(dd,df,1); // jours ouvrés dans la plage
+        th=nbJours*TT_H_JOURNEE; frLabel=`${nbJours} j × 7h`;
+      } else if(mode==="Demi-journée (3,5h)"){
+        th=TT_H_DEMI; frLabel="Demi-journée (3,5h)";
+      } else {
+        th=parseFloat(document.getElementById("nd-tth")?.value)||0; frLabel=`${th}h`;
+        if(th<=0){alert("Indiquez un nombre d'heures valide.");return;}
+      }
+      // Contrôle du plafond
+      const restant=ttRestant(mb.id);
+      if(th>restant){
+        if(!confirm(`Ce télétravail (${fH(th)}) dépasse le solde restant (${fH(restant)} sur 160h annuelles). Soumettre quand même ?`)) return;
+      }
+      const d={id:uid(),cr:today2(),ty,dd,df,fr:frLabel,th,nj:0,co,st:ST.ATT,
+        mid:mb.id,nm:`${mb.nom} ${mb.pr}`,sv:mb.sv};
+      A.save("dem",[...A.s.dem,d]);
+      A.set({modal:null});
+      A.toast(`Demande de télétravail soumise ✓ (${fH(th)})`,"success");
+      return;
+    }
+
+    // Autres types : jours ouvrables classiques
     const nj=nJO(dd,df,fr==="Journée entière"?1:0.5);
     const d={id:uid(),cr:today2(),ty,dd,df,fr,nj,co,st:ST.ATT,
       mid:mb.id,nm:`${mb.nom} ${mb.pr}`,sv:mb.sv};
@@ -696,7 +919,7 @@ function bMdlVD(){
           if(mb){const nj=d.nj||1;let nm={...mb};
             if(d.ty==="Congés payés")nm.cpp=(mb.cpp||0)+nj;
             if(d.ty==="Récupération")nm.rp=(mb.rp||0)+nj;
-            const ne=A.s.eq.map(m=>m.id===mb.id?nm:m);A.s.eq=ne;K.s("eq",ne);
+            const ne=A.s.eq.map(m=>m.id===mb.id?nm:m);A.s.eq=ne;A.save("eq",ne);
           }
         }
       }
@@ -865,17 +1088,17 @@ function bAB(){
 function rOM(){
   const {role,user,eq,ord}=A.s;const vis=(role==="salarie"?ord.filter(o=>o.mid===user?.id):ord).sort((a,b)=>(b.cr||"").localeCompare(a.cr||""));const enOM=ord.filter(o=>o.st===ST.ATT).length;
   let lH="";
-  if(!vis.length)lH=`<div class="card" style="text-align:center;padding:40px"><p style="color:#888">Aucun ordre de mission${role==="salarie"?" — cliquez sur '+ Nouvel OM'":""}</p></div>`;
+  if(!vis.length)lH=`<div class="card" style="text-align:center;padding:40px"><p style="color:#888">Aucun ordre de mission${role==="salarie"?" — cliquez sur '+ Nouvel ordre de mission'":""}</p></div>`;
   else vis.forEach(o=>{const ac=o.st===ST.APP?"#2E7D52":o.st===ST.REF?"#C0392B":"#B8670A";lH+=`<div class="card ca" style="border-left-color:${ac}"><div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px"><div style="flex:1"><div style="display:flex;align-items:center;gap:7px;margin-bottom:5px;flex-wrap:wrap">${role==="direction"?`<span style="font-weight:800;font-size:17px;color:#3A4425">${o.nm}</span>`:""}<span class="tsv">${o.sv||""}</span>${sBdg(o.st)}</div><div style="font-size:17px;font-weight:600;margin-bottom:3px">📋 ${o.ob}${o.ty?` <span style="background:#EEF2E6;color:#3A5220;border:1px solid #7A9A4A;border-radius:12px;padding:1px 9px;font-size:12px;font-weight:700;margin-left:6px">${o.ty}</span>`:""}</div><div style="font-size:16px;color:#555">📅 ${fD(o.dd)} · ${o.hd} de ${o.ld}${o.hr?` · retour ${o.hr}`:""}</div><div style="font-size:15px;color:#888;margin-top:2px">🚗 Véhicule : ${o.ve==="oui"?"Oui":"Non"} · ${(o.dests||[]).length} dest.</div>${o.st===ST.APP?`<div style="font-size:15px;color:#2E7D52;margin-top:3px">✅ Validé le ${fD(o.dv||"")}</div>`:""}<div style="font-size:15px;color:#888;margin-top:2px">Soumis le ${fD(o.cr)}</div></div><div style="display:flex;gap:6px;flex-wrap:wrap">${o.st===ST.APP?`<button class="btn bg bsm" data-pom="${o.id}">🖨 PDF</button>`:""} ${role==="direction"&&o.st===ST.ATT?`<button class="btn bs bsm" data-vom="${o.id}" data-voms="${ST.APP}">✓</button><button class="btn bd bsm" data-vom="${o.id}" data-voms="${ST.REF}">✗</button>`:""} <button class="btn bl bsm" data-dom="${o.id}">Détail</button></div></div></div>`;});
-  return`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px"><h2 style="color:#3A4425;font-size:22px;font-weight:800">🗺️ Ordres de mission</h2><div style="display:flex;gap:8px;align-items:center">${role==="direction"&&enOM>0?`<span style="background:#FEF3E2;color:#B8670A;border:1.5px solid #E8A030;border-radius:20px;padding:3px 12px;font-size:15px;font-weight:700">${enOM} en attente</span>`:""} ${role==="salarie"?`<button class="btn bp" id="bnom">+ Nouvel OM</button>`:""}</div></div>${lH}`;
+  return`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px"><h2 style="color:#3A4425;font-size:22px;font-weight:800">🗺️ Ordres de mission</h2><div style="display:flex;gap:8px;align-items:center">${role==="direction"&&enOM>0?`<span style="background:#FEF3E2;color:#B8670A;border:1.5px solid #E8A030;border-radius:20px;padding:3px 12px;font-size:15px;font-weight:700">${enOM} en attente</span>`:""} ${role==="salarie"?`<button class="btn bp" id="bnom">+ Nouvel ordre de mission</button>`:""}</div></div>${lH}`;
 }
 function bOM(){
   const b=document.getElementById("bnom");if(b){omD=[{dest:"",jeu:""}];b.onclick=()=>A.set({modal:{ty:"no"}});}
-  document.querySelectorAll("[data-vom]").forEach(b=>{b.onclick=()=>{const id=b.dataset.vom,st=b.dataset.voms;const l=A.s.ord.map(o=>o.id===id?{...o,st,dv:today2()}:o);A.save("ord",l);A.toast(`OM ${st.toLowerCase()} ✓`,st===ST.APP?"success":"error");};});
+  document.querySelectorAll("[data-vom]").forEach(b=>{b.onclick=()=>{const id=b.dataset.vom,st=b.dataset.voms;const l=A.s.ord.map(o=>o.id===id?{...o,st,dv:today2()}:o);A.save("ord",l);A.toast(`Ordre de mission ${st.toLowerCase()} ✓`,st===ST.APP?"success":"error");};});
   document.querySelectorAll("[data-pom]").forEach(b=>{b.onclick=()=>{const o=A.s.ord.find(x=>x.id===b.dataset.pom);if(o)pdfOM(o);};});
   document.querySelectorAll("[data-dom]").forEach(b=>{b.onclick=()=>{const o=A.s.ord.find(x=>x.id===b.dataset.dom);if(o)A.set({modal:{ty:"do",data:{o}}});};});
 }
-function rMdlNO(){const dr=omD.map((d,i)=>`<div class="odr"><input placeholder="Destination (nom, commune)" value="${d.dest||""}" data-di="${i}" data-df="dest" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px"><input placeholder="Jeune (optionnel)" value="${d.jeu||""}" data-di="${i}" data-df="jeu" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px">${omD.length>1?`<button class="btn bd bsm" data-rmd="${i}">✕</button>`:`<div></div>`}</div>`).join("");return mdl("Nouvel ordre de mission",`<div class="ibox">ℹ️ Cet OM doit être validé par la direction avant le départ.</div>${fld("Type de mission *",sel("omty",OM_TYPES,"","-- Choisir le type --"))}${fld("Objet du déplacement *",'<textarea id="omob" rows="2" placeholder="Ex: Visite entreprise — Jean DUPONT — Nérac"></textarea>')}<div class="g2">${fld("Date du déplacement *",'<input type="date" id="omdd">')} ${fld("Véhicule personnel *",sel("omve",[{v:"oui",l:"☑ Oui"},{v:"non",l:"☐ Non"}],"","-- Choisir --"))}</div><div class="g2">${fld("Heure départ *",'<input type="time" id="omhd">')} ${fld("Lieu de départ *",'<input id="omld" placeholder="ex: 200 route de Bordeaux Barbaste 47230">')}</div><div class="g2">${fld("Heure retour",'<input type="time" id="omhr">')} ${fld("Lieu de retour",'<input id="omlr" placeholder="ex: 200 route de Bordeaux Barbaste 47230">')}</div><div class="dvd"></div><p style="font-size:15px;font-weight:700;color:#3A4425;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Destinations</p><div id="omde">${dr}</div>${omD.length<5?`<button class="btn bg bsm" id="omad" style="margin-bottom:10px">+ Destination</button>`:""}<div class="dvd"></div><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn bl" id="omcn">Annuler</button><button class="btn bp" id="omsb">Soumettre ✉</button></div>`,600);}
+function rMdlNO(){const dr=omD.map((d,i)=>`<div class="odr"><input placeholder="Destination (nom, commune)" value="${d.dest||""}" data-di="${i}" data-df="dest" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px"><input placeholder="Jeune (optionnel)" value="${d.jeu||""}" data-di="${i}" data-df="jeu" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px">${omD.length>1?`<button class="btn bd bsm" data-rmd="${i}">✕</button>`:`<div></div>`}</div>`).join("");return mdl("Nouvel ordre de mission",`<div class="ibox">ℹ️ Cet ordre de mission doit être validé par la direction avant le départ.</div>${fld("Type de mission *",sel("omty",OM_TYPES,"","-- Choisir le type --"))}${fld("Objet du déplacement *",'<textarea id="omob" rows="2" placeholder="Ex: Visite entreprise — Jean DUPONT — Nérac"></textarea>')}<div class="g2">${fld("Date du déplacement *",'<input type="date" id="omdd">')} ${fld("Véhicule personnel *",sel("omve",[{v:"oui",l:"☑ Oui"},{v:"non",l:"☐ Non"}],"","-- Choisir --"))}</div><div class="g2">${fld("Heure départ *",'<input type="time" id="omhd">')} ${fld("Lieu de départ *",'<input id="omld" placeholder="ex: 200 route de Bordeaux Barbaste 47230">')}</div><div class="g2">${fld("Heure retour",'<input type="time" id="omhr">')} ${fld("Lieu de retour",'<input id="omlr" placeholder="ex: 200 route de Bordeaux Barbaste 47230">')}</div><div class="dvd"></div><p style="font-size:15px;font-weight:700;color:#3A4425;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Destinations</p><div id="omde">${dr}</div>${omD.length<5?`<button class="btn bg bsm" id="omad" style="margin-bottom:10px">+ Destination</button>`:""}<div class="dvd"></div><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn bl" id="omcn">Annuler</button><button class="btn bp" id="omsb">Soumettre ✉</button></div>`,600);}
 function bMdlNO(){
   document.getElementById("omcn").onclick=()=>{omD=[{dest:"",jeu:""}];A.set({modal:null});};
   const ad=document.getElementById("omad");if(ad)ad.onclick=()=>{omD.push({dest:"",jeu:""});A.set({modal:{ty:"no"}});};
@@ -890,7 +1113,7 @@ function bMdlNO(){
   };
 }
 function rMdlDO(){const {o}=A.s.modal.data;const dr=(o.dests||[]).map(d=>`<tr><td style="padding:6px 10px;border-top:1px solid #EDE8D8">${d.dest||"—"}</td><td style="padding:6px 10px;border-top:1px solid #EDE8D8">${d.jeu||"—"}</td></tr>`).join("");return mdl("Détail — Ordre de mission",`<div class="g2" style="margin-bottom:12px">${[["Salarié",o.nm],["Service",o.sv],["Date",fD(o.dd)],["Véhicule",o.ve==="oui"?"Oui":"Non"],["Départ",`${o.hd} — ${o.ld}`],["Retour",`${o.hr||"—"} — ${o.lr||"—"}`]].map(([k,v])=>`<div style="background:#FAF7F0;border-radius:8px;padding:8px 12px"><div style="font-size:15px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">${k}</div><div style="font-size:16px;font-weight:600">${v}</div></div>`).join("")}</div><div style="background:#FAF7F0;border-radius:8px;padding:10px 12px;margin-bottom:12px"><div style="font-size:15px;color:#888;margin-bottom:4px">OBJET</div><div style="font-size:16px">${o.ob}</div></div>${(o.dests||[]).length>0?`<table style="width:100%;border-collapse:collapse;font-size:15px;margin-bottom:12px"><thead><tr style="background:#EEF2E6"><th style="padding:6px 10px;text-align:left;font-weight:700">Destination</th><th style="padding:6px 10px;text-align:left;font-weight:700">Jeune concerné</th></tr></thead><tbody>${dr}</tbody></table>`:""}<div style="display:flex;gap:8px;justify-content:flex-end">${o.st===ST.APP?`<button class="btn bg bsm" id="dprt">🖨 PDF</button>`:""} ${A.s.role==="direction"&&o.st===ST.ATT?`<button class="btn bs bsm" id="dva">✓ Valider</button><button class="btn bd bsm" id="dre">✗ Refuser</button>`:""}</div>`,580);}
-function bMdlDO(){const {o}=A.s.modal.data;const dp=document.getElementById("dprt");if(dp)dp.onclick=()=>pdfOM(o);const va=document.getElementById("dva");if(va)va.onclick=()=>{const l=A.s.ord.map(x=>x.id===o.id?{...x,st:ST.APP,dv:today2()}:x);A.save("ord",l);A.set({modal:null});A.toast("OM validé ✓","success");};const re=document.getElementById("dre");if(re)re.onclick=()=>{const l=A.s.ord.map(x=>x.id===o.id?{...x,st:ST.REF}:x);A.save("ord",l);A.set({modal:null});A.toast("OM refusé","error");};}
+function bMdlDO(){const {o}=A.s.modal.data;const dp=document.getElementById("dprt");if(dp)dp.onclick=()=>pdfOM(o);const va=document.getElementById("dva");if(va)va.onclick=()=>{const l=A.s.ord.map(x=>x.id===o.id?{...x,st:ST.APP,dv:today2()}:x);A.save("ord",l);A.set({modal:null});A.toast("Ordre de mission validé ✓","success");};const re=document.getElementById("dre");if(re)re.onclick=()=>{const l=A.s.ord.map(x=>x.id===o.id?{...x,st:ST.REF}:x);A.save("ord",l);A.set({modal:null});A.toast("Ordre de mission refusé","error");};}
 function pdfOM(o){const w=window.open("","_blank","width=800,height=700");w.document.write(`<!`+`DOCTYPE html><html><head><meta charset="UTF-8"><title>Ordre de mission</title><style>body{font-family:Georgia,serif;margin:40px;color:#2A2A2A}h1{font-size:20px;text-align:center;border-bottom:2px solid #5C6B3A;padding-bottom:8px;color:#3A4425}h2{font-size:17px;color:#3A4425;text-align:center}.sub{text-align:center;font-size:15px;color:#888;margin-bottom:20px}table{width:100%;border-collapse:collapse;margin:12px 0}td,th{border:1px solid #ccc;padding:8px;font-size:15px}th{background:#EEF2E6;font-weight:700;text-align:left}.sig{display:flex;justify-content:space-between;margin-top:50px}.sig div{width:45%;text-align:center}.ln{border-top:1px solid #555;padding-top:8px;font-size:15px;margin-top:40px}</style></head><body><div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:6px"><img src="data:image/png;base64,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" style="height:50px;width:auto" alt="MFR"><h1 style="text-align:left;border:none;padding:0;font-size:17px">MFR CFA DU NÉRACAIS<br><span style="font-size:13px;font-weight:400;color:#888">Territoire de l'Albret</span></h1></div><div class="sub">200 Route de Bordeaux • 47230 BARBASTE • 05 53 65 56 06 • mfr.barbaste@mfr.asso.fr</div><h2>ORDRE DE MISSION ${o.as||""}</h2><div class="sub">À compléter et faire signer avant le départ. Un exemplaire à remettre à la direction, l'autre à conserver.</div><table><tr><td><strong>Nom :</strong> ${(o.nm||"").split(" ")[0]}</td><td><strong>Prénom :</strong> ${(o.nm||"").split(" ").slice(1).join(" ")}</td><td><strong>Date d'émission :</strong> ${fD(o.cr)}</td></tr></table><p><strong>Objet :</strong><br>${o.ob}</p><table><tr><td colspan="2"><strong>Date :</strong> ${fD(o.dd)}</td></tr><tr><td><strong>Départ :</strong> ${o.hd}</td><td><strong>Lieu :</strong> ${o.ld}</td></tr><tr><td><strong>Retour :</strong> ${o.hr||"—"}</td><td><strong>Lieu :</strong> ${o.lr||"—"}</td></tr><tr><td colspan="2"><strong>Véhicule personnel :</strong> ${o.ve==="oui"?"☑ Oui  ☐ Non":"☐ Oui  ☑ Non"}</td></tr></table><table><thead><tr><th>Destination</th><th>Jeune (Nom, Prénom, Classe)</th></tr></thead><tbody>${(o.dests||[]).map(d=>`<tr><td>${d.dest||""}</td><td>${d.jeu||""}</td></tr>`).join("")}${Array(Math.max(0,5-(o.dests||[]).length)).fill("<tr><td>&nbsp;</td><td>&nbsp;</td></tr>").join("")}</tbody></table><div class="sig"><div><div class="ln">Date : ${fD(o.dv||"")}<br>Signature de la Directrice :<br><br><strong>P. DAUGE</strong></div></div><div><div class="ln">Nom : ${o.nm}<br>Signature du salarié :</div></div></div></body></html>`);w.document.close();setTimeout(()=>w.print(),600);}
 
 
@@ -1154,17 +1377,217 @@ function getAnniversaires(eq){
     if(proch<today) proch.setFullYear(proch.getFullYear()+1);
     const diff=Math.round((proch-today)/(1000*60*60*24));
     const age=proch.getFullYear()-nais.getFullYear();
-    if(diff<=30) res.push({...m,prochAnniv:proch.toISOString().split("T")[0],diffJours:diff,age});
+    if(diff<=15) res.push({...m,prochAnniv:proch.toISOString().split("T")[0],diffJours:diff,age});
   });
   return res.sort((a,b)=>a.diffJours-b.diffJours);
 }
 
+// ══════════ ÉDITION DES HORAIRES (direction + assistante) ══════════
+const CRENEAU_STD = {matin:["08:00","12:00"], aprem:["13:30","17:30"]};
+
+// Résumé lisible d'une journée à partir de son tableau [dm,fm,da,fa]
+function resumeJour(j){
+  if(!j) return {txt:"Non travaillé", mode:"off", color:"#999"};
+  const [dm,fm,da,fa]=j;
+  const matin = dm&&fm;
+  const aprem = da&&fa;
+  if(matin&&aprem) return {txt:`${dm}–${fm} · ${da}–${fa}`, mode:"journee", color:"#3A4425"};
+  if(matin) return {txt:`Matin (${dm}–${fm})`, mode:"matin", color:"#5C6B3A"};
+  if(aprem) return {txt:`Après-midi (${da}–${fa})`, mode:"aprem", color:"#5C6B3A"};
+  return {txt:"Non travaillé", mode:"off", color:"#999"};
+}
+
+// Vue principale : liste des personnes avec leur horaire résumé
+function rHORAIRES(){
+  const {role,user}=A.s;
+  if(!canSeeEq(role,user?.id)) return `<div class="wbox">🔒 Accès réservé à la direction et à l'assistante de direction.</div>`;
+  const membres=(A.s.eq||[]).filter(m=>!m.archive).sort((a,b)=>a.nom.localeCompare(b.nom));
+  const lignes=membres.map(m=>{
+    const p=HOR[m.id];
+    const veilleur=p&&p.jm;
+    const mod=A.s.horaires&&A.s.horaires[m.id];
+    const temp=mod&&mod.temporaire&&mod.tempJusqu&&today2()<=mod.tempJusqu;
+    let resume;
+    if(veilleur){ resume=`<span style="font-size:12px;color:#888;font-style:italic">Horaire de nuit (non modifiable ici)</span>`; }
+    else { resume=JK.filter(jk=>jk!=="sam").map(jk=>{const r=resumeJour(p?.j[jk]); return `<span style="font-size:11px;color:${r.color}">${JL[jk].slice(0,3)} : ${r.mode==="journee"?"J":r.mode==="matin"?"M":r.mode==="aprem"?"A-M":"—"}</span>`;}).join(" · "); }
+    return `<div class="card" style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <div>
+        <div style="font-size:15px;font-weight:700;color:#3A4425">${m.nom} ${m.pr}${temp?` <span style="font-size:11px;color:#B8670A">⏳ aménagement jusqu'au ${fD(mod.tempJusqu)}</span>`:""}</div>
+        <div style="margin-top:3px">${resume}</div>
+      </div>
+      ${veilleur?"":`<button class="btn bl bsm" data-hor-edit="${m.id}">✏️ Modifier</button>`}
+    </div>`;
+  }).join("");
+  return `<h2 style="color:#3A4425;font-size:22px;font-weight:800;margin-bottom:8px">🕒 Horaires du personnel</h2>
+  <div class="wbox" style="margin-bottom:12px">Définissez pour chaque personne les jours et créneaux travaillés. Les jours non travaillés sont automatiquement banalisés (jamais comptés comme incomplets). Vous pouvez aussi programmer un aménagement temporaire avec date de fin : l'horaire habituel se rétablit tout seul à l'échéance.</div>
+  ${lignes}`;
+}
+
+// Modale d'édition d'un horaire
+function bHORAIRES(){
+  document.querySelectorAll("[data-hor-edit]").forEach(b=>{
+    b.onclick=()=>A.set({modal:{ty:"horEdit",data:{id:b.dataset.horEdit}}});
+  });
+}
+
+function rMdlHorEdit(){
+  const mid=A.s.modal.data.id;
+  const m=(A.s.eq||[]).find(x=>x.id===mid);
+  if(!m) return mdl("Erreur","Personne introuvable.");
+  const p=HOR[mid];
+  const mod=(A.s.horaires&&A.s.horaires[mid])||{};
+  const tempActif = mod.temporaire && mod.tempJusqu;
+  const jours=JK.filter(jk=>jk!=="sam");
+  // Sélecteur de mode par jour
+  const ligneJour=(jk)=>{
+    const r=resumeJour(p?.j[jk]);
+    const j=p?.j[jk]||[];
+    const dm=j[0]||"08:00",fm=j[1]||"12:00",da=j[2]||"13:30",fa=j[3]||"17:30";
+    return `<div style="padding:6px 0;border-bottom:1px solid #F0ECDD">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="width:80px;font-size:13px;font-weight:700;color:#3A4425">${JL[jk]}</span>
+        ${sel(`hor-${jk}`, [["journee","Journée entière"],["matin","Matin seulement"],["aprem","Après-midi seulement"],["off","Non travaillé"]], r.mode)}
+      </div>
+      <div class="hor-heures" data-jk="${jk}" style="display:none;gap:6px;margin:6px 0 0 88px;flex-wrap:wrap;align-items:center;font-size:12px;color:#666">
+        <span>Matin</span><input type="time" id="hor-${jk}-dm" value="${dm}" style="border:1px solid #DDD;border-radius:6px;padding:3px 6px">
+        <span>–</span><input type="time" id="hor-${jk}-fm" value="${fm}" style="border:1px solid #DDD;border-radius:6px;padding:3px 6px">
+        <span style="margin-left:8px">Après-midi</span><input type="time" id="hor-${jk}-da" value="${da}" style="border:1px solid #DDD;border-radius:6px;padding:3px 6px">
+        <span>–</span><input type="time" id="hor-${jk}-fa" value="${fa}" style="border:1px solid #DDD;border-radius:6px;padding:3px 6px">
+      </div>
+    </div>`;
+  };
+  return mdl(`🕒 Horaire — ${m.nom} ${m.pr}`,`
+    <div style="font-size:13px;color:#666;margin-bottom:10px">Horaires standards : matin 8h–12h, après-midi 13h30–17h30. Cochez le mode de chaque jour.</div>
+    ${jours.map(ligneJour).join("")}
+    <div style="margin-top:10px">
+      <label style="font-size:12px;color:#5C6B3A;cursor:pointer"><input type="checkbox" id="hor-avance"> Affiner les heures précises de chaque créneau</label>
+    </div>
+    <div class="dvd"></div>
+    <div style="background:#FEF9EF;border:1px solid #E8CF9A;border-radius:8px;padding:10px 12px;margin-bottom:10px">
+      <label style="font-size:13px;font-weight:700;color:#8A5A10;cursor:pointer"><input type="checkbox" id="hor-temp" ${tempActif?"checked":""}> Aménagement temporaire (avec date de fin)</label>
+      <div id="hor-temp-wrap" style="display:${tempActif?"block":"none"};margin-top:8px">
+        <div style="font-size:12px;color:#8A5A10;margin-bottom:6px">Les modifications ci-dessus s'appliqueront jusqu'à cette date, puis l'horaire habituel sera rétabli automatiquement.</div>
+        ${fld("Date de fin de l'aménagement",`<input type="date" id="hor-temp-date" value="${mod.tempJusqu||""}" style="border:1.5px solid #E8CF9A;border-radius:8px;padding:8px 12px;width:100%">`)}
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap">
+      ${Object.keys(mod).length?`<button class="btn bl bsm" id="hor-reset">↺ Revenir à l'horaire d'origine</button>`:"<span></span>"}
+      <div style="display:flex;gap:10px">
+        <button class="btn bl" id="hor-cancel">Annuler</button>
+        <button class="btn bp" id="hor-save">Enregistrer</button>
+      </div>
+    </div>`);
+}
+
+// Construit le tableau [dm,fm,da,fa] d'un jour selon le mode et (option) les heures précises
+function jourDepuisMode(mode, heures){
+  const M=heures&&heures.matin||CRENEAU_STD.matin;
+  const A_=heures&&heures.aprem||CRENEAU_STD.aprem;
+  if(mode==="off") return null;
+  if(mode==="matin") return [M[0],M[1],null,null];
+  if(mode==="aprem") return [null,null,A_[0],A_[1]];
+  return [M[0],M[1],A_[0],A_[1]]; // journée
+}
+
+function bMdlHorEdit(){
+  const mid=A.s.modal.data.id;
+  const jours=JK.filter(jk=>jk!=="sam");
+  // Case aménagement temporaire → afficher la date
+  const cbTemp=document.getElementById("hor-temp");
+  const wrap=document.getElementById("hor-temp-wrap");
+  if(cbTemp) cbTemp.onchange=()=>{ if(wrap) wrap.style.display=cbTemp.checked?"block":"none"; };
+  // Mode avancé : afficher/masquer les champs d'heures
+  const cbAv=document.getElementById("hor-avance");
+  if(cbAv) cbAv.onchange=()=>{ document.querySelectorAll(".hor-heures").forEach(el=>{el.style.display=cbAv.checked?"flex":"none";}); };
+
+  const c=document.getElementById("hor-cancel"); if(c)c.onclick=()=>A.set({modal:null});
+  const rst=document.getElementById("hor-reset");
+  if(rst) rst.onclick=()=>{
+    if(!confirm("Rétablir l'horaire d'origine de cette personne ?")) return;
+    const hs={...(A.s.horaires||{})}; delete hs[mid];
+    A.save("horaires",hs); rebuildHOR(); A.set({modal:null}); A.toast("Horaire d'origine rétabli ✓","success");
+  };
+  const s=document.getElementById("hor-save");
+  if(s) s.onclick=()=>{
+    // Construire l'horaire "normal" à partir des sélecteurs
+    const avance=document.getElementById("hor-avance")?.checked;
+    const jNormal={sam:null};
+    jours.forEach(jk=>{
+      const mode=document.getElementById(`hor-${jk}`).value;
+      let heures=null;
+      if(avance){
+        heures={
+          matin:[document.getElementById(`hor-${jk}-dm`).value||"08:00", document.getElementById(`hor-${jk}-fm`).value||"12:00"],
+          aprem:[document.getElementById(`hor-${jk}-da`).value||"13:30", document.getElementById(`hor-${jk}-fa`).value||"17:30"]
+        };
+      }
+      jNormal[jk]=jourDepuisMode(mode, heures);
+    });
+    const temp=document.getElementById("hor-temp")?.checked;
+    const tempDate=document.getElementById("hor-temp-date")?.value;
+    const hs={...(A.s.horaires||{})};
+    if(temp){
+      if(!tempDate){alert("Indiquez la date de fin de l'aménagement temporaire.");return;}
+      // L'horaire saisi devient l'aménagement temporaire ; l'horaire d'origine (par défaut) reste la référence
+      const base=HOR_DEFAUT[mid];
+      hs[mid]={jNormal: base?base.j:jNormal, temporaire:true, tempJusqu:tempDate, jTemp:jNormal, lb:(HOR[mid]?.lb)};
+    } else {
+      hs[mid]={jNormal, lb:(HOR[mid]?.lb)};
+    }
+    A.save("horaires",hs); rebuildHOR();
+    A.set({modal:null}); A.toast(`Horaire de ${m_nom(mid)} enregistré ✓`,"success");
+  };
+}
+function m_nom(mid){const m=(A.s.eq||[]).find(x=>x.id===mid);return m?`${m.nom} ${m.pr}`:"";}
+
+// ── Configuration éditable (messages anniversaires) ───────────────
+const CONFIG_DEFAUT = {
+  annivAucun: "Aucun anniversaire à fêter tout de suite — en attendant, un sourire ou un mot gentil font toujours plaisir ! \u{1F337}",
+  annivJour: "\u{1F389} Joyeux anniversaire !"
+};
+function getConfig(){
+  return {...CONFIG_DEFAUT, ...(A.s.config||{})};
+}
+
+// ── Signe astrologique (clin d'œil, à partir du jour/mois de naissance) ──
+const SIGNES = [
+  {nom:"Capricorne", emoji:"\u{2651}", fin:[1,19]},
+  {nom:"Verseau",    emoji:"\u{2652}", fin:[2,18]},
+  {nom:"Poissons",   emoji:"\u{2653}", fin:[3,20]},
+  {nom:"Bélier",     emoji:"\u{2648}", fin:[4,19]},
+  {nom:"Taureau",    emoji:"\u{2649}", fin:[5,20]},
+  {nom:"Gémeaux",    emoji:"\u{264A}", fin:[6,20]},
+  {nom:"Cancer",     emoji:"\u{264B}", fin:[7,22]},
+  {nom:"Lion",       emoji:"\u{264C}", fin:[8,22]},
+  {nom:"Vierge",     emoji:"\u{264D}", fin:[9,22]},
+  {nom:"Balance",    emoji:"\u{264E}", fin:[10,22]},
+  {nom:"Scorpion",   emoji:"\u{264F}", fin:[11,21]},
+  {nom:"Sagittaire", emoji:"\u{2650}", fin:[12,21]},
+  {nom:"Capricorne", emoji:"\u{2651}", fin:[12,31]}
+];
+function signeAstro(dateNaiss){
+  if(!dateNaiss) return null;
+  const d=new Date(dateNaiss+"T00:00:00");
+  if(isNaN(d)) return null;
+  const mois=d.getMonth()+1, jour=d.getDate();
+  for(const s of SIGNES){
+    if(mois<s.fin[0] || (mois===s.fin[0] && jour<=s.fin[1])) return s;
+  }
+  return SIGNES[0];
+}
+
 function rBlocAnniversaires(eq){
   const annivs=getAnniversaires(eq);
-  if(!annivs.length) return "";
   const td=today2();
+  // Aucun anniversaire proche (ou dates de naissance non renseignées) : message sympa permanent
+  if(!annivs.length){
+    return`<div class="card" style="margin-bottom:12px;border-left:4px solid #C8A84B">
+      <h3 style="font-size:16px;color:#3A4425;margin-bottom:6px">&#127874; Anniversaires</h3>
+      <div style="font-size:13px;color:#777">${getConfig().annivAucun}</div>
+    </div>`;
+  }
   return`<div class="card" style="margin-bottom:12px;border-left:4px solid #C8A84B">
-    <h3 style="font-size:16px;color:#3A4425;margin-bottom:10px">&#127874; Anniversaires — 30 prochains jours</h3>
+    <h3 style="font-size:16px;color:#3A4425;margin-bottom:10px">&#127874; Anniversaires — 15 prochains jours</h3>
     ${annivs.map(m=>{
       const isToday=m.prochAnniv===td;
       const isWeek=m.diffJours<=7;
@@ -1172,11 +1595,11 @@ function rBlocAnniversaires(eq){
         <div style="display:flex;align-items:center;gap:10px">
           <div>
             <div style="font-weight:700;font-size:14px;color:#3A4425">${m.nom} ${m.pr}</div>
-            <div style="font-size:12px;color:#888">${m.sv||""} &middot; ${m.age} ans</div>
+            <div style="font-size:12px;color:#888">${m.sv||""}${(()=>{const s=signeAstro(m.naissance);return s?` &middot; ${s.emoji} ${s.nom}`:"";})()}</div>
           </div>
         </div>
         <div style="text-align:right">
-          <div style="font-size:13px;font-weight:700;color:${isToday?"#C8A84B":isWeek?"#B8670A":"#555"}">${isToday?"Aujourd'hui !":m.diffJours===1?"Demain !":"Le "+fD(m.prochAnniv)}</div>
+          <div style="font-size:13px;font-weight:700;color:${isToday?"#C8A84B":isWeek?"#B8670A":"#555"}">${isToday?getConfig().annivJour:m.diffJours===1?"Demain !":"Le "+fD(m.prochAnniv)}</div>
           ${!isToday?`<div style="font-size:11px;color:#888">Dans ${m.diffJours}j</div>`:""}
         </div>
       </div>`;
@@ -1377,9 +1800,9 @@ function rDB(){
 
     return`<h2 style="color:#3A4425;font-size:22px;font-weight:800;margin-bottom:4px">Bonjour, ${user?.pr||""} 👋</h2>
       <p style="color:#888;font-size:13px;margin-bottom:14px">Année scolaire ${getAS()} · 1er sept → 31 août</p>
-      ${A.s._cpRechargeInfo?`<div style="background:#E8F5EE;border:1.5px solid #5AAA80;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:14px;color:#2E7D52;font-weight:700">✅ CP mensuels crédités — ${A.s._cpRechargeInfo.nb} salarié${A.s._cpRechargeInfo.nb>1?"s":""} (${A.s._cpRechargeInfo.mois||""})</div>`:""}
+      ${A.s._cpRechargeInfo?`<div style="background:#E8F5EE;border:1.5px solid #5AAA80;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:14px;color:#2E7D52;font-weight:700">✅ Congés payés mensuels crédités — ${A.s._cpRechargeInfo.nb} salarié${A.s._cpRechargeInfo.nb>1?"s":""} (${A.s._cpRechargeInfo.mois||""})</div>`:""}
 
-    ${user?.id==="mfr001"?rBlocAnniversaires(eq):""}
+    ${rBlocAnniversaires(eq)}
         ${/* ── 1. AUJOURD'HUI ── */""}
       <div style="background:#3A4425;border-radius:10px;padding:8px 14px;margin-bottom:10px">
         <span style="color:#C8A84B;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1px">📍 Aujourd'hui — ${fD(today2())}</span>
@@ -1402,6 +1825,14 @@ function rDB(){
       </div>
       ${absFilH}
       ${anticipH}
+      ${rBlocPointagesIncompletsDirection()}
+      ${rBlocAlerteVoie2()}
+      ${rBlocRappelSauvegarde()}
+      ${rBlocAlertesMaint()}
+      <div style="background:#F4F1E8;border:1px solid #E0D9C0;border-radius:10px;padding:10px 14px;margin:14px 0;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+        <div style="font-size:13px;color:#5C6B3A"><strong>🔧 Un problème dans les locaux ?</strong> Signalez-le à l'équipe d'entretien.</div>
+        <button class="btn bp bsm" id="btn-signaler" style="white-space:nowrap">Signaler un problème</button>
+      </div>
       ${rBlocActualites(3)}`;
   }
 
@@ -1419,15 +1850,32 @@ function rDB(){
   return`<h2 style="color:#3A4425;font-size:22px;font-weight:800;margin-bottom:4px">Bonjour, ${user?.pr||""} 👋</h2>
     <p style="color:#888;font-size:13px;margin-bottom:14px">Période : ${getAS()}</p>
     ${affBandeau}
+    ${rBlocRappelPointageSalarie()}
+    ${rBlocAlertesMaint()}
+    ${rBlocAnniversaires(A.s.eq)}
+    <div style="background:linear-gradient(135deg,#5C6B3A,#3A4425);border-radius:12px;padding:16px 18px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;box-shadow:0 2px 8px rgba(58,68,37,.15)">
+      <div style="color:#fff"><div style="font-size:16px;font-weight:800;margin-bottom:2px">🔧 Un problème à signaler ?</div><div style="font-size:13px;color:#EDE8D8">Bâtiment ou véhicule : fuite, panne, casse, voyant… Prévenez l'équipe d'entretien en un clic.</div></div>
+      <button class="btn" id="btn-signaler" style="white-space:nowrap;background:#C8A84B;color:#3A4425;font-weight:800;font-size:15px;padding:12px 22px;border:none;border-radius:10px">Signaler un problème</button>
+    </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(115px,1fr));gap:10px;margin-bottom:14px">
-      <div class="sc"><div class="lbl">CP restants</div><div class="val" style="color:#C8A84B">${cp}<span style="font-size:13px;color:#888">j</span></div></div>
+      <div class="sc"><div class="lbl">Congés payés restants</div><div class="val" style="color:#C8A84B">${cp}<span style="font-size:13px;color:#888">j</span></div></div>
       <div class="sc"><div class="lbl">Récupération</div><div class="val" style="color:#5C6B3A">${rc}<span style="font-size:13px;color:#888">j</span></div></div>
-      <div class="sc"><div class="lbl">TT ce mois</div><div class="val" style="color:#1A6B9A">${hStr(tt)}</div></div>
+      <div class="sc"><div class="lbl">Télétravail restant</div><div class="val" style="color:#1A6B9A">${hStr(tt)}</div></div>
     </div>${mdH}`;
 }
 
 function bDB(){
   document.querySelectorAll("[data-nav]").forEach(b=>b.onclick=()=>A.set({vue:b.dataset.nav,modal:null}));
+  const bsig=document.getElementById("btn-signaler");
+  if(bsig) bsig.onclick=()=>A.set({modal:{ty:"signalement",data:{}}});
+  const bpoint=document.getElementById("btn-aller-pointage");
+  if(bpoint) bpoint.onclick=()=>A.set({vue:"hr"});
+  const bsv=document.getElementById("btn-sauvegarde-rapide");
+  if(bsv) bsv.onclick=()=>exporterDonnees();
+  const bv2=document.getElementById("btn-voie2-fait");
+  if(bv2) bv2.onclick=()=>{ if(confirm("Masquer ce rappel ? Il ne réapparaîtra plus.")){ K.s("voie2Fait","oui"); A.r(); } };
+  const blac=document.getElementById("btn-lacaze-retabli");
+  if(blac) blac.onclick=()=>{ if(confirm("Masquer ce rappel ?")){ K.s("lacazeRetabli","oui"); A.r(); } };
   const pv=document.getElementById("db-sem-prev");
   if(pv)pv.onclick=()=>{const d=new Date(dbSemaineLundi+"T12:00:00");d.setDate(d.getDate()-7);dbSemaineLundi=d.toISOString().split("T")[0];A.r();};
   const nx=document.getElementById("db-sem-next");
@@ -1851,7 +2299,7 @@ function genEcheancesAuto(eq){
     type:"Rappel",
     label:`Nouvelle période CP — 1er septembre ${dateRecharge.split("-")[0]}`,
     date:dateRecharge,
-    note:`Début d'une nouvelle période de référence CP (1er sept → 31 août). Les compteurs sont réinitialisés avec report des CP non pris (max 5j). L'acquisition mensuelle de 2,5j (5j direction) reprend automatiquement. Vérifiez le champ "CP acquis par mois" dans les fiches avant cette date.`,
+    note:`Début d'une nouvelle période de référence CP (1er sept → 31 août). Les compteurs sont réinitialisés avec report des CP non pris (max 5j). L'acquisition mensuelle de 2,5j (5j direction) reprend automatiquement. Vérifiez le champ "Congés payés acquis par mois" dans les fiches avant cette date.`,
   }];
   const auto=[];
   const today=new Date(); today.setHours(0,0,0,0);
@@ -1939,9 +2387,9 @@ function getAllEcheances(eq){
 // ══ MODULE LOCATIONS ════════════════════════════════════════════
 
 const LOC_ESPACES = ["Site complet","Salle de réunion","Salle de classe","Internat","Cuisine / réfectoire","Autre"];
-const LOC_VEHICULES = ["Minibus Ford","Minibus Peugeot"];
+const LOC_VEHICULES = ["Minibus Ford","Minibus Peugeot","Voiture Ford","Voiture Peugeot"];
 const LOC_TYPES = ["Site / Locaux","Véhicule","Prêt salarié"];
-const LOC_PRET_TYPES = ["Minibus Ford","Minibus Peugeot","Site complet"];
+const LOC_PRET_TYPES = ["Minibus Ford","Minibus Peugeot","Voiture Ford","Voiture Peugeot","Site complet"];
 const GABRIEL_ID = "mfr017";
 function canEditLoc(user, role){
   return role==="direction" || user?.id===GABRIEL_ID;
@@ -1975,25 +2423,19 @@ function rBlocLocations(){
     return diff>7;
   }).slice(0,3);
 
-  // Statut minibus sur dashboard
-  const mb1Dispo=!(A.s.locations||[]).some(l=>l.type==="Véhicule"&&l.vehicule==="Minibus Ford"&&l.debut<=today&&l.fin>=today);
-  const mb2Dispo=!(A.s.locations||[]).some(l=>l.type==="Véhicule"&&l.vehicule==="Minibus Peugeot"&&l.debut<=today&&l.fin>=today);
-  // Prochaine indispo minibus
-  const mb1Next=(A.s.locations||[]).filter(l=>l.type==="Véhicule"&&l.vehicule==="Minibus Ford"&&l.debut>today).sort((a,b)=>a.debut.localeCompare(b.debut))[0];
-  const mb2Next=(A.s.locations||[]).filter(l=>l.type==="Véhicule"&&l.vehicule==="Minibus Peugeot"&&l.debut>today).sort((a,b)=>a.debut.localeCompare(b.debut))[0];
-
+  // Statut des 4 véhicules sur dashboard (dynamique)
+  const _vehStatuts = LOC_VEHICULES.map(veh=>{
+    const dispo=!(A.s.locations||[]).some(l=>l.type==="Véhicule"&&l.vehicule===veh&&l.debut<=today&&l.fin>=today);
+    const next=(A.s.locations||[]).filter(l=>l.type==="Véhicule"&&l.vehicule===veh&&l.debut>today).sort((a,b)=>a.debut.localeCompare(b.debut))[0];
+    return {veh, dispo, next, icone:veh.startsWith("Minibus")?"🚌":"🚗"};
+  });
   let html=`<div style="margin-bottom:12px">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-      <div style="background:${mb1Dispo?"#E8F5EE":"#FDECEA"};border:1.5px solid ${mb1Dispo?"#5AAA80":"#E08080"};border-radius:10px;padding:9px 12px;display:flex;align-items:center;gap:8px">
-        <span style="font-size:22px">🚌</span>
-        <div><div style="font-size:13px;font-weight:800;color:${mb1Dispo?"#2E7D52":"#C0392B"}">Minibus Ford — ${mb1Dispo?"Disponible":"Loué"}</div>
-        <div style="font-size:11px;color:#888">${mb1Next?`Prochain départ le ${fD(mb1Next.debut)}`:mb1Dispo?"Aucune réservation":""}</div></div>
-      </div>
-      <div style="background:${mb2Dispo?"#E8F5EE":"#FDECEA"};border:1.5px solid ${mb2Dispo?"#5AAA80":"#E08080"};border-radius:10px;padding:9px 12px;display:flex;align-items:center;gap:8px">
-        <span style="font-size:22px">🚌</span>
-        <div><div style="font-size:13px;font-weight:800;color:${mb2Dispo?"#2E7D52":"#C0392B"}">Minibus Peugeot — ${mb2Dispo?"Disponible":"Loué"}</div>
-        <div style="font-size:11px;color:#888">${mb2Next?`Prochain départ le ${fD(mb2Next.debut)}`:mb2Dispo?"Aucune réservation":""}</div></div>
-      </div>
+      ${_vehStatuts.map(s=>`<div style="background:${s.dispo?"#E8F5EE":"#FDECEA"};border:1.5px solid ${s.dispo?"#5AAA80":"#E08080"};border-radius:10px;padding:9px 12px;display:flex;align-items:center;gap:8px">
+        <span style="font-size:22px">${s.icone}</span>
+        <div><div style="font-size:13px;font-weight:800;color:${s.dispo?"#2E7D52":"#C0392B"}">${s.veh} — ${s.dispo?"Disponible":"Loué"}</div>
+        <div style="font-size:11px;color:#888">${s.next?`Prochain départ le ${fD(s.next.debut)}`:s.dispo?"Aucune réservation":""}</div></div>
+      </div>`).join("")}
     </div>`;
 
   // ── Encadré J-7 (prioritaire et bien visible) ──
@@ -2107,21 +2549,18 @@ function rLOCATIONS(){
   const passeeSite=passees.filter(l=>l.type!=="Véhicule");
   const passeeVeh=passees.filter(l=>l.type==="Véhicule");
 
-  // Statut disponibilité minibus
-  const mb1Occupe=activeVeh.some(l=>l.vehicule==="Minibus Ford"&&l.debut<=today&&l.fin>=today);
-  const mb2Occupe=activeVeh.some(l=>l.vehicule==="Minibus Peugeot"&&l.debut<=today&&l.fin>=today);
-
+  // Statut disponibilité des 4 véhicules (dynamique)
+  const vehiculesListe=LOC_VEHICULES; // Minibus + Voitures
   let listeH=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:14px">
-    <div class="kpi" style="background:${mb1Occupe?"#FDECEA":"#E8F5EE"}">
-      <div style="font-size:22px">🚌</div>
-      <div style="font-size:14px;font-weight:800;color:${mb1Occupe?"#C0392B":"#2E7D52"}">Minibus Ford</div>
-      <div style="font-size:12px;color:#555;font-weight:600">${mb1Occupe?"Loué":"Disponible"}</div>
-    </div>
-    <div class="kpi" style="background:${mb2Occupe?"#FDECEA":"#E8F5EE"}">
-      <div style="font-size:22px">🚌</div>
-      <div style="font-size:14px;font-weight:800;color:${mb2Occupe?"#C0392B":"#2E7D52"}">Minibus Peugeot</div>
-      <div style="font-size:12px;color:#555;font-weight:600">${mb2Occupe?"Loué":"Disponible"}</div>
-    </div>
+    ${vehiculesListe.map(veh=>{
+      const occupe=activeVeh.some(l=>l.vehicule===veh&&l.debut<=today&&l.fin>=today);
+      const icone=veh.startsWith("Minibus")?"🚌":"🚗";
+      return `<div class="kpi" style="background:${occupe?"#FDECEA":"#E8F5EE"}">
+        <div style="font-size:22px">${icone}</div>
+        <div style="font-size:14px;font-weight:800;color:${occupe?"#C0392B":"#2E7D52"}">${veh}</div>
+        <div style="font-size:12px;color:#555;font-weight:600">${occupe?"Loué":"Disponible"}</div>
+      </div>`;
+    }).join("")}
   </div>`;
 
   const activePret=actives.filter(l=>l.type==="Prêt salarié");
@@ -3033,7 +3472,7 @@ function bMdlNAff(){
 // ══ SAUVEGARDE / RESTAURATION ════════════════════════════════════
 
 function exporterDonnees(){
-  const keys=["eq","abs","dem","heu","ord","fr","budgets","devis","echeances","locations","formations","affichage","maintenances"];
+  const keys=["eq","abs","dem","heu","ord","fr","budgets","devis","echeances","locations","formations","affichage","maintenances","vehicules","config","horaires"];
   const data={version:1,date:today2(),app:"MFR-RH",contenu:{}};
   keys.forEach(k=>{
     const v=A.s[k]||K.g(k);
@@ -3046,6 +3485,110 @@ function exporterDonnees(){
   a.href=url;a.download=`MFR-RH_sauvegarde_${today2()}.json`;
   a.click();URL.revokeObjectURL(url);
   A.toast(`✓ Sauvegarde téléchargée — ${Math.round(json.length/1024)}Ko`,"success");
+  K.s("derniereSauvegarde", today2());
+}
+
+// ── Alerte hebdomadaire : pointages non complétés (semaine écoulée) ──
+// Un jour "à compléter" = jour théoriquement travaillé (horaire défini) SANS pointage.
+// Les jours non travaillés (temps partiels) sont banalisés : jamais comptés.
+function joursIncompletsSemaine(mid, lundiSemaine){
+  const p=HOR[mid];
+  if(!p) return [];
+  // Personne sans horaire théorique (ex. direction) : pas de pointage attendu → on n'alerte pas.
+  const sansHoraire=JK.every(jk=>!p.j[jk]&&!(p.jm&&p.jm[jk]));
+  if(sansHoraire) return [];
+  const manquants=[];
+  JK.forEach(jk=>{
+    const jourTravaille = p.j[jk] || (p.jm&&p.jm[jk]); // jour théoriquement travaillé ?
+    if(!jourTravaille) return;                          // jour non travaillé → banalisé
+    const ds=getDJ(lundiSemaine,jk);
+    if(ds>today2()) return;                             // jour futur → on n'attend pas encore la saisie
+    const pointe=(A.s.heu||[]).some(x=>x.mid===mid && x.dt===ds);
+    if(!pointe) manquants.push({jk,ds});
+  });
+  return manquants;
+}
+
+// Lundi de la semaine PRÉCÉDENTE (celle qui vient de s'achever)
+function lundiSemainePrecedente(){
+  const lunCourant=getLun(today2());
+  const d=new Date(lunCourant+"T12:00:00");
+  d.setDate(d.getDate()-7);
+  return d.toISOString().split("T")[0];
+}
+
+// Bannière côté SALARIÉ : rappel si sa propre semaine écoulée est incomplète
+function rBlocRappelPointageSalarie(){
+  const u=A.s.user;
+  if(!u || A.s.role==="direction") return "";
+  const lunPrec=lundiSemainePrecedente();
+  const manquants=joursIncompletsSemaine(u.id, lunPrec);
+  if(manquants.length===0) return "";
+  const finSem=getDJ(lunPrec,"sam");
+  return `<div style="background:#FEF3E2;border:1.5px solid #E8A030;border-radius:12px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+    <div style="font-size:13px;color:#8A5A10"><strong>⏱ Vos heures de la semaine dernière ne sont pas complètes</strong><br>Semaine du ${fD(lunPrec)} au ${fD(finSem)} : ${manquants.length} jour(s) à compléter dans « Mes heures ».</div>
+    <button class="btn bp bsm" id="btn-aller-pointage" style="white-space:nowrap">⏱ Compléter</button>
+  </div>`;
+}
+
+// Bannière côté DIRECTION : récap des personnes dont la semaine écoulée est incomplète
+function rBlocPointagesIncompletsDirection(){
+  if(A.s.role!=="direction") return "";
+  const lunPrec=lundiSemainePrecedente();
+  const finSem=getDJ(lunPrec,"sam");
+  const enRetard=(A.s.eq||[]).filter(m=>!m.archive).map(m=>({m,manq:joursIncompletsSemaine(m.id,lunPrec)})).filter(x=>x.manq.length>0);
+  if(enRetard.length===0) return "";
+  return `<div style="background:#FEF3E2;border:1.5px solid #E8A030;border-radius:12px;padding:12px 16px;margin-bottom:14px">
+    <div style="font-size:14px;font-weight:800;color:#8A5A10;margin-bottom:6px">⏱ Horaires non complétés — semaine du ${fD(lunPrec)} au ${fD(finSem)}</div>
+    <div style="font-size:13px;color:#333">${enRetard.map(x=>`• <strong>${x.m.nom} ${x.m.pr}</strong> — ${x.manq.length} jour(s) manquant(s)`).join("<br>")}</div>
+    <div style="font-size:12px;color:#888;margin-top:6px">Les jours non travaillés (temps partiels) ne sont pas comptés.</div>
+  </div>`;
+}
+
+// Alerte planifiée : fin de l'organisation temporaire de Céline Lacaze (30/11/2026)
+function rBlocRappelLacaze(){
+  if(A.s.role!=="direction") return "";
+  if(K.g("lacazeRetabli")==="oui") return "";
+  const auj=new Date(); auj.setHours(0,0,0,0);
+  const cible=new Date("2026-11-30T00:00:00");
+  if(auj<cible) return "";
+  return `<div style="background:#EEF2E6;border:2px solid #5C6B3A;border-radius:12px;padding:14px 16px;margin-bottom:14px">
+    <div style="font-size:15px;font-weight:800;color:#3A4425;margin-bottom:6px">📅 Fin d'organisation temporaire — Céline Lacaze</div>
+    <div style="font-size:13px;color:#333;margin-bottom:10px">L'aménagement temporaire de <strong>Céline Lacaze</strong> (jeudi et vendredi non travaillés) prenait fin le <strong>30/11/2026</strong>. Pense à rétablir son horaire habituel du jeudi et du vendredi. Le mercredi après-midi reste, lui, non travaillé (organisation permanente).</div>
+    <button class="btn bl bsm" id="btn-lacaze-retabli">✓ C'est rétabli (masquer)</button>
+  </div>`;
+}
+
+// Bannière de rappel de sauvegarde (direction) : si aucune sauvegarde depuis 7 jours
+function rBlocRappelSauvegarde(){
+  if(A.s.role!=="direction") return "";
+  const derniere=K.g("derniereSauvegarde");
+  const auj=new Date(); auj.setHours(0,0,0,0);
+  let joursDepuis=999;
+  if(derniere){
+    const d=new Date(derniere+"T00:00:00");
+    joursDepuis=Math.round((auj-d)/(1000*60*60*24));
+  }
+  if(joursDepuis<7) return ""; // sauvegarde récente : rien à signaler
+  const txt=derniere?`Dernière sauvegarde il y a ${joursDepuis} jours.`:"Aucune sauvegarde effectuée pour l'instant.";
+  return `<div style="background:#FEF3E2;border:1.5px solid #E8A030;border-radius:12px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+    <div style="font-size:13px;color:#8A5A10"><strong>💾 Pensez à sauvegarder vos données</strong><br>${txt} Une sauvegarde régulière protège contre toute perte accidentelle.</div>
+    <button class="btn bp bsm" id="btn-sauvegarde-rapide" style="white-space:nowrap">💾 Sauvegarder maintenant</button>
+  </div>`;
+}
+
+// Alerte planifiée : passage à la sécurité renforcée (Voie 2) — à partir du 22/10/2026
+function rBlocAlerteVoie2(){
+  if(A.s.role!=="direction") return "";
+  if(K.g("voie2Fait")==="oui") return ""; // masquée si marquée comme traitée
+  const auj=new Date(); auj.setHours(0,0,0,0);
+  const cible=new Date("2026-10-22T00:00:00");
+  if(auj<cible) return ""; // pas encore l'heure
+  return `<div style="background:#FDECEA;border:2px solid #C0392B;border-radius:12px;padding:14px 16px;margin-bottom:14px">
+    <div style="font-size:15px;font-weight:800;color:#C0392B;margin-bottom:6px">🔐 Rappel de sécurité — Authentification renforcée</div>
+    <div style="font-size:13px;color:#333;margin-bottom:10px">Comme prévu, il est temps d'envisager le passage à l'<strong>authentification Firebase complète (Voie 2)</strong> pour renforcer durablement la protection des données RH (notamment les données de santé). Pense à te rapprocher de la fédération MFR pour un accompagnement technique.</div>
+    <button class="btn bl bsm" id="btn-voie2-fait">✓ J'ai traité ce point (masquer)</button>
+  </div>`;
 }
 
 function restaurerDonnees(file){
@@ -3092,7 +3635,7 @@ function rInfosContrat(mb){
 // ══ MODULE MAINTENANCE & PETIT ENTRETIEN ════════════════════════
 
 // Accès : Loïc (mfr018), Mélina (mfr019), Direction, Sandrine (mfr015)
-const MAINT_USERS = ["mfr018","mfr019","mfr015"]; // mfr015 = Sandrine (suivi uniquement)
+const MAINT_USERS = ["mfr018","mfr019","mfr015","mfr017"]; // mfr015 = Sandrine (suivi uniquement)
 const MAINT_INTERVENANTS = ["mfr018","mfr019"]; // Loïc + Mélina uniquement
 function canSeeMaint(role, userId){
   return role==="direction" || MAINT_USERS.includes(userId);
@@ -3107,19 +3650,215 @@ const MAINT_TYPES = [
 ];
 
 const MAINT_LIEUX = [
-  "Salle de classe 1","Salle de classe 2","Salle de classe 3",
-  "Salle de classe 4","Salle informatique","Salle de réunion",
+  "Salle jaune","Salle rouge","Salle bleue",
+  "Salle Moulin","Salle Aide-soignant","Salle Pavillon",
+  "Salle informatique","Salle de réunion",
   "Internat — couloir","Internat — chambre","Réfectoire / cuisine",
   "Sanitaires","Bureaux direction","Extérieurs / parking",
   "Entrée / hall","Autre"
 ];
 
+const FORFAIT_GESTION = 10; // Forfait gestion administrative (€) ajouté à chaque refacturation de dégradation
 const MAINT_STATUTS = {
   OUVERT:"En cours",
   TERMINE:"Terminé",
   FACTURE:"Facturé famille",
   ARCHIVE:"Archivé"
 };
+
+
+// ── Espace Véhicules ──────────────────────────────────────────────
+const VEHICULES_DEFAUT = [
+  {id:"veh1", nom:"Minibus Peugeot", type:"Minibus", marque:"Peugeot", immat:"", ct:"", assurance:"", revision:"", anomalies:[]},
+  {id:"veh2", nom:"Minibus Ford", type:"Minibus", marque:"Ford", immat:"", ct:"", assurance:"", revision:"", anomalies:[]},
+  {id:"veh3", nom:"Voiture Ford", type:"Voiture", marque:"Ford", immat:"", ct:"", assurance:"", revision:"", anomalies:[]},
+  {id:"veh4", nom:"Voiture Peugeot", type:"Voiture", marque:"Peugeot", immat:"", ct:"", assurance:"", revision:"", anomalies:[]},
+];
+const VEH_ECHEANCES = [
+  {cle:"ct", label:"Contrôle technique", icone:"🔧"},
+  {cle:"assurance", label:"Assurance", icone:"🛡️"},
+  {cle:"revision", label:"Révision / entretien", icone:"⚙️"},
+];
+function initVehicules(){
+  if(!A.s.vehicules || A.s.vehicules.length===0){
+    A.s.vehicules = JSON.parse(JSON.stringify(VEHICULES_DEFAUT));
+  }
+}
+
+function canSeeVehic(role, userId){ return canSeeMaint(role, userId); }
+
+// Vue principale Véhicules
+function rVEHICULES(){
+  initVehicules();
+  const {role,user}=A.s;
+  if(!canSeeVehic(role,user?.id)) return`<div class="wbox">🔒 Accès réservé à l'équipe d'entretien et à la direction.</div>`;
+  const vehs=A.s.vehicules||[];
+
+  const cards=vehs.map(v=>{
+    // Échéances avec niveau d'alerte
+    const echH=VEH_ECHEANCES.map(e=>{
+      const dateVal=v[e.cle];
+      if(!dateVal) return `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #F0ECDD">
+        <span style="font-size:13px;color:#888">${e.icone} ${e.label}</span>
+        <span style="font-size:12px;color:#BBB">Non renseignée</span></div>`;
+      const al=getAlertLevel(dateVal);
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #F0ECDD">
+        <span style="font-size:13px;color:#3A4425">${e.icone} ${e.label}</span>
+        <span style="font-size:12px;font-weight:700;color:${al.color};background:${al.bg};padding:2px 8px;border-radius:10px">${fD(dateVal)} · ${al.label}</span></div>`;
+    }).join("");
+
+    // Anomalies ouvertes
+    const anoOuvertes=(v.anomalies||[]).filter(a=>a.statut!=="Résolu");
+    const anoH=anoOuvertes.length>0
+      ? anoOuvertes.map(a=>`<div style="font-size:12px;color:#C0392B;padding:3px 0">⚠️ ${a.description}${a.signalePar?` <span style="color:#999">— ${a.signalePar}</span>`:""}
+          <button class="btn bl bsm" data-veh-ano-resolu="${v.id}|${a.id}" style="font-size:11px;padding:2px 8px;margin-left:6px">✓ Résolu</button></div>`).join("")
+      : `<div style="font-size:12px;color:#2E7D52">✓ Aucune anomalie en cours</div>`;
+
+    return `<div class="card" style="margin-bottom:12px;border-left:4px solid #3A4425">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+        <div>
+          <div style="font-size:16px;font-weight:800;color:#3A4425">${v.type==="Minibus"?"🚐":"🚗"} ${v.nom}</div>
+          <div style="font-size:12px;color:#888">${v.immat||"Immatriculation non renseignée"}</div>
+        </div>
+        <button class="btn bl bsm" data-veh-edit="${v.id}">✏️ Modifier</button>
+      </div>
+      <div style="margin-bottom:8px">${echH}</div>
+      <div style="background:#FAF7F0;border-radius:8px;padding:8px 10px">
+        <div style="font-size:12px;font-weight:700;color:#5C6B3A;margin-bottom:4px">Anomalies</div>
+        ${anoH}
+        <button class="btn bp bsm" data-veh-ano-add="${v.id}" style="font-size:12px;margin-top:6px">+ Signaler une anomalie</button>
+      </div>
+    </div>`;
+  }).join("");
+
+  return `<h2 style="color:#3A4425;font-size:22px;font-weight:800;margin-bottom:8px">🚗 Véhicules</h2>
+  <div class="wbox" style="margin-bottom:12px">Suivi des 4 véhicules de la MFR : échéances (contrôle technique, assurance, révision) et anomalies. Les échéances proches et les anomalies remontent en alerte sur l'accueil de l'équipe d'entretien.</div>
+  ${cards}`;
+}
+
+// Modal : modifier un véhicule (immat + échéances)
+function rMdlVehEdit(){
+  const v=(A.s.vehicules||[]).find(x=>x.id===A.s.modal.data.id);
+  if(!v) return mdl("Erreur","Véhicule introuvable.");
+  return mdl(`✏️ ${v.nom}`,`
+    ${fld("Immatriculation",`<input id="veh-immat" value="${v.immat||""}" placeholder="ex: AB-123-CD" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px;width:100%">`)}
+    <div class="dvd"></div>
+    <div style="font-size:13px;font-weight:700;color:#3A4425;margin-bottom:8px">Échéances</div>
+    ${fld("🔧 Contrôle technique",`<input type="date" id="veh-ct" value="${v.ct||""}" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px;width:100%">`)}
+    ${fld("🛡️ Assurance",`<input type="date" id="veh-assurance" value="${v.assurance||""}" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px;width:100%">`)}
+    ${fld("⚙️ Révision / entretien",`<input type="date" id="veh-revision" value="${v.revision||""}" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px;width:100%">`)}
+    <div class="dvd"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn bl" id="veh-cancel">Annuler</button>
+      <button class="btn bp" id="veh-save">Enregistrer</button>
+    </div>`);
+}
+function bMdlVehEdit(){
+  const c=document.getElementById("veh-cancel"); if(c)c.onclick=()=>A.set({modal:null});
+  const s=document.getElementById("veh-save");
+  if(s) s.onclick=()=>{
+    const id=A.s.modal.data.id;
+    const immat=document.getElementById("veh-immat").value.trim();
+    const ct=document.getElementById("veh-ct").value;
+    const assurance=document.getElementById("veh-assurance").value;
+    const revision=document.getElementById("veh-revision").value;
+    const l=(A.s.vehicules||[]).map(v=>v.id===id?{...v,immat,ct,assurance,revision}:v);
+    A.save("vehicules",l); A.set({modal:null}); A.toast("Véhicule mis à jour ✓","success");
+  };
+}
+
+// Modal : signaler une anomalie sur un véhicule
+function rMdlVehAno(){
+  const v=(A.s.vehicules||[]).find(x=>x.id===A.s.modal.data.id);
+  if(!v) return mdl("Erreur","Véhicule introuvable.");
+  return mdl(`⚠️ Anomalie — ${v.nom}`,`
+    <p style="font-size:13px;color:#666;margin-bottom:12px">Signalez un problème constaté sur ce véhicule (bruit, voyant, pneu, carrosserie…).</p>
+    ${fld("Description de l'anomalie *",`<textarea id="veh-ano-desc" placeholder="ex: Voyant moteur allumé, bruit au freinage…" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px;width:100%;min-height:70px;font-family:inherit"></textarea>`)}
+    <div class="dvd"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn bl" id="veha-cancel">Annuler</button>
+      <button class="btn bp" id="veha-submit">Envoyer</button>
+    </div>`);
+}
+function bMdlVehAno(){
+  const c=document.getElementById("veha-cancel"); if(c)c.onclick=()=>A.set({modal:null});
+  const s=document.getElementById("veha-submit");
+  if(s) s.onclick=()=>{
+    const id=A.s.modal.data.id;
+    const desc=document.getElementById("veh-ano-desc").value.trim();
+    if(!desc){alert("Merci de décrire l'anomalie.");return;}
+    const u=A.s.user; const signalePar=u?`${u.nom} ${u.pr}`:"Anonyme";
+    const ano={id:uid(),date:today2(),description:desc,statut:"Ouvert",signalePar};
+    const l=(A.s.vehicules||[]).map(v=>v.id===id?{...v,anomalies:[...(v.anomalies||[]),ano]}:v);
+    A.save("vehicules",l); A.set({modal:null}); A.toast("Anomalie signalée ✓","success");
+  };
+}
+
+// Bindings de la vue Véhicules
+function bVEHICULES(){
+  document.querySelectorAll("[data-veh-edit]").forEach(b=>{
+    b.onclick=()=>A.set({modal:{ty:"vehEdit",data:{id:b.dataset.vehEdit}}});
+  });
+  document.querySelectorAll("[data-veh-ano-add]").forEach(b=>{
+    b.onclick=()=>A.set({modal:{ty:"vehAno",data:{id:b.dataset.vehAnoAdd}}});
+  });
+  document.querySelectorAll("[data-veh-ano-resolu]").forEach(b=>{
+    b.onclick=()=>{
+      const [vid,aid]=b.dataset.vehAnoResolu.split("|");
+      const l=(A.s.vehicules||[]).map(v=>v.id===vid?{...v,anomalies:(v.anomalies||[]).map(a=>a.id===aid?{...a,statut:"Résolu"}:a)}:v);
+      A.save("vehicules",l); A.toast("Anomalie résolue ✓","success");
+    };
+  });
+}
+
+// Bloc d'alertes pour l'équipe d'entretien (accueil) : signalements + échéances véhicules
+function rBlocAlertesMaint(){
+  const {role,user}=A.s;
+  if(!canSeeMaint(role,user?.id)) return "";
+  initVehicules();
+
+  // 1. Signalements bâtiment en attente (viaSignalement + statut ouvert)
+  const signalements=(A.s.maintenances||[]).filter(m=>m.viaSignalement && m.statut===MAINT_STATUTS.OUVERT);
+
+  // 2. Échéances véhicules dans les 30 jours ou dépassées
+  const vehAlertes=[];
+  (A.s.vehicules||[]).forEach(v=>{
+    VEH_ECHEANCES.forEach(e=>{
+      if(v[e.cle]){
+        const al=getAlertLevel(v[e.cle]);
+        if(al.diff<=30) vehAlertes.push({veh:v.nom, label:e.label, icone:e.icone, date:v[e.cle], al});
+      }
+    });
+  });
+
+  // 3. Anomalies véhicules ouvertes
+  const anoVeh=[];
+  (A.s.vehicules||[]).forEach(v=>{
+    (v.anomalies||[]).filter(a=>a.statut!=="Résolu").forEach(a=>anoVeh.push({veh:v.nom, desc:a.description}));
+  });
+
+  const total=signalements.length+vehAlertes.length+anoVeh.length;
+  if(total===0) return "";
+
+  vehAlertes.sort((a,b)=>a.al.diff-b.al.diff);
+
+  return `<div style="background:#FDECEA;border:1.5px solid #E08080;border-radius:12px;padding:12px 16px;margin-bottom:14px">
+    <div style="font-size:15px;font-weight:800;color:#C0392B;margin-bottom:8px">🔔 À traiter — Entretien & Véhicules (${total})</div>
+    ${signalements.length>0?`<div style="margin-bottom:6px">
+      <div style="font-size:12px;font-weight:700;color:#5C6B3A">🔧 Signalements en attente (${signalements.length})</div>
+      ${signalements.slice(0,5).map(m=>`<div style="font-size:13px;color:#333;padding:2px 0">• ${m.lieu} — ${m.description}${m.signalePar?` <span style="color:#999">(${m.signalePar})</span>`:""}</div>`).join("")}
+      ${signalements.length>5?`<div style="font-size:12px;color:#888">… et ${signalements.length-5} autre(s)</div>`:""}
+    </div>`:""}
+    ${vehAlertes.length>0?`<div style="margin-bottom:6px">
+      <div style="font-size:12px;font-weight:700;color:#5C6B3A">🚗 Échéances véhicules</div>
+      ${vehAlertes.map(a=>`<div style="font-size:13px;color:#333;padding:2px 0">• ${a.icone} ${a.veh} — ${a.label} : <strong style="color:${a.al.color}">${fD(a.date)} (${a.al.label})</strong></div>`).join("")}
+    </div>`:""}
+    ${anoVeh.length>0?`<div>
+      <div style="font-size:12px;font-weight:700;color:#5C6B3A">⚠️ Anomalies véhicules (${anoVeh.length})</div>
+      ${anoVeh.map(a=>`<div style="font-size:13px;color:#333;padding:2px 0">• ${a.veh} — ${a.desc}</div>`).join("")}
+    </div>`:""}
+  </div>`;
+}
 
 function initMaint(){
   if(!A.s.maintenances) A.s.maintenances=[];
@@ -3131,7 +3870,7 @@ function rMAINTENANCE(){
   const {role,user}=A.s;
   if(!canSeeMaint(role,user?.id)) return`<div class="wbox">🔒 Accès réservé à l'équipe de maintenance et à la direction.</div>`;
 
-  const isDir=role==="direction"||user?.id==="mfr015";
+  const isDir=role==="direction"||user?.id==="mfr015"||user?.id==="mfr017";
   const isMaint=MAINT_USERS.includes(user?.id);
   const filtre=A.s.maintFiltre||"all";
   const annee=A.s.maintAnnee||getAS();
@@ -3154,8 +3893,8 @@ function rMAINTENANCE(){
   const kpiH=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-bottom:14px">
     <div class="kpi" style="background:#EEF2E6"><div class="val" style="font-size:22px;font-weight:800;color:#3A4425">${allAnnee.length}</div><div style="font-size:12px;font-weight:600;color:#555">Interventions</div></div>
     <div class="kpi" style="background:#E3F1FA"><div class="val" style="font-size:22px;font-weight:800;color:#1A6B9A">${totalTemps}h</div><div style="font-size:12px;font-weight:600;color:#555">Temps total</div></div>
-    ${isDir?`
     <div class="kpi" style="background:#FBF5E0"><div class="val" style="font-size:22px;font-weight:800;color:#C8A84B">${totalCout.toFixed(0)} €</div><div style="font-size:12px;font-weight:600;color:#555">Coût matériaux</div></div>
+    ${isDir?`
     <div class="kpi" style="background:${nbDeg>0?"#FDECEA":"#FAF7F0"};cursor:pointer" data-maint-filtre="dégradation">
       <div class="val" style="font-size:22px;font-weight:800;color:${nbDeg>0?"#C0392B":"#888"}">${nbDeg}</div><div style="font-size:12px;font-weight:600;color:#555">Dégradations</div></div>
     <div class="kpi" style="background:#FEF3E2;cursor:pointer" data-maint-filtre="facturable">
@@ -3206,14 +3945,14 @@ function rMAINTENANCE(){
             </div>
             <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:13px;margin-bottom:4px">
               ${m.temps>0?`<span>⏱ <strong>${m.temps}h</strong> travaillées</span>`:""}
-              ${isDir&&m.coutMat>0?`<span>💶 <strong>${m.coutMat.toFixed(2)} €</strong> matériaux</span>`:""}
+              ${m.coutMat>0?`<span>💶 <strong>${m.coutMat.toFixed(2)} €</strong> matériaux</span>`:""}
               ${isDir&&m.coutTotal>0?`<span style="font-weight:700;color:#3A4425">= <strong>${m.coutTotal.toFixed(2)} €</strong> total estimé</span>`:""}
             </div>
-            ${m.description?`<div style="font-size:13px;color:#555;margin-bottom:4px">📝 ${m.description}</div>`:""}
+            ${m.description?`<div style="font-size:13px;color:#555;margin-bottom:4px">📝 ${m.description}</div>`:""}${m.viaSignalement&&m.signalePar?`<div style="font-size:12px;color:#1A6B9A;margin-bottom:4px">🔔 Signalé par ${m.signalePar}${m.date?` le ${fD(m.date)}`:""}</div>`:""}
             ${isDeg?`<div style="background:#FDECEA;border-radius:8px;padding:8px 12px;margin-top:5px;font-size:13px">
               <strong>Dégradation</strong>${m.jeune?` · Jeune identifié : <strong>${m.jeune}</strong>`:" · Jeune non identifié"}
               ${m.famille?` · Contact famille : ${m.famille}`:""}
-              ${m.montantRefact>0?` · Refacturation : <strong>${m.montantRefact.toFixed(2)} €</strong>`:""}
+              ${isDir&&m.montantRefact>0?`<div style="margin-top:4px;padding-top:4px;border-top:1px dashed #E08080"><div style="font-size:12px">Montant dégâts : <strong>${m.montantRefact.toFixed(2)} €</strong></div><div style="font-size:12px">Forfait gestion administrative : <strong>${FORFAIT_GESTION.toFixed(2)} €</strong></div><div style="font-size:13px;color:#C0392B;margin-top:2px">Total refacturé : <strong>${(m.montantRefact+FORFAIT_GESTION).toFixed(2)} €</strong></div><div style="margin-top:6px"><button class="btn bp bsm" data-facture="${m.id}" style="font-size:12px">📄 Générer la demande de remboursement</button>${m.numDemande?`<span style="font-size:11px;color:#888;margin-left:8px">N° ${m.numDemande}</span>`:""}</div></div>`:""}
             </div>`:""}
             ${(m.pj||[]).length>0?`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px">
               <span style="font-size:12px;color:#888">📎</span>
@@ -3223,7 +3962,7 @@ function rMAINTENANCE(){
             <div style="font-size:11px;color:#AAA;margin-top:4px">Saisi par ${m.creePar||"—"} le ${fD(m.cr)}</div>
           </div>
           <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end">
-            <button class="btn bl bsm" data-edit-maint="${m.id}">✏️</button>
+            <button class="btn bl bsm" data-edit-maint="${m.id}">✏️</button><button class="btn bl bsm" data-fiche-travaux="${m.id}" title="Fiche travaux imprimable">📋</button>
             ${isDir&&m.statut===MAINT_STATUTS.OUVERT?`<button class="btn bs bsm" data-close-maint="${m.id}">✓ Clore</button>`:""}
             ${isDir&&isDeg&&m.statut!==MAINT_STATUTS.FACTURE?`<button class="btn bi bsm" data-fact-maint="${m.id}">💳 Facturé</button>`:""}
             ${isDir?`<button class="btn bg bsm" data-pdf-maint="${m.id}">🖨</button>`:""}
@@ -3247,8 +3986,14 @@ function rMAINTENANCE(){
 function bMAINTENANCE(){
   initMaint();
   const {role,user}=A.s;
-  const isDir=role==="direction"||user?.id==="mfr015";
+  const isDir=role==="direction"||user?.id==="mfr015"||user?.id==="mfr017";
 
+  document.querySelectorAll("[data-facture]").forEach(b=>{
+    b.onclick=()=>pdfDemandeRemboursement(b.dataset.facture);
+  });
+  document.querySelectorAll("[data-fiche-travaux]").forEach(b=>{
+    b.onclick=()=>pdfFicheTravaux(b.dataset.ficheTravaux);
+  });
   document.querySelectorAll("[data-maint-filtre]").forEach(b=>{
     b.onclick=()=>{A.s.maintFiltre=b.dataset.maintFiltre;A.r();};
   });
@@ -3298,10 +4043,135 @@ function bMAINTENANCE(){
   });
 }
 
+// ── Modal signalement simple (accessible à tous) ────────────────
+// Modal : changer son propre mot de passe (tous les utilisateurs)
+function rMdlChangePwd(){
+  return mdl("🔑 Changer mon mot de passe",`
+    <p style="font-size:13px;color:#666;margin-bottom:12px">Pour votre sécurité, choisissez un mot de passe personnel connu de vous seul.</p>
+    ${fld("Mot de passe actuel *",`<input type="password" id="cpw-old" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px;width:100%">`)}
+    ${fld("Nouveau mot de passe *",`<input type="password" id="cpw-new" placeholder="au moins 6 caractères" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px;width:100%">`)}
+    ${fld("Confirmer le nouveau mot de passe *",`<input type="password" id="cpw-new2" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px;width:100%">`)}
+    <div class="dvd"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn bl" id="cpw-cancel">Annuler</button>
+      <button class="btn bp" id="cpw-save">Enregistrer</button>
+    </div>`);
+}
+function bMdlChangePwd(){
+  const c=document.getElementById("cpw-cancel"); if(c)c.onclick=()=>A.set({modal:null});
+  const s=document.getElementById("cpw-save");
+  if(s) s.onclick=async()=>{
+    const old=document.getElementById("cpw-old").value;
+    const np=document.getElementById("cpw-new").value;
+    const np2=document.getElementById("cpw-new2").value;
+    const u=A.s.user;
+    if(!u){alert("Session introuvable.");return;}
+    if(!old||!np){alert("Renseignez tous les champs.");return;}
+    if(np.length<6){alert("Le nouveau mot de passe doit faire au moins 6 caractères.");return;}
+    if(np!==np2){alert("Les deux nouveaux mots de passe ne correspondent pas.");return;}
+    // Vérifier l'ancien mot de passe
+    const oldHash=await hashPwd(old);
+    const hashActuel=u.pwhash||PWDS_HASH[u.id]||"";
+    if(oldHash!==hashActuel){alert("Le mot de passe actuel est incorrect.");return;}
+    // Enregistrer le nouveau
+    const newHash=await hashPwd(np);
+    const l=A.s.eq.map(x=>x.id===u.id?{...x,pwhash:newHash,pw:undefined}:x);
+    A.s.user={...u,pwhash:newHash};
+    A.save("eq",l);
+    A.set({modal:null});
+    A.toast("Mot de passe modifié ✓","success");
+  };
+}
+
+function rMdlSignalement(){
+  initVehicules();
+  const motifs=[...MAINT_TYPES,"🚗 Problème véhicule"];
+  const vehOpts=(A.s.vehicules||[]).map(v=>({v:v.id,l:v.nom}));
+  return mdl("🔧 Signaler un problème",`
+    <p style="font-size:13px;color:#666;margin-bottom:12px">Signalez un problème technique (fuite, panne, casse, ampoule…). L'équipe d'entretien en sera informée et assurera le suivi.</p>
+    ${fld("Motif *",sel("sig-motif",motifs,"","-- Choisir le type de problème --"))}
+    <div id="sig-veh-wrap" style="display:none">
+      ${fld("Quel véhicule ? *",sel("sig-veh",vehOpts,"","-- Choisir le véhicule --"))}
+    </div>
+    ${fld("Où ? (lieu précis) *",`<input id="sig-lieu" placeholder="ex: Salle 3, dortoir garçons, cuisine…" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px;width:100%">`)}
+    ${fld("Quel est le problème ? *",`<textarea id="sig-desc" placeholder="Décrivez ce que vous avez constaté…" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px;width:100%;min-height:70px;font-family:inherit"></textarea>`)}
+    <div style="display:flex;gap:8px;margin:4px 0 8px;flex-wrap:wrap">
+      <label class="btn bl bsm" style="cursor:pointer">📷 Joindre une photo<input type="file" id="sig-pj-input" accept="image/*" style="display:none"></label>
+      <span style="font-size:12px;color:#888;align-self:center">Facultatif</span>
+    </div>
+    <div id="sig-pj-list" style="font-size:12px;color:#5C6B3A"></div>
+    <div class="dvd"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn bl" id="sig-cancel">Annuler</button>
+      <button class="btn bp" id="sig-submit">Envoyer le signalement</button>
+    </div>
+  `);
+}
+
+function bMdlSignalement(){
+  const pj=[];
+  const inp=document.getElementById("sig-pj-input");
+  if(inp) inp.onchange=async(e)=>{
+    const files=Array.from(e.target.files);
+    for(const f of files){
+      if(f.size>5*1024*1024){alert(`${f.name} trop volumineux (max 5 Mo).`);continue;}
+      const data=await new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.readAsDataURL(f);});
+      pj.push({name:f.name,type:f.type,size:f.size,data});
+    }
+    const list=document.getElementById("sig-pj-list");
+    if(list) list.innerHTML=pj.map(p=>`📎 ${p.name}`).join(" · ");
+  };
+  // Afficher le sélecteur véhicule uniquement si motif = problème véhicule
+  const motifSel=document.getElementById("sig-motif");
+  const vehWrap=document.getElementById("sig-veh-wrap");
+  const isVehMotif=()=>motifSel && motifSel.value==="🚗 Problème véhicule";
+  if(motifSel) motifSel.onchange=()=>{ if(vehWrap) vehWrap.style.display=isVehMotif()?"block":"none"; };
+
+  const c=document.getElementById("sig-cancel");
+  if(c) c.onclick=()=>A.set({modal:null});
+  const s=document.getElementById("sig-submit");
+  if(s) s.onclick=()=>{
+    const motif=motifSel?motifSel.value:"";
+    const desc=document.getElementById("sig-desc").value.trim();
+    if(!motif){alert("Merci de choisir un motif.");return;}
+    if(!desc){alert("Merci de décrire le problème.");return;}
+    const u=A.s.user;
+    const signalePar=u?`${u.nom} ${u.pr}`:"Anonyme";
+
+    // Cas 1 : problème véhicule → rattaché au véhicule choisi (anomalie)
+    if(motif==="🚗 Problème véhicule"){
+      const vehId=document.getElementById("sig-veh")?.value;
+      if(!vehId){alert("Merci de choisir le véhicule concerné.");return;}
+      const ano={id:uid(),date:today2(),description:desc,statut:"Ouvert",signalePar};
+      const l=(A.s.vehicules||[]).map(v=>v.id===vehId?{...v,anomalies:[...(v.anomalies||[]),ano]}:v);
+      A.save("vehicules",l);
+      A.set({modal:null});
+      A.toast("✅ Anomalie véhicule signalée à l'équipe d'entretien","success");
+      return;
+    }
+
+    // Cas 2 : problème bâtiment → intervention (avec le motif choisi)
+    const lieu=document.getElementById("sig-lieu").value.trim();
+    if(!lieu){alert("Merci d'indiquer le lieu.");return;}
+    const entry={
+      id:uid(), annee:getAS(), date:today2(),
+      intitule:desc.length>50?desc.slice(0,50)+"…":desc,
+      type:motif, lieu, description:desc,
+      temps:0, coutMat:0, coutTotal:0, degradation:false,
+      statut:MAINT_STATUTS.OUVERT, pj,
+      signalePar, creePar:signalePar, viaSignalement:true
+    };
+    A.save("maintenances",[...(A.s.maintenances||[]),entry]);
+    A.set({modal:null});
+    A.toast("✅ Signalement envoyé à l'équipe d'entretien","success");
+  };
+}
+
 // ── Modal nouvelle intervention ──────────────────────────────────
 function rMdlNMaint(){
   const edit=A.s.modal.data.edit||null;
   const isDeg=edit?.degradation||false;
+  const isDir=A.s.role==="direction"||A.s.user?.id==="mfr015"||A.s.user?.id==="mfr017";
   return mdl(edit?"✏️ Modifier l'intervention":"🔧 Signaler une intervention",`
     ${fld("Intitulé *",`<input id="mt-int" value="${edit?.intitule||""}" placeholder="ex: Réparation serrure chambre 3, Peinture couloir internat…" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px;width:100%">`)}
     <div class="g2">
@@ -3333,7 +4203,12 @@ function rMdlNMaint(){
         ${fld("Jeune identifié (prénom NOM ou 'Non identifié')",`<input id="mt-jeune" value="${edit?.jeune||""}" placeholder="ex: Mathis DUPONT — 3ème A, ou Non identifié" style="border:1.5px solid #E08080;border-radius:8px;padding:8px 12px;width:100%">`)}
         <div class="g2">
           ${fld("Contact famille",`<input id="mt-famille" value="${edit?.famille||""}" placeholder="ex: M. Dupont — 06 12 34 56 78" style="border:1.5px solid #E08080;border-radius:8px;padding:8px 12px;width:100%">`)}
-          ${fld("Montant à refacturer (€)",`<input type="number" id="mt-refact" value="${edit?.montantRefact||""}" min="0" step="0.01" placeholder="ex: 120.00" style="border:1.5px solid #E08080;border-radius:8px;padding:8px 12px;width:100%">`)}
+        </div>
+        <div style="font-size:12px;font-weight:700;color:#C0392B;margin:6px 0 4px">Coordonnées du débiteur (pour la demande de remboursement)</div>
+        ${fld("Nom du responsable légal",`<input id="mt-debNom" value="${edit?.debiteurNom||""}" placeholder="ex: Monsieur et Madame DUPONT" style="border:1.5px solid #E08080;border-radius:8px;padding:8px 12px;width:100%">`)}
+        ${fld("Adresse postale du débiteur",`<textarea id="mt-debAdr" placeholder="ex: 12 rue des Écoles&#10;47600 Nérac" style="border:1.5px solid #E08080;border-radius:8px;padding:8px 12px;width:100%;min-height:52px;font-family:inherit">${edit?.debiteurAdresse||""}</textarea>`)}
+        <div class="g2">
+          ${isDir?fld("Montant à refacturer (€)",`<input type="number" id="mt-refact" value="${edit?.montantRefact||""}" min="0" step="0.01" placeholder="ex: 120.00" style="border:1.5px solid #E08080;border-radius:8px;padding:8px 12px;width:100%">`):`<input type="hidden" id="mt-refact" value="${edit?.montantRefact||""}">`}
         </div>
       </div>
     </div>
@@ -3412,6 +4287,8 @@ function bMdlNMaint(){
     const degradation=document.getElementById("mt-deg").checked;
     const jeune=document.getElementById("mt-jeune")?.value||"";
     const famille=document.getElementById("mt-famille")?.value||"";
+    const debiteurNom=document.getElementById("mt-debNom")?.value||"";
+    const debiteurAdresse=document.getElementById("mt-debAdr")?.value||"";
     const montantRefact=parseFloat(document.getElementById("mt-refact")?.value)||0;
 
     if(!intitule||!type||!lieu||!date){alert("Renseignez l'intitulé, le type, le lieu et la date.");return;}
@@ -3425,7 +4302,7 @@ function bMdlNMaint(){
       intervenantId,intervenantNom:mbInter?`${mbInter.pr} ${mbInter.nom}`:"",
       statut,description,degradation,
       jeune:degradation?jeune:"",famille:degradation?famille:"",
-      montantRefact:degradation?montantRefact:0,pj,creePar};
+      montantRefact:degradation?montantRefact:0,debiteurNom:degradation?debiteurNom:"",debiteurAdresse:degradation?debiteurAdresse:"",pj,creePar};
 
     const l=edit?(A.s.maintenances||[]).map(x=>x.id===edit.id?entry:x):[...(A.s.maintenances||[]),entry];
     A.save("maintenances",l);A.set({modal:null});
@@ -3490,6 +4367,233 @@ function pdfFicheMaint(m){
 }
 
 // ── PDF bilan annuel AG ───────────────────────────────────────────
+
+// ── Constantes d'identification MFR (pour la facturation) ──
+const MFR_IDENT = {
+  raisonSociale: "Maison Familiale Rurale d'Éducation et d'Orientation du Néracais-Barbaste",
+  nomCourt: "MFR du Néracais",
+  adresse: "200 route de Bordeaux",
+  cp: "47230", ville: "Barbaste",
+  siret: "782 198 931 00027",
+  formeJuridique: "Association Loi 1901",
+  ape: "8532Z",
+  tel: "05 53 65 56 06",
+  email: "comptabilite.barbaste@mfr.asso.fr"
+};
+
+// Attribue (ou récupère) le numéro de demande de remboursement d'une intervention.
+// Format DR-AAAA-NNN, séquence calculée sur l'année civile, stockée sur la fiche.
+function numeroDemande(m){
+  if(m.numDemande) return m.numDemande; // déjà attribué → stable
+  const anneeCiv = (m.date||today2()).slice(0,4);
+  // Chercher le plus grand numéro déjà attribué cette année
+  let maxN = 0;
+  (A.s.maintenances||[]).forEach(x=>{
+    if(x.numDemande && x.numDemande.startsWith(`DR-${anneeCiv}-`)){
+      const n = parseInt(x.numDemande.split("-")[2],10)||0;
+      if(n>maxN) maxN=n;
+    }
+  });
+  const num = `DR-${anneeCiv}-${String(maxN+1).padStart(3,"0")}`;
+  // Enregistrer le numéro sur la fiche (synchronisé) pour qu'il reste stable
+  const l = (A.s.maintenances||[]).map(x=>x.id===m.id?{...x,numDemande:num}:x);
+  A.s.maintenances=l; A.save("maintenances",l);
+  return num;
+}
+
+// Génère la demande de remboursement (PDF imprimable) pour une dégradation.
+function pdfDemandeRemboursement(id){
+  const m=(A.s.maintenances||[]).find(x=>x.id===id);
+  if(!m){alert("Intervention introuvable.");return;}
+  if(!m.degradation){alert("Cette intervention n'est pas une dégradation.");return;}
+  if(!(m.montantRefact>0)){alert("Aucun montant à refacturer n'est renseigné.");return;}
+  if(!m.debiteurNom){ if(!confirm("Aucun nom de débiteur n'est renseigné. Générer quand même ?")) return; }
+
+  const num=numeroDemande(m);
+  const dateEd=fD(today2());
+  const montant=m.montantRefact||0;
+  const forfait=FORFAIT_GESTION;
+  const total=montant+forfait;
+  const I=MFR_IDENT;
+
+  const w=window.open("","_blank","width=950,height=760");
+  w.document.write(`<!`+`DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Demande de remboursement ${num}</title>
+  <style>
+    @page{margin:18mm 16mm}
+    *{box-sizing:border-box}
+    body{font-family:'Calibri','Segoe UI',Arial,sans-serif;color:#2b2b2b;font-size:13px;line-height:1.45;margin:0}
+    .head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #C8A84B;padding-bottom:12px;margin-bottom:6px}
+    .logo{height:74px}
+    .emetteur{font-size:11px;color:#555;text-align:right;line-height:1.4}
+    .emetteur .rs{font-size:12px;font-weight:700;color:#3A4425;max-width:280px;display:inline-block}
+    .titre{background:#3A4425;color:#fff;padding:8px 14px;border-radius:6px;font-size:18px;font-weight:800;letter-spacing:.5px;margin:14px 0 4px}
+    .ref{display:flex;justify-content:space-between;font-size:12px;color:#555;margin-bottom:14px}
+    .ref strong{color:#2b2b2b}
+    .debiteur{border:1px solid #DDD5B8;border-radius:8px;padding:10px 14px;width:52%;margin-left:auto;background:#FAF7F0;margin-bottom:16px}
+    .debiteur .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#888;margin-bottom:3px}
+    .debiteur .nom{font-weight:700;font-size:14px}
+    table{width:100%;border-collapse:collapse;margin:8px 0 4px}
+    th{background:#EEF2E6;color:#3A4425;text-align:left;padding:8px 10px;font-size:12px;border:1px solid #DDD5B8}
+    td{padding:8px 10px;border:1px solid #E5E0CE;font-size:13px}
+    td.r{text-align:right}
+    .tot{font-weight:800;font-size:15px;color:#3A4425}
+    .tot td{background:#FBF5E0;border-color:#C8A84B}
+    .mentions{font-size:11px;color:#666;margin-top:16px;border-top:1px solid #E5E0CE;padding-top:10px;line-height:1.5}
+    .regl{background:#F4F1E8;border-radius:8px;padding:10px 14px;font-size:12px;margin-top:14px}
+    .sign{display:flex;justify-content:space-between;align-items:flex-end;margin-top:26px}
+    .tampon{height:96px;opacity:.92}
+    .pied{font-size:10px;color:#999;text-align:center;border-top:1px solid #E5E0CE;padding-top:8px;margin-top:22px}
+    @media print{.noprint{display:none}}
+  </style></head><body>
+
+  <div class="head">
+    <img src="${LOGO_B64}" class="logo" alt="MFR">
+    <div class="emetteur">
+      <span class="rs">${I.raisonSociale}</span><br>
+      ${I.adresse} — ${I.cp} ${I.ville}<br>
+      SIRET : ${I.siret} · APE : ${I.ape}<br>
+      ${I.formeJuridique}<br>
+      Tél. ${I.tel} · ${I.email}
+    </div>
+  </div>
+
+  <div class="titre">DEMANDE DE REMBOURSEMENT</div>
+  <div class="ref">
+    <span>Référence : <strong>${num}</strong></span>
+    <span>Établie à Barbaste, le <strong>${dateEd}</strong></span>
+  </div>
+
+  <div class="debiteur">
+    <div class="lbl">Adressée à</div>
+    <div class="nom">${m.debiteurNom||"[Responsable légal non renseigné]"}</div>
+    <div style="white-space:pre-line">${m.debiteurAdresse||""}</div>
+  </div>
+
+  <p>Madame, Monsieur,</p>
+  <p>Par la présente, nous sollicitons le remboursement des frais engagés par la MFR du Néracais à la suite de la dégradation constatée ci-dessous${m.jeune&&m.jeune!=="Non identifié"?`, impliquant <strong>${m.jeune}</strong>`:""}.</p>
+
+  <table>
+    <thead><tr><th>Désignation</th><th style="width:130px">Détail</th><th style="width:110px;text-align:right">Montant</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>${m.intitule||"Dégradation"}</strong>${m.description?`<br><span style="font-size:11px;color:#777">${m.description}</span>`:""}</td>
+        <td>${m.lieu||"—"}<br><span style="font-size:11px;color:#777">${fD(m.date)}</span></td>
+        <td class="r">${montant.toFixed(2)} €</td>
+      </tr>
+      <tr>
+        <td>Forfait de gestion administrative<br><span style="font-size:11px;color:#777">Traitement du dossier, courriers, suivi</span></td>
+        <td>Forfait</td>
+        <td class="r">${forfait.toFixed(2)} €</td>
+      </tr>
+      <tr class="tot"><td colspan="2" class="r">TOTAL À RÉGLER</td><td class="r">${total.toFixed(2)} €</td></tr>
+    </tbody>
+  </table>
+
+  <div class="regl">
+    <strong>Modalités de règlement :</strong> par chèque à l'ordre de « MFR du Néracais » ou par virement, dans un délai de 30 jours à réception de la présente. Pour toute question, contactez le service comptabilité : ${I.email}.
+  </div>
+
+  <div class="sign">
+    <div style="font-size:12px">
+      <strong>Pascale DAUGÉ</strong><br>
+      <span style="color:#666">Directrice — MFR du Néracais</span>
+    </div>
+    <img src="${TAMPON_B64}" class="tampon" alt="Cachet">
+  </div>
+
+  <div class="mentions">
+    Document établi par ${I.raisonSociale}, ${I.formeJuridique}, SIRET ${I.siret}.
+    Demande de remboursement de frais consécutifs à une dégradation — non soumise à TVA (association à but non lucratif, art. 261-7 du CGI).
+  </div>
+
+  <div class="pied">MFR du Néracais · ${I.adresse}, ${I.cp} ${I.ville} · Cultivons les réussites</div>
+
+  <div class="noprint" style="text-align:center;margin-top:16px">
+    <button onclick="window.print()" style="background:#3A4425;color:#fff;border:none;padding:10px 22px;border-radius:8px;font-size:14px;cursor:pointer">🖨️ Imprimer / Enregistrer en PDF</button>
+  </div>
+  </body></html>`);
+  w.document.close();
+}
+
+// Fiche travaux imprimable pour une intervention
+function pdfFicheTravaux(id){
+  const m=(A.s.maintenances||[]).find(x=>x.id===id);
+  if(!m){alert("Intervention introuvable.");return;}
+  const I=MFR_IDENT;
+  const isDir=A.s.role==="direction"||A.s.user?.id==="mfr015"||A.s.user?.id==="mfr017";
+  const w=window.open("","_blank","width=900,height=740");
+  w.document.write(`<!`+`DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Fiche travaux — ${m.intitule||""}</title>
+  <style>
+    @page{margin:16mm}
+    body{font-family:'Calibri','Segoe UI',Arial,sans-serif;color:#2b2b2b;font-size:13px;line-height:1.5;margin:0}
+    .head{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #C8A84B;padding-bottom:10px;margin-bottom:14px}
+    .logo{height:64px}
+    .titre{font-size:20px;font-weight:800;color:#3A4425;text-align:right}
+    .titre small{display:block;font-size:12px;color:#888;font-weight:400}
+    .row{display:flex;gap:12px;margin-bottom:10px}
+    .box{flex:1;border:1px solid #DDD5B8;border-radius:8px;padding:8px 12px}
+    .box .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#888}
+    .box .val{font-size:14px;font-weight:600;color:#3A4425}
+    .section{margin:14px 0}
+    .section h3{background:#EEF2E6;color:#3A4425;padding:6px 10px;border-radius:6px;font-size:13px;margin:0 0 6px}
+    .desc{border:1px solid #E5E0CE;border-radius:8px;padding:10px 12px;min-height:60px}
+    .travaux{border:1px dashed #B0B0B0;border-radius:8px;padding:10px 12px;min-height:90px;color:#999;font-style:italic}
+    table{width:100%;border-collapse:collapse;margin-top:6px}
+    td,th{border:1px solid #E5E0CE;padding:6px 10px;font-size:13px;text-align:left}
+    th{background:#FAF7F0;color:#3A4425}
+    .sign{display:flex;justify-content:space-between;margin-top:30px;font-size:12px}
+    .sign .sb{border-top:1px solid #999;padding-top:4px;width:44%;color:#888}
+    .pied{font-size:10px;color:#999;text-align:center;border-top:1px solid #E5E0CE;padding-top:8px;margin-top:24px}
+    @media print{.noprint{display:none}}
+  </style></head><body>
+  <div class="head">
+    <img src="${LOGO_B64}" class="logo" alt="MFR">
+    <div class="titre">FICHE DE TRAVAUX<small>${I.nomCourt} — ${I.adresse}, ${I.cp} ${I.ville}</small></div>
+  </div>
+
+  <div class="row">
+    <div class="box"><div class="lbl">Intervention</div><div class="val">${m.intitule||"—"}</div></div>
+    <div class="box"><div class="lbl">Type</div><div class="val">${m.type||"—"}</div></div>
+  </div>
+  <div class="row">
+    <div class="box"><div class="lbl">Lieu</div><div class="val">${m.lieu||"—"}</div></div>
+    <div class="box"><div class="lbl">Date de signalement</div><div class="val">${fD(m.date)}</div></div>
+    <div class="box"><div class="lbl">Statut</div><div class="val">${m.statut||"—"}</div></div>
+  </div>
+  ${m.signalePar?`<div class="box" style="margin-bottom:10px"><div class="lbl">Signalé par</div><div class="val">${m.signalePar}</div></div>`:""}
+
+  <div class="section">
+    <h3>Problème constaté</h3>
+    <div class="desc">${m.description||"—"}</div>
+  </div>
+
+  <div class="section">
+    <h3>Travaux réalisés</h3>
+    <div class="travaux">À compléter : nature des travaux effectués, pièces changées, observations…</div>
+  </div>
+
+  <div class="section">
+    <h3>Temps et matériaux</h3>
+    <table>
+      <tr><th style="width:50%">Temps passé</th><td>${m.temps>0?m.temps+" h":"À compléter"}</td></tr>
+      ${isDir?`<tr><th>Coût matériaux</th><td>${m.coutMat>0?m.coutMat.toFixed(2)+" €":"À compléter"}</td></tr>`:""}
+    </table>
+  </div>
+
+  <div class="sign">
+    <div class="sb">Intervenant (nom et signature)</div>
+    <div class="sb">Visa responsable entretien</div>
+  </div>
+
+  <div class="pied">${I.nomCourt} · Cultivons les réussites · Fiche générée le ${fD(today2())}</div>
+
+  <div class="noprint" style="text-align:center;margin-top:16px">
+    <button onclick="window.print()" style="background:#3A4425;color:#fff;border:none;padding:10px 22px;border-radius:8px;font-size:14px;cursor:pointer">🖨️ Imprimer / Enregistrer en PDF</button>
+  </div>
+  </body></html>`);
+  w.document.close();
+}
+
 function pdfBilanMaint(annee){
   const all=(A.s.maintenances||[]).filter(m=>m.annee===annee);
   const totalCout=all.reduce((s,m)=>s+(m.coutMat||0),0);
@@ -3499,6 +4603,12 @@ function pdfBilanMaint(annee){
   const degrades=all.filter(m=>m.degradation);
   const factures=degrades.filter(m=>m.statut===MAINT_STATUTS.FACTURE);
   const montantRefact=degrades.reduce((s,m)=>s+(m.montantRefact||0),0);
+  // Forfait gestion administrative : 10€ par dégradation effectivement refacturée
+  const nbRefact=degrades.filter(m=>(m.montantRefact||0)>0).length;
+  const totalForfait=nbRefact*FORFAIT_GESTION;
+  const montantRefactTotal=montantRefact+totalForfait;
+  const nbFactRefact=factures.filter(m=>(m.montantRefact||0)>0).length;
+  const factureAvecForfait=factures.reduce((s,m)=>s+(m.montantRefact||0),0)+nbFactRefact*FORFAIT_GESTION;
 
   // Par type
   const parType={};
@@ -3523,7 +4633,7 @@ function pdfBilanMaint(annee){
     <td style="padding:6px 10px;border:1px solid #DDD">${m.intitule}</td>
     <td style="padding:6px 10px;border:1px solid #DDD">${m.lieu||"—"}</td>
     <td style="padding:6px 10px;border:1px solid #DDD">${m.jeune||"Non identifié"}</td>
-    <td style="padding:6px 10px;border:1px solid #DDD;text-align:right">${(m.montantRefact||0).toFixed(2)} €</td>
+    <td style="padding:6px 10px;border:1px solid #DDD;text-align:right">${(m.montantRefact||0)>0?`${(m.montantRefact||0).toFixed(2)} €<br><span style="font-size:11px;color:#888">+ ${FORFAIT_GESTION.toFixed(2)} € forfait</span><br><strong>${((m.montantRefact||0)+FORFAIT_GESTION).toFixed(2)} €</strong>`:`${(m.montantRefact||0).toFixed(2)} €`}</td>
     <td style="padding:6px 10px;border:1px solid #DDD;text-align:center">${m.statut===MAINT_STATUTS.FACTURE?`<span style="color:#2E7D52;font-weight:700">✅ Facturé</span>`:`<span style="color:#B8670A">⏳ En attente</span>`}</td>
   </tr>`).join("");
 
@@ -3555,7 +4665,7 @@ function pdfBilanMaint(annee){
   <tbody>${typeRows||"<tr><td colspan='5' style='text-align:center;color:#888'>Aucune donnée</td></tr>"}</tbody></table>
   ${degrades.length>0?`<h2>🔴 Dégradations (${degrades.length}) — Refacturation aux familles</h2>
   <div style="background:#FDECEA;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:13px">
-    Total à refacturer : <strong>${montantRefact.toFixed(2)} €</strong> · Facturé : <strong>${factures.reduce((s,m)=>s+(m.montantRefact||0),0).toFixed(2)} €</strong> · En attente : <strong>${(montantRefact-factures.reduce((s,m)=>s+(m.montantRefact||0),0)).toFixed(2)} €</strong>
+    Total à refacturer : <strong>${montantRefactTotal.toFixed(2)} €</strong> <span style="color:#888">(dont ${totalForfait.toFixed(2)} € de forfait gestion)</span> · Facturé : <strong>${factureAvecForfait.toFixed(2)} €</strong> · En attente : <strong>${(montantRefactTotal-factureAvecForfait).toFixed(2)} €</strong>
   </div>
   <table><thead><tr><th>Date</th><th>Travaux</th><th>Lieu</th><th>Jeune</th><th>Montant</th><th>Statut</th></tr></thead>
   <tbody>${degRows}</tbody></table>`:""}
@@ -3588,6 +4698,12 @@ function pdfBilanMaint(annee){
 // ══ SYNTHÈSE ANNUELLE RH ════════════════════════════════════════
 // Visible : Pascale (direction) + Sandrine (mfr015) uniquement
 
+function canFacturer(role, userId){
+  return role==="direction" || userId==="mfr015" || userId==="mfr017"; // Direction + assistante + comptable
+}
+function canSeeEq(role, userId){
+  return role==="direction" || userId==="mfr015"; // Direction + assistante de direction
+}
 function canSeeSynth(role, userId){
   return role==="direction" || userId==="mfr015";
 }
@@ -3636,9 +4752,13 @@ function rSYNTHESE(){
   const totalJoursCP=demCP.reduce((s,d)=>s+(d.nj||0),0);
 
   // ── Sélecteur année ──
-  const selH=`<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+  const selH=`<div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;align-items:center">
+    <span style="font-size:13px;font-weight:700;color:#5C6B3A">Année scolaire :</span>
     ${["2024-2025","2025-2026","2026-2027"].map(a=>`<button class="btn ${a===annee?"bp":"bl"} bsm" data-synth-annee="${a}">${a.replace("-","/")}</button>`).join("")}
     <button class="btn bg bsm" id="btn-print-synth">🖨 Imprimer le bilan</button>
+  </div>
+  <div style="background:#E8F0F5;border:1px solid #B8D0E0;border-radius:8px;padding:8px 14px;margin-bottom:16px;font-size:13px;color:#1A5A7A">
+    📅 Période affichée : <strong>du ${fD(dateDebStr)} au ${fD(dateFinStr)}</strong> — seules les données de cette période sont comptabilisées ci-dessous.
   </div>`;
 
   // ── Section effectifs ──
@@ -3658,7 +4778,7 @@ function rSYNTHESE(){
     <h3 style="font-size:16px;color:#3A4425;margin-bottom:12px">📅 Absentéisme — ${annee}</h3>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:12px">
       <div class="kpi" style="background:#FEF3E2"><div class="val" style="font-size:22px;font-weight:800;color:#B8670A">${totalJoursAbs}</div><div style="font-size:12px;font-weight:600;color:#555">Jours d'absence</div></div>
-      <div class="kpi" style="background:#FBF5E0"><div class="val" style="font-size:22px;font-weight:800;color:#C8A84B">${totalJoursCP}</div><div style="font-size:12px;font-weight:600;color:#555">Jours CP posés</div></div>
+      <div class="kpi" style="background:#FBF5E0"><div class="val" style="font-size:22px;font-weight:800;color:#C8A84B">${totalJoursCP}</div><div style="font-size:12px;font-weight:600;color:#555">Jours de congés payés posés</div></div>
       <div class="kpi" style="background:#EEF2E6"><div class="val" style="font-size:22px;font-weight:800;color:#5C6B3A">${fH(totalHSup)}</div><div style="font-size:12px;font-weight:600;color:#555">Heures sup.</div></div>
       <div class="kpi" style="background:#E3F1FA"><div class="val" style="font-size:22px;font-weight:800;color:#1A6B9A">${fH(totalRecup)}</div><div style="font-size:12px;font-weight:600;color:#555">Récup générées</div></div>
     </div>
@@ -3681,7 +4801,7 @@ function rSYNTHESE(){
   const OBJ_TEMPS_PLEIN=1599; // Durée annuelle de référence (accord MFR)
   const annualH=`<div class="card" style="margin-bottom:12px">
     <h3 style="font-size:16px;color:#3A4425;margin-bottom:6px">⏱ Annualisation du temps de travail — ${annee}</h3>
-    <p style="font-size:12px;color:#888;margin-bottom:12px">Objectif temps plein : <strong>${OBJ_TEMPS_PLEIN}h</strong> · ajusté à la quotité de chaque salarié · réalisé = heures déclarées et approuvées à ce jour.</p>
+    <p style="font-size:12px;color:#888;margin-bottom:12px">Objectif temps plein : <strong>${OBJ_TEMPS_PLEIN}h</strong> · ajusté à la quotité de chaque salarié · réalisé = heures déclarées et approuvées <strong>entre le ${fD(dateDebStr)} et le ${fD(dateFinStr)}</strong>.</p>
     <div style="overflow-x:auto">
       <table style="border-collapse:collapse;width:100%;font-size:13px">
         <thead><tr style="background:#3A4425">
@@ -3726,6 +4846,43 @@ function rSYNTHESE(){
   </div>`;
 
 
+  // ── Section compteur récupération ──
+  const recupLignes = actifs.map(m=>{
+    const acquis = (m.ra||0)*7;   // stocké en jours → affiché en heures
+    const pris   = (m.rp||0)*7;
+    const solde  = Math.max(0, acquis - pris);
+    return {nom:`${m.nom} ${m.pr}`, sv:m.sv||"—", acquis, pris, solde};
+  }).filter(r=>r.acquis>0 || r.pris>0); // n'afficher que ceux ayant un mouvement
+
+  const totalSolde = recupLignes.reduce((s,r)=>s+r.solde,0);
+
+  const recupH = `<div class="card" style="margin-bottom:12px">
+    <h3 style="font-size:16px;color:#3A4425;margin-bottom:6px">⏱ Compteur de récupération — soldes de l'équipe</h3>
+    <p style="font-size:12px;color:#888;margin-bottom:12px">Heures supplémentaires validées, récupérations prises et solde disponible, par salarié. Total équipe : <strong>${fH(totalSolde)}</strong> à récupérer.</p>
+    ${recupLignes.length===0 ? `<p style="font-size:13px;color:#999">Aucune heure supplémentaire ni récupération enregistrée cette année.</p>` : `
+    <div style="overflow-x:auto">
+      <table style="border-collapse:collapse;width:100%;font-size:13px">
+        <thead><tr style="background:#3A4425">
+          <th style="padding:8px 12px;color:#fff;text-align:left">Salarié</th>
+          <th style="padding:8px 8px;color:#fff;text-align:left">Service</th>
+          <th style="padding:8px 8px;color:#fff;text-align:right">Heures acquises</th>
+          <th style="padding:8px 8px;color:#fff;text-align:right">Récup. prises</th>
+          <th style="padding:8px 12px;color:#fff;text-align:right">Solde disponible</th>
+        </tr></thead>
+        <tbody>
+          ${recupLignes.map(r=>`<tr style="border-bottom:1px solid #EDE8D8">
+            <td style="padding:6px 12px;font-weight:600">${r.nom}</td>
+            <td style="padding:6px 8px;color:#666">${r.sv}</td>
+            <td style="padding:6px 8px;text-align:right;color:#1A6B9A">${fH(r.acquis)}</td>
+            <td style="padding:6px 8px;text-align:right;color:#B8670A">${fH(r.pris)}</td>
+            <td style="padding:6px 12px;text-align:right;font-weight:800;color:${r.solde>0?"#5C6B3A":"#999"}">${fH(r.solde)}</td>
+          </tr>`).join("")}
+        </tbody>
+      </table>
+    </div>`}
+    <div style="font-size:12px;color:#888;margin-top:8px">Le solde correspond aux heures supplémentaires validées non encore récupérées. Il diminue lorsqu'une demande de récupération est approuvée.</div>
+  </div>`;
+
   // ── Section maintenance ──
   const maintAnnee=(A.s.maintenances||[]).filter(m=>m.annee===annee);
   const maintH=maintAnnee.length>0?`<div class="card" style="margin-bottom:12px">
@@ -3741,7 +4898,7 @@ function rSYNTHESE(){
   return`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
     <h2 style="color:#3A4425;font-size:22px;font-weight:800">📊 Bilan RH annuel</h2>
   </div>
-  ${selH}${effH}${absH}${formH}${annualH}${maintH}`;
+  ${selH}${effH}${absH}${formH}${annualH}${recupH}${maintH}`;
 }
 
 function bSYNTHESE(){
@@ -3835,7 +4992,7 @@ function pdfSynthese(annee){
   <h2>📅 Absentéisme</h2>
   <div class="kpi-grid">
     <div class="kpi"><div class="kval" style="color:#B8670A">${totalJoursAbs}</div><div class="klbl">Jours d'absence</div></div>
-    <div class="kpi"><div class="kval" style="color:#5C6B3A">${dem.filter(d=>d.ty==="CP"&&d.st==="Approuvée"&&d.dd>=dateDebStr).reduce((s,d)=>s+(d.nj||0),0)}</div><div class="klbl">Jours CP posés</div></div>
+    <div class="kpi"><div class="kval" style="color:#5C6B3A">${dem.filter(d=>d.ty==="CP"&&d.st==="Approuvée"&&d.dd>=dateDebStr).reduce((s,d)=>s+(d.nj||0),0)}</div><div class="klbl">Jours de congés payés posés</div></div>
     <div class="kpi"><div class="kval" style="color:#B8670A">${fH(totalHSup)}</div><div class="klbl">Heures sup.</div></div>
     <div class="kpi"><div class="kval">${absAnnee.length}</div><div class="klbl">Évènements abs.</div></div>
   </div>
@@ -3884,43 +5041,46 @@ function rechargerCPAnnuels(){
   // ── Acquisition MENSUELLE progressive des CP ──
   // Période de référence : 1er septembre → 31 août
   // Chaque 1er du mois : +2,5j (ou montant custom par salarié, ex. direction = 5j)
+  // ⚠ Démarrage : ne crédite RIEN avant le 1er septembre 2026.
+  // ⚠ Anti-doublon MULTI-POSTES : le marqueur est stocké dans la fiche (m.cpDernierCredit),
+  //    synchronisée via Firebase → un seul crédit par mois quel que soit le poste.
   const today=new Date();
   const mm=today.getMonth()+1; // 1-12
   const yyyy=today.getFullYear();
 
-  // Déterminer l'année de référence de la période en cours
-  // Sept-Déc → période yyyy/yyyy+1 ; Jan-Août → période yyyy-1/yyyy
+  // Ne rien faire avant la date de mise en place (1er septembre 2026)
+  const dateActive=new Date("2026-09-01T00:00:00");
+  if(today < dateActive) return;
+
+  // Année de référence : Sept-Déc → yyyy ; Jan-Août → yyyy-1
   const anneeRef = mm>=9 ? yyyy : yyyy-1;
-  const moisEcoules = mm>=9 ? (mm-9+1) : (mm+3+1); // sept=1, oct=2, ... août=12
+  // Identifiant unique du mois de crédit (ex: "2026-09")
+  const moisCle = `${anneeRef}-${String(mm).padStart(2,"0")}`;
 
   const eq=A.s.eq||[];
   let nb=0;
   const newEq=eq.map(m=>{
     if(m.archive) return m;
     const mensuel = (m.cpMensuel!=null ? m.cpMensuel : 2.5);
-    // CP théoriquement acquis depuis le 1er septembre
-    const acquisTheorique = mensuel * moisEcoules;
-    // Clé pour ne créditer qu'une fois par mois
-    const cleMois = `cp_${m.id}_${anneeRef}_${mm}`;
-    if(K.g(cleMois)) return m; // déjà crédité ce mois-ci
+    // Anti-doublon partagé : si ce mois a déjà été crédité pour ce salarié, on saute
+    if(m.cpDernierCredit===moisCle) return m;
 
-    // Réinitialisation en septembre (nouvelle période)
+    // Réinitialisation en septembre (nouvelle période de référence)
     if(mm===9){
       const soldeActuel=Math.max(0,(m.cp||0)-(m.cpp||0));
       const report=Math.min(5,soldeActuel); // report max 5j (CCN MFR)
-      K.s(cleMois,{date:today.toISOString()});
       nb++;
-      return {...m, cp:mensuel+report, cpp:0, _cpAcquis:mensuel};
+      return {...m, cp:mensuel+report, cpp:0, _cpAcquis:mensuel, cpDernierCredit:moisCle};
     }
     // Autres mois : créditer l'incrément mensuel
-    K.s(cleMois,{date:today.toISOString()});
     nb++;
-    return {...m, cp:(m.cp||0)+mensuel, _cpAcquis:(m._cpAcquis||0)+mensuel};
+    return {...m, cp:(m.cp||0)+mensuel, _cpAcquis:(m._cpAcquis||0)+mensuel, cpDernierCredit:moisCle};
   });
 
   if(nb>0){
     A.s.eq=newEq;
-    K.s("eq",newEq);
+    // Sauvegarde synchronisée (Firebase + local) pour propager le marqueur à tous les postes
+    A.save("eq",newEq);
     A.s._cpRechargeInfo={date:today.toISOString().split("T")[0],nb,mois:MNS[mm-1]};
   }
 }
@@ -5250,7 +6410,7 @@ function imprimerSalarie(mb, dd, df){
   const {abs,dem,heu,ord}=A.s;
   const cp=Math.max(0,(mb.cp||0)-(mb.cpp||0));
   const rc=Math.max(0,(mb.ra||0)-(mb.rp||0));
-  const tt=Math.max(0,(mb.ttp||0)-(mb.ttu||0));
+  const tt=ttRestant(mb.id);
 
   
   const absMb=abs.filter(a=>a.mid===mb.id&&a.ty!=="Annulée"&&a.dd>=dd&&a.dd<=df);
@@ -5347,8 +6507,8 @@ function imprimerEquipe(){
   html+=entete("Tableau des soldes — Équipe complète","À la date du "+fD(today2()));
   html+=`<div class="section"><h2>Soldes congés et récupérations (${actifs.length} membres actifs)</h2>
     <table><thead><tr><th>Nom</th><th>Prénom</th><th>Service</th><th>Poste</th>
-    <th style="text-align:center">CP restants</th><th style="text-align:center">Récup. dispo</th>
-    <th style="text-align:center">TT restant</th><th>Entrée</th></tr></thead><tbody>`;
+    <th style="text-align:center">Congés payés restants</th><th style="text-align:center">Récup. disponible</th>
+    <th style="text-align:center">Télétravail restant</th><th>Entrée</th></tr></thead><tbody>`;
   
   
   SVC.forEach(sv=>{
@@ -5358,7 +6518,7 @@ function imprimerEquipe(){
     mbs.forEach(m=>{
       const cp=Math.max(0,(m.cp||0)-(m.cpp||0));
       const rc=Math.max(0,(m.ra||0)-(m.rp||0));
-      const tt=Math.max(0,(m.ttp||0)-(m.ttu||0));
+      const tt=ttRestant(m.id);
       const cpColor=cp>5?"#2E7D52":cp>0?"#B8670A":"#C0392B";
       html+=`<tr><td><strong>${m.nom}</strong></td><td>${m.pr}</td><td>${m.sv}</td><td>${m.po||"—"}</td>
         <td style="text-align:center;color:${cpColor};font-weight:700">${cp}j</td>
@@ -5371,9 +6531,9 @@ function imprimerEquipe(){
 
   
   html+=`<p style="font-size:11px;color:#888;margin-top:8px">
-    <span style="color:#2E7D52;font-weight:700">■</span> CP > 5j · 
-    <span style="color:#B8670A;font-weight:700">■</span> CP entre 1 et 5j · 
-    <span style="color:#C0392B;font-weight:700">■</span> CP épuisé
+    <span style="color:#2E7D52;font-weight:700">■</span> Congés payés > 5j · 
+    <span style="color:#B8670A;font-weight:700">■</span> Congés payés entre 1 et 5j · 
+    <span style="color:#C0392B;font-weight:700">■</span> Congés payés épuisés
   </p></div>`;
   html+=`<div class="footer"><span>MFR du Néracais — Tableau des soldes</span><span>Édité le ${fD(today2())}</span></div></body></html>`;
 
@@ -5466,8 +6626,8 @@ function imprimerAbsences(as,sv){
 function rEQ(){
   const {eq,abs,role}=A.s;let lH="";
   const eqVis=(A.s.eqFiltreArch?eq.filter(m=>m.archive):eq.filter(m=>!m.archive));
-  eqVis.forEach(m=>{const cp=Math.max(0,(m.cp||0)-(m.cpp||0)),rc=Math.max(0,(m.ra||0)-(m.rp||0)),tt=Math.max(0,(m.ttp||0)-(m.ttu||0));const ec=abs.find(a=>{const t=today2();return a.mid===m.id&&a.dd<=t&&(a.df||a.dd)>=t&&a.ty!=="Annulée";});lH+=`<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px"><div><div style="font-weight:800;font-size:17px;color:#3A4425">${m.nom} ${m.pr}</div><div style="font-size:15px;color:#555">${m.po||"—"}</div>
-          <div style="font-size:15px;color:#888;margin-top:1px">🔑 ${m.pw?"••••••••":"<span style='color:#C0392B'>Aucun mot de passe</span>"}</div><span class="tsv" style="margin-top:3px;display:inline-block">${m.sv}</span>${m.em?`<div style="font-size:15px;color:#888;margin-top:2px">📧 ${m.em}</div>`:""}</div><div style="display:flex;gap:5px"><button class="btn bl bsm" data-edm="${m.id}">✏️</button><button class="btn bi bsm" data-rpwm="${m.id}" title="Réinitialiser mot de passe">🔑</button>${m.archive?`<button class="btn bs bsm" data-unarch="${m.id}">↩ Réactiver</button>`:`<button class="btn bw bsm" data-arch="${m.id}">📦 Archiver</button>`}<button class="btn bd bsm" data-dlm="${m.id}">🗑</button></div></div>${ec?`<div style="padding:5px 9px;background:#FAF7F0;border:1px solid #DDD5B8;border-radius:8px;margin-bottom:9px">${tBdg(ec.ty,true)}</div>`:""}${role==="direction"?`<div class="g3"><div style="background:#FBF5E0;border-radius:7px;padding:6px;text-align:center"><div style="font-size:17px;font-weight:800;color:#C8A84B">${cp}j</div><div style="font-size:14px;color:#888">CP</div></div><div style="background:#EEF2E6;border-radius:7px;padding:6px;text-align:center"><div style="font-size:17px;font-weight:800;color:#5C6B3A">${rc}j</div><div style="font-size:14px;color:#888">Récup</div></div><div style="background:#E3F1FA;border-radius:7px;padding:6px;text-align:center"><div style="font-size:17px;font-weight:800;color:#1A6B9A">${hStr(tt)}</div><div style="font-size:14px;color:#888">TT</div></div></div>`:""}</div>`;});
+  eqVis.forEach(m=>{const cp=Math.max(0,(m.cp||0)-(m.cpp||0)),rc=Math.max(0,(m.ra||0)-(m.rp||0)),tt=ttRestant(m.id);const ec=abs.find(a=>{const t=today2();return a.mid===m.id&&a.dd<=t&&(a.df||a.dd)>=t&&a.ty!=="Annulée";});lH+=`<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px"><div><div style="font-weight:800;font-size:17px;color:#3A4425">${m.nom} ${m.pr}</div><div style="font-size:15px;color:#555">${m.po||"—"}</div>
+          <div style="font-size:15px;color:#888;margin-top:1px">🔑 ${m.pwhash||PWDS_HASH[m.id]?"••••••••":"<span style='color:#C0392B'>Aucun mot de passe</span>"}</div><span class="tsv" style="margin-top:3px;display:inline-block">${m.sv}</span>${m.em?`<div style="font-size:15px;color:#888;margin-top:2px">📧 ${m.em}</div>`:""}</div><div style="display:flex;gap:5px"><button class="btn bl bsm" data-edm="${m.id}">✏️</button><button class="btn bi bsm" data-rpwm="${m.id}" title="Réinitialiser mot de passe">🔑</button>${m.archive?`<button class="btn bs bsm" data-unarch="${m.id}">↩ Réactiver</button>`:`<button class="btn bw bsm" data-arch="${m.id}">📦 Archiver</button>`}<button class="btn bd bsm" data-dlm="${m.id}">🗑</button></div></div>${ec?`<div style="padding:5px 9px;background:#FAF7F0;border:1px solid #DDD5B8;border-radius:8px;margin-bottom:9px">${tBdg(ec.ty,true)}</div>`:""}${role==="direction"?`<div class="g3"><div style="background:#FBF5E0;border-radius:7px;padding:6px;text-align:center"><div style="font-size:17px;font-weight:800;color:#C8A84B">${cp}j</div><div style="font-size:14px;color:#888">Congés payés</div></div><div style="background:#EEF2E6;border-radius:7px;padding:6px;text-align:center"><div style="font-size:17px;font-weight:800;color:#5C6B3A">${rc}j</div><div style="font-size:14px;color:#888">Récup</div></div><div style="background:#E3F1FA;border-radius:7px;padding:6px;text-align:center"><div style="font-size:17px;font-weight:800;color:#1A6B9A">${hStr(tt)}</div><div style="font-size:14px;color:#888">Télétravail</div></div></div>`:""}</div>`;});
   const actifs=eq.filter(m=>!m.archive);const archivés=eq.filter(m=>m.archive);
   return`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><h2 style="color:#3A4425;font-size:22px;font-weight:800">Équipe (${actifs.length} actifs${archivés.length>0?" · "+archivés.length+" archivé"+(archivés.length>1?"s":""):""})</h2><button class="btn bp" id="bnam">+ Ajouter</button></div>
   <div style="display:flex;gap:8px;margin-bottom:14px"><button class="btn ${A.s.eqFiltreArch?"bl":"bp"} bsm" data-eq-filtre="actifs">Actifs (${actifs.length})</button><button class="btn ${A.s.eqFiltreArch?"bp":"bl"} bsm" data-eq-filtre="archives">Archivés (${archivés.length})</button></div>
@@ -5488,14 +6648,16 @@ function bEQ(){
       const np=prompt(`Nouveau mot de passe pour ${m.pr} ${m.nom} :\n(Laisser vide pour annuler)`);
       if(np===null||np.trim()==="")return;
       if(np.trim().length<4){alert("Le mot de passe doit faire au moins 4 caractères.");return;}
-      const l=A.s.eq.map(x=>x.id===mid?{...x,pw:np.trim(),pwhash:undefined}:x);
-      A.save("eq",l);A.toast(`Mot de passe de ${m.pr} réinitialisé ✓`,"success");
+      hashPwd(np.trim()).then(hh=>{
+        const l=A.s.eq.map(x=>x.id===mid?{...x,pwhash:hh,pw:undefined}:x);
+        A.save("eq",l);A.toast(`Mot de passe de ${m.pr} réinitialisé ✓`,"success");
+      });
     };
   });
 }
-function rMdlSM(){const i=A.s.modal.data?.init||{};return mdl(i.id?"Modifier":"Ajouter un membre",`<div class="g2">${fld("Prénom *",`<input id="mbpr" value="${i.pr||""}">`)} ${fld("Nom *",`<input id="mbno" value="${i.nom||""}">`)}</div>${fld("Service *",sel("mbsv",SVC,i.sv||"","-- Choisir --"))}${fld("Poste",`<input id="mbpo" value="${i.po||""}" placeholder="ex: Formateur…">`)}${fld("Email",`<input type="email" id="mbem" value="${i.em||""}">`)}${fld("Date d'entrée",`<input id="mbde" value="${i.de||""}" placeholder="ex: 01/09/2025">`)}
-    ${fld("Mot de passe",`<input type="password" id="mbpw" placeholder="${i.id?"Laisser vide pour ne pas changer":"Définir un mot de passe"}">`,i.id?"Laisser vide = mot de passe inchangé":"")}<div class="dvd"></div><div class="g2">${fld("CP acquis par mois (j)",`<input type="number" id="mbcpmens" value="${i.cpMensuel??2.5}" min="0" step="0.5" title="Jours de CP crédités automatiquement chaque 1er du mois">`,"2,5j standard · 5j direction · crédité chaque 1er du mois") } ${fld("Solde CP actuel (j)",`<input type="number" id="mbcp" value="${i.cp??0}" min="0" step="0.5">`)} ${fld("Plafond TT (h/mois)",`<input type="number" id="mbtt" value="${i.ttp??8}" min="0" step="0.5">`)}</div>
-    <div class="g2">${fld("Quotité temps de travail (%)",`<input type="number" id="mbquot" value="${i.quotite??100}" min="0" max="100" step="1" title="100% = temps plein (1599h/an) · 80% = 1279h...">`,"100% = 1599h/an · sert au tableau d'annualisation")}<div></div></div><div class="dvd"></div><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn bl" id="smcn">Annuler</button><button class="btn bp" id="smsb">${i.id?"Mettre à jour":"Ajouter"}</button></div>`);}
+function rMdlSM(){const i=A.s.modal.data?.init||{};return mdl(i.id?"Modifier":"Ajouter un membre",`<div class="g2">${fld("Prénom *",`<input id="mbpr" value="${i.pr||""}">`)} ${fld("Nom *",`<input id="mbno" value="${i.nom||""}">`)}</div>${fld("Service *",sel("mbsv",SVC,i.sv||"","-- Choisir --"))}${fld("Poste",`<input id="mbpo" value="${i.po||""}" placeholder="ex: Formateur…">`)}${fld("Email",`<input type="email" id="mbem" value="${i.em||""}">`)}${fld("Date d'entrée",`<input id="mbde" value="${i.de||""}" placeholder="ex: 01/09/2025">`)}${fld("Date de naissance",`<input id="mbnais" value="${i.naissance||""}" placeholder="ex: 15/03/1985">`,"pour les anniversaires sur l'accueil")}
+    ${fld("Mot de passe",`<input type="password" id="mbpw" placeholder="${i.id?"Laisser vide pour ne pas changer":"Définir un mot de passe"}">`,i.id?"Laisser vide = mot de passe inchangé":"")}<div class="dvd"></div><div class="g2">${fld("Congés payés acquis par mois (j)",`<input type="number" id="mbcpmens" value="${i.cpMensuel??2.5}" min="0" step="0.5" title="Jours de congés payés crédités automatiquement chaque 1er du mois">`,"2,5j standard · 5j direction · crédité chaque 1er du mois") } ${fld("Solde congés payés actuel (j)",`<input type="number" id="mbcp" value="${i.cp??0}" min="0" step="0.5">`)} ${fld("Plafond Télétravail",`<div style="padding:9px 12px;background:#F4F1E8;border-radius:8px;font-size:13px;color:#5C6B3A"><strong>160 h / an</strong> — identique pour tous (1er sept → 31 août)</div>`)}</div>
+    <div class="g2">${fld("Quotité temps de travail (%)",`<input type="number" id="mbquot" value="${i.quotite??100}" min="0" max="100" step="1" title="100% = temps plein (1599h/an) · 80% = 1279h...">`,"100% = 1599h/an · sert au tableau d'annualisation")}${fld("Taux horaire brut (€/h)",`<input type="number" id="mb-taux" value="${i.tauxHoraire??25}" min="0" step="0.01" placeholder="ex: 25.00">`,"sert au calcul du coût de main d'œuvre (entretien) — confidentiel")}</div><div class="dvd"></div><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn bl" id="smcn">Annuler</button><button class="btn bp" id="smsb">${i.id?"Mettre à jour":"Ajouter"}</button></div>`);}
 function bMdlSM(){
   document.getElementById("smcn").onclick=()=>A.set({modal:null});
   document.getElementById("smsb").onclick=()=>{
@@ -5503,7 +6665,7 @@ function bMdlSM(){
     const pr=document.getElementById("mbpr").value,nom=document.getElementById("mbno").value,sv=document.getElementById("mbsv").value;
     if(!pr||!nom||!sv)return;
     const newpw=document.getElementById("mbpw").value.trim();
-    const saveEntry=(pwhash,pwclair)=>{
+    const saveEntry=(pwhash)=>{
       const dernVisite=document.getElementById("mb-visite")?.value||"";
       const dateEssai=document.getElementById("mb-essai")?.value||"";
       const dateFinContrat=document.getElementById("mb-fincontrat")?.value||"";
@@ -5516,19 +6678,20 @@ function bMdlSM(){
         po:document.getElementById("mbpo").value,sv,
         em:document.getElementById("mbem").value,
         de:document.getElementById("mbde").value,
+        naissance:document.getElementById("mbnais")?.value||i.naissance||"",
         cp:parseFloat(document.getElementById("mbcp").value)||0,
         cpp:i.cpp||0,ra:i.ra||0,rp:i.rp||0,
-        ttp:parseFloat(document.getElementById("mbtt").value)||0,
+        ttp:TT_PLAFOND_ANNUEL,
         ttu:i.ttu||0,
-        pw:pwclair||(i.pw||""),
+        pwhash:pwhash||i.pwhash||"",
         cpMensuel:parseFloat(document.getElementById("mbcpmens")?.value??2.5),quotite:parseFloat(document.getElementById("mbquot")?.value)||100,dernVisite,dateEssai,dateFinContrat,typeContrat,enfants,tauxHoraire:parseFloat(document.getElementById("mb-taux")?.value)||i.tauxHoraire||25
       };
       const l=i.id?A.s.eq.map(m=>m.id===i.id?e:m):[...A.s.eq,e];
       A.save("eq",l);A.set({modal:null});
       A.toast(i.id?"Membre mis à jour ✓":"Membre ajouté ✓");
     };
-    if(newpw&&newpw.length>=4) saveEntry(null,newpw);
-    else saveEntry(null,null);
+    if(newpw&&newpw.length>=4){ hashPwd(newpw).then(hh=>saveEntry(hh)); }
+    else saveEntry(null);
   };
 }
 
@@ -5545,7 +6708,7 @@ function rPR(){
       <p><strong>Données :</strong> Identité, email pro, congés, absences, heures, déplacements</p>
       <p><strong>Conservation :</strong> Durée du contrat + 5 ans après archivage</p>
       <p><strong>Droits :</strong> Accès, rectification, effacement → <a href="mailto:mfr.barbaste@mfr.asso.fr" style="color:#5C6B3A">mfr.barbaste@mfr.asso.fr</a></p>
-      <p><strong>Stockage :</strong> Local uniquement — aucune transmission à des tiers</p>
+      <p><strong>Hébergement :</strong> Base synchronisée via Google Firebase (région Europe) ; application diffusée via GitHub Pages. Aucune transmission à des tiers à des fins commerciales.</p>
       <p><strong>Sécurité :</strong> Mots de passe chiffrés SHA-256, accès par authentification individuelle</p>
     </div>
     <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
@@ -5574,7 +6737,7 @@ function rPR(){
     <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:12px">
       ${A.s.eq.filter(m=>!m.archive).map(m=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 13px;background:#FAF7F0;border-radius:8px;border:1px solid #DDD5B8">
         <span style="font-size:15px;font-weight:600">${m.nom} ${m.pr}</span>
-        <span style="font-size:13px;color:${m.pw||PWDS_CLAIRS[m.id]?"#2E7D52":"#C0392B"};font-weight:600">${m.pw||PWDS_CLAIRS[m.id]?"🔒 Défini":"⚠ Non défini"}</span>
+        <span style="font-size:13px;color:${m.pwhash||PWDS_HASH[m.id]?"#2E7D52":"#C0392B"};font-weight:600">${m.pwhash||PWDS_HASH[m.id]?"🔒 Défini":"⚠ Non défini"}</span>
       </div>`).join("")}
     </div>
     <div class="ibox">Pour modifier un mot de passe : onglet <strong>Équipe</strong> → bouton 🔑</div>
@@ -5598,7 +6761,24 @@ function rPR(){
       <label class="btn bl" style="cursor:pointer">📂 Restaurer une sauvegarde<input type="file" id="inp-restore" accept=".json" style="display:none"></label>
     </div>
     <div style="font-size:12px;color:#888">Format : fichier JSON horodaté · Restauration écrase les données actuelles</div>
-  </div>`;
+  </div>
+  <div class="card" style="border-left:4px solid #C8A84B;margin-bottom:12px">
+    <h3 style="font-size:17px;color:#3A4425;margin-bottom:10px">&#127874; Messages d'anniversaire</h3>
+    <p style="font-size:13px;color:#888;margin-bottom:12px">Personnalisez les messages affichés sur l'accueil de tous. Le signe astrologique s'affiche automatiquement (l'âge n'apparaît pas).</p>
+    <div style="margin-bottom:10px">
+      <label style="font-size:13px;font-weight:700;color:#5C6B3A;display:block;margin-bottom:4px">Message quand il n'y a pas d'anniversaire proche</label>
+      <textarea id="cfg-anniv-aucun" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px;width:100%;min-height:60px;font-family:inherit">${getConfig().annivAucun}</textarea>
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="font-size:13px;font-weight:700;color:#5C6B3A;display:block;margin-bottom:4px">Message le jour de l'anniversaire</label>
+      <input id="cfg-anniv-jour" value="${getConfig().annivJour}" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px;width:100%">
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn bp bsm" id="btn-cfg-anniv-save">💾 Enregistrer les messages</button>
+      <button class="btn bl bsm" id="btn-cfg-anniv-reset">↺ Revenir aux messages par défaut</button>
+    </div>
+  </div>
+`;
 }
 
 function bPR(){
@@ -5628,12 +6808,12 @@ document.addEventListener("DOMContentLoaded",()=>A.init());
 
 
 const A={
-  s:{role:null,user:null,vue:"db",toast:null,tT:null,modal:null,eq:[],abs:[],dem:[],heu:[],ord:[],fr:[],budgets:[],devis:[],budAnneeSco:null,budFilter:null,echeances:[],alertFiltre:"all",locations:[],formations:[],affichage:[],maintenances:[],synthAnnee:null,maintFiltre:"all",maintAnnee:null,rcplOnglet:"soldes",pMo:undefined,pAn:undefined,formAnneeSco:null,eqFiltreArch:false,planAnneeSco:null},
+  s:{role:null,user:null,vue:"db",toast:null,tT:null,modal:null,eq:[],abs:[],dem:[],heu:[],ord:[],fr:[],budgets:[],devis:[],budAnneeSco:null,budFilter:null,echeances:[],alertFiltre:"all",locations:[],formations:[],affichage:[],maintenances:[],config:null,horaires:{},synthAnnee:null,maintFiltre:"all",maintAnnee:null,rcplOnglet:"soldes",pMo:undefined,pAn:undefined,formAnneeSco:null,eqFiltreArch:false,planAnneeSco:null},
   set(p){Object.assign(A.s,p);A.r();},
   toast(msg,ty="success"){if(A.s.tT)clearTimeout(A.s.tT);const t=setTimeout(()=>A.set({toast:null,tT:null}),3200);A.set({toast:{msg,ty},tT:t});},
   save(k,v){K.s(k,v);A.set({[k]:v});if(fbReady&&FB_COLLECTIONS.includes(k))fbSave(k,v);},
   init(){
-    const VER="v66";
+    const VER="v88";
     if(K.g("ver")!==VER){K.s("ver",VER);}
     // Charger d'abord le cache local (affichage immédiat)
     const eq=K.g("eq");A.s.eq=eq&&eq.length>0?eq:JSON.parse(JSON.stringify(EQ0));if(!eq||!eq.length)K.s("eq",A.s.eq);
@@ -5688,6 +6868,7 @@ const A={
   r(){
     const el=document.getElementById("app");
     if(!el)return;
+    if(typeof rebuildHOR==="function") rebuildHOR();
     if(!A.s.role){el.innerHTML=rLogin();bLogin();return;}
     el.innerHTML=rMain();bMain();
   }
@@ -5712,18 +6893,19 @@ function bLogin(){
   document.getElementById("bd").onclick=()=>{
     document.getElementById("lc").innerHTML=`${fld("Votre identité",sel("who",ADM.map(a=>{const m=eq.find(e=>e.id===a.id);return{v:a.id,l:m?`${m.pr} ${m.nom}`:a.id}}),"","-- Choisir --"))}${fld("Mot de passe",`<div style="position:relative"><input type="password" id="pwd" placeholder="••••••••" style="padding-right:40px;width:100%"><button type="button" onclick="const i=document.getElementById('pwd');i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'👁':'🙈'" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;font-size:16px">👁</button></div>`)}<p id="lerr" style="color:#C0392B;font-size:16px;display:none">⚠ Identifiant ou mot de passe incorrect</p><button class="btn bp bfull" id="bld" style="margin-bottom:10px">Accéder →</button><button class="btn bl bfull bsm" id="brt">← Retour</button>`;
     document.getElementById("brt").onclick=()=>A.r();
-    document.getElementById("bld").onclick=()=>{const who=document.getElementById("who").value,pwd=document.getElementById("pwd").value,adm=ADM.find(a=>a.id===who&&a.pwd===pwd);if(adm){const m=eq.find(e=>e.id===who)||{id:who,nom:"Direction",pr:""};A.s.role="direction";A.s.user=m;K.s("ses",{role:"direction",user:m});A.set({vue:"db"});}else document.getElementById("lerr").style.display="block";};
+    document.getElementById("bld").onclick=async()=>{const who=document.getElementById("who").value,pwd=document.getElementById("pwd").value;const ph=await hashPwd(pwd);const adm=ADM.find(a=>a.id===who&&a.pwdh===ph);if(adm){const m=eq.find(e=>e.id===who)||{id:who,nom:"Direction",pr:""};A.s.role="direction";A.s.user=m;K.s("ses",{role:"direction",user:m});A.set({vue:"db"});}else document.getElementById("lerr").style.display="block";};
   };
   document.getElementById("bs").onclick=()=>{
     document.getElementById("lc").innerHTML=`${fld("Votre nom",sel("whs",sortEq(A.s.eq).map(m=>({v:m.id,l:`${m.nom} ${m.pr} — ${m.sv||""}`})),"","-- Sélectionner --"))}${fld("Mot de passe",`<div style="position:relative"><input type="password" id="pwdsal" placeholder="••••••••" style="padding-right:40px;width:100%"><button type="button" onclick="const i=document.getElementById('pwdsal');i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'👁':'🙈'" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;font-size:16px">👁</button></div>`)}<p id="lerr2" style="color:#C0392B;font-size:16px;display:none">⚠ Sélectionnez votre nom</p><button class="btn bp bfull" id="bls" style="margin-bottom:10px">Accéder →</button><button class="btn bl bfull bsm" id="brt2">← Retour</button>`;
     document.getElementById("brt2").onclick=()=>A.r();
-    document.getElementById("bls").onclick=()=>{
+    document.getElementById("bls").onclick=async()=>{
     const who=document.getElementById("whs").value,pwd=document.getElementById("pwdsal").value;
     const m=A.s.eq.find(e=>e.id===who);
     if(!m){document.getElementById("lerr2").textContent="⚠ Sélectionnez votre nom";document.getElementById("lerr2").style.display="block";return;}
-    
-    const pwdAttendu=m.pw||PWDS_CLAIRS[who]||"";
-    if(!pwdAttendu||pwd!==pwdAttendu){
+    const ph=await hashPwd(pwd);
+    // Mot de passe personnalisé (pwhash) ou hash par défaut
+    const hashAttendu=m.pwhash||PWDS_HASH[who]||"";
+    if(!hashAttendu||ph!==hashAttendu){
       document.getElementById("lerr2").textContent="⚠ Mot de passe incorrect";
       document.getElementById("lerr2").style.display="block";return;
     }
@@ -5741,12 +6923,13 @@ function rMain(){
   const navItems=[
     {id:"db",ic:"🏠",lb:"Accueil"},
     {id:"rc",ic:"📋",lb:"Planning"},
+    {id:"af",ic:"📣",lb:"Actualités"},
     {id:"dm",ic:"📨",lb:"Congés & absences",bdg:role==="direction"?nAtt:0},
     
     {id:"hr",ic:"⏱",lb:"Heures"},
     {id:"om",ic:"🗺️",lb:"Missions"},
-    {id:"fr",ic:"💶",lb:"Frais"},{id:"bu",ic:"💰",lb:"Budget"},...(canSeeSynth(role,user?.id)?[{id:"al",ic:"🔔",lb:"Alertes"}]:[]),...(canSeeSynth(role,user?.id)?[{id:"sy",ic:"📊",lb:"Bilan RH"}]:[]),{id:"lo",ic:"🏠",lb:"Locations"},...(canSeeSynth(role,user?.id)?[{id:"fo",ic:"🎓",lb:"Formations"}]:[]),...(canSeeMaint(role,user?.id)?[{id:"mt",ic:"🔧",lb:"Entretien"}]:[]),
-    ...(role==="direction"?[{id:"pc",ic:"🎓",lb:"Classes"},{id:"fi",ic:"📚",lb:"Filières"},{id:"im",ic:"🖨️",lb:"Imprimer"},{id:"eq",ic:"👥",lb:"Personnel"},{id:"pr",ic:"⚙️",lb:"Réglages"}]:[])
+    {id:"fr",ic:"💶",lb:"Frais"},{id:"bu",ic:"💰",lb:"Budget"},...(canSeeSynth(role,user?.id)?[{id:"al",ic:"🔔",lb:"Alertes"}]:[]),...(canSeeSynth(role,user?.id)?[{id:"sy",ic:"📊",lb:"Bilan RH"}]:[]),{id:"lo",ic:"🏠",lb:"Locations"},...(canSeeSynth(role,user?.id)?[{id:"fo",ic:"🎓",lb:"Formations"}]:[]),...(canSeeMaint(role,user?.id)?[{id:"mt",ic:"🔧",lb:"Entretien"}]:[]),...(canSeeMaint(role,user?.id)?[{id:"veh",ic:"🚗",lb:"Véhicules"}]:[]),
+    ...(role==="direction"?[{id:"pc",ic:"🎓",lb:"Classes"},{id:"fi",ic:"📚",lb:"Filières"},{id:"im",ic:"🖨️",lb:"Imprimer"}]:[]),...(canSeeEq(role,user?.id)?[{id:"eq",ic:"👥",lb:"Personnel"}]:[]),...(canSeeEq(role,user?.id)?[{id:"horaires",ic:"🕒",lb:"Horaires"}]:[]),...(role==="direction"?[{id:"pr",ic:"⚙️",lb:"Réglages"}]:[])
   ];
   const nav=navItems.map(n=>`<button class="nb${vue===n.id?" on act":""}" data-v="${n.id}"><span class="nb-ic">${n.ic}</span><span class="nb-lb">${n.lb}</span>${n.bdg>0?`<span class="nb-bdg">${n.bdg}</span>`:""}</button>`).join("");
   let content="";
@@ -5764,10 +6947,12 @@ function rMain(){
   else if(vue==="fo"&&canSeeSynth(role,user?.id))content=rFORMATIONS();
   else if(vue==="af")content=rAFFICHAGE();
   else if(vue==="mt")content=rMAINTENANCE();
+  else if(vue==="veh")content=rVEHICULES();
+  else if(vue==="horaires"&&canSeeEq(role,user?.id))content=rHORAIRES();
   else if(vue==="pc")content=rPLANNING_CLASSES();
   else if(vue==="fi"&&role==="direction")content=rFILIERES();
   else if(vue==="im"&&role==="direction")content=rIM();
-  else if(vue==="eq"&&role==="direction")content=rEQ();
+  else if(vue==="eq"&&canSeeEq(role,A.s.user?.id))content=rEQ();
   else if(vue==="pr"&&role==="direction")content=rPR();
   const tst=toast?`<div class="tst" style="background:${{success:"#2E7D52",error:"#C0392B",info:"#1A6B9A",warn:"#B8670A"}[toast.ty]||"#5C6B3A"}">${toast.msg}</div>`:"";
   const modal=A.s.modal?rMdl():"";
@@ -5777,12 +6962,15 @@ function rMain(){
     </div></div>
   <div style="display:flex;align-items:center;gap:8px">
     ${role==="salarie"?`<button class="btn bgo bsm" id="bnd">+ Demande</button>`:""}
+    <button class="btn bl bsm" id="btn-changepwd-hdr" title="Changer mon mot de passe">🔑</button>
     <button class="btn bd bsm" id="btn-logout-hdr" title="Se déconnecter">⬡ Quitter</button>
   </div></div><div class="app">${content}</div><nav class="nav"><div style="padding:16px 14px 10px;border-bottom:1px solid rgba(200,168,75,.3);margin-bottom:6px"><div style="font-size:13px;font-weight:800;color:#C8A84B;letter-spacing:.5px;text-transform:uppercase">MFR Néracais</div><div style="font-size:11px;color:rgba(250,247,240,.5);margin-top:2px">${nu||""}</div></div>${nav}</nav>${tst}${modal}`;
 }
 function bMain(){
   document.querySelectorAll(".nb[data-v]").forEach(b=>b.onclick=()=>A.set({vue:b.dataset.v,modal:null}));
   const bnd=document.getElementById("bnd");if(bnd)bnd.onclick=()=>A.set({modal:{ty:"nd"}});
+  const bcpw=document.getElementById("btn-changepwd-hdr");
+  if(bcpw)bcpw.onclick=()=>A.set({modal:{ty:"changePwd",data:{}}});
   const blo2=document.getElementById("btn-logout-hdr");
   if(blo2)blo2.onclick=()=>{
     if(!confirm("Se déconnecter ?"))return;
@@ -5800,22 +6988,26 @@ function bMain(){
   else if(v==="fo")bFORMATIONS();
   else if(v==="af")bAFFICHAGE();
   else if(v==="mt")bMAINTENANCE();
+  else if(v==="veh")bVEHICULES();
+  else if(v==="horaires")bHORAIRES();
   else if(v==="pc")bPLANNING_CLASSES();
   else if(v==="fi")bFILIERES();
   else if(v==="im")bIM();
   else if(v==="eq")bEQ();else if(v==="pr")bPR();
   if(A.s.modal)bMdl();
 }
-function rMdl(){const {modal}=A.s;if(!modal)return"";const m={"nd":rMdlND,"vd":rMdlVD,"ad":rMdlAD,"sa":rMdlSA,"sm":rMdlSM,"dp":rMdlDP,"no":rMdlNO,"do":rMdlDO,"nf":rMdlNF,"df":rMdlDF,"class-filiere":rMdlClassFiliere,"ndevis":rMdlNDevis,"allocuer":rMdlAllocuer,"detailBud":rMdlDetailBud,"paiementDevis":rMdlPaiementDevis,"nEch":rMdlNEch,"nLoc":rMdlNLoc,"nForm":rMdlNForm,"nAff":rMdlNAff,"nMaint":rMdlNMaint}[modal.ty];return m?m():"";} 
-function bMdl(){const {modal}=A.s;const mc=document.getElementById("mcl");if(mc)mc.onclick=()=>A.set({modal:null});const m={"nd":bMdlND,"vd":bMdlVD,"ad":bMdlAD,"sa":bMdlSA,"sm":bMdlSM,"dp":bMdlDP,"no":bMdlNO,"do":bMdlDO,"nf":bMdlNF,"df":bMdlDF,"class-filiere":bMdlClassFiliere,"ndevis":bMdlNDevis,"allocuer":bMdlAllocuer,"detailBud":bMdlDetailBud,"paiementDevis":bMdlPaiementDevis,"nEch":bMdlNEch,"nLoc":bMdlNLoc,"nForm":bMdlNForm,"nAff":bMdlNAff,"nMaint":bMdlNMaint}[modal.ty];if(m)m();}
+function rMdl(){const {modal}=A.s;if(!modal)return"";const m={"nd":rMdlND,"vd":rMdlVD,"ad":rMdlAD,"sa":rMdlSA,"sm":rMdlSM,"dp":rMdlDP,"no":rMdlNO,"do":rMdlDO,"nf":rMdlNF,"df":rMdlDF,"class-filiere":rMdlClassFiliere,"ndevis":rMdlNDevis,"allocuer":rMdlAllocuer,"detailBud":rMdlDetailBud,"paiementDevis":rMdlPaiementDevis,"nEch":rMdlNEch,"nLoc":rMdlNLoc,"nForm":rMdlNForm,"nAff":rMdlNAff,"nMaint":rMdlNMaint,"signalement":rMdlSignalement,"vehEdit":rMdlVehEdit,"vehAno":rMdlVehAno,"changePwd":rMdlChangePwd,"horEdit":rMdlHorEdit}[modal.ty];return m?m():"";} 
+function bMdl(){const {modal}=A.s;const mc=document.getElementById("mcl");if(mc)mc.onclick=()=>A.set({modal:null});const m={"nd":bMdlND,"vd":bMdlVD,"ad":bMdlAD,"sa":bMdlSA,"sm":bMdlSM,"dp":bMdlDP,"no":bMdlNO,"do":bMdlDO,"nf":bMdlNF,"df":bMdlDF,"class-filiere":bMdlClassFiliere,"ndevis":bMdlNDevis,"allocuer":bMdlAllocuer,"detailBud":bMdlDetailBud,"paiementDevis":bMdlPaiementDevis,"nEch":bMdlNEch,"nLoc":bMdlNLoc,"nForm":bMdlNForm,"nAff":bMdlNAff,"nMaint":bMdlNMaint,"signalement":bMdlSignalement,"vehEdit":bMdlVehEdit,"vehAno":bMdlVehAno,"changePwd":bMdlChangePwd,"horEdit":bMdlHorEdit}[modal.ty];if(m)m();}
 
 
 function rRCPL(){
   const {eq,abs,dem,role,user}=A.s;
   const ms=getMC();
-  const onglet=A.s.rcplOnglet||"soldes";
+  // Les salariés n'ont pas accès aux soldes équipe : on les place directement sur le planning
+  let onglet=A.s.rcplOnglet||(role==="direction"?"soldes":"planning");
+  if(role!=="direction") onglet="planning";
   const tabs=`<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-    <button class="btn ${onglet==="soldes"?"bp":"bl"} bsm" data-rcpl-tab="soldes">📋 Soldes équipe</button>
+    ${role==="direction"?`<button class="btn ${onglet==="soldes"?"bp":"bl"} bsm" data-rcpl-tab="soldes">📋 Soldes équipe</button>`:""}
     <button class="btn ${onglet==="planning"?"bp":"bl"} bsm" data-rcpl-tab="planning">📅 Planning absences</button>
   </div>`;
 
@@ -5874,7 +7066,7 @@ function rRCPL(){
           <thead><tr style="background:#3A4425">
             <th style="padding:9px 12px;color:#fff;text-align:left">Membre</th>
             <th style="padding:9px 8px;color:#fff">Service</th>
-            <th style="padding:9px 8px;color:#fff;text-align:center">CP restants</th>
+            <th style="padding:9px 8px;color:#fff;text-align:center">Congés payés restants</th>
             <th style="padding:9px 8px;color:#fff;text-align:center">Récup</th>
             <th style="padding:9px 8px;color:#fff;min-width:120px">Présence mois</th>
             <th style="padding:9px 8px;color:#fff;text-align:center">Abs. mois</th>
@@ -6091,7 +7283,12 @@ function rHR(){
       const hTEffectif=isVeillee?CRENEAUX_SPECIAUX.veillee.duree:hT;
 
       if(!jT&&!dc&&!isDim&&!sansHoraire){
-        h+=`<div style="padding:10px 14px;background:#F8F6F0;border-radius:10px;opacity:.5;margin-bottom:7px;font-size:14px;color:#888">${JL[jk]} ${fD(ds)} — Repos</div>`;
+        // Jour non travaillé (temps partiel) : banalisé, jamais compté comme incomplet,
+        // mais saisie possible en cas de travail exceptionnel.
+        h+=`<div style="padding:10px 14px;background:#F8F6F0;border-radius:10px;margin-bottom:7px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+          <span style="font-size:14px;color:#999">${JL[jk]} ${fD(ds)} — <em>Non travaillé</em></span>
+          ${isPast?`<button class="btn bl bsm" style="font-size:12px;color:#5C6B3A" data-dpj="${jk}" data-dpd="${ds}">＋ J'ai travaillé exceptionnellement</button>`:""}
+        </div>`;
         return;
       }
       // Pour une personne sans horaire théorique (direction), ne pas afficher "Repos" — proposer la saisie
