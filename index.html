@@ -394,7 +394,7 @@ const K={
 //  FIREBASE — Synchronisation temps réel multi-postes
 // ══════════════════════════════════════════════════════════════════
 // Configuration du projet MFR-Neracais-RH
-const APP_VERSION="v97";
+const APP_VERSION="v98";
 const firebaseConfig = {
   apiKey: "AIzaSyAJNsp-EY6DkT8AWa0824HuZh2Wu2Frce4",
   authDomain: "gestion-rh-mfr-du-neracais.firebaseapp.com",
@@ -405,7 +405,7 @@ const firebaseConfig = {
 };
 
 // Collections synchronisées (une par type de donnée)
-const FB_COLLECTIONS = ["eq","abs","dem","heu","ord","fr","budgets","devis","echeances","locations","formations","affichage","maintenances","vehicules","config","horaires"];
+const FB_COLLECTIONS = ["eq","abs","dem","heu","ord","fr","budgets","devis","echeances","locations","formations","affichage","maintenances","vehicules","config","horaires","commandes"];
 
 let fbDB = null;          // instance Firestore
 let fbReady = false;      // Firebase initialisé ?
@@ -1540,6 +1540,134 @@ function bMdlHorEdit(){
   };
 }
 function m_nom(mid){const m=(A.s.eq||[]).find(x=>x.id===mid);return m?`${m.nom} ${m.pr}`:"";}
+
+// ══════════ COMMANDES CUISINE (pique-niques, collations, invités) ══════════
+const CMD_TYPES = ["🥪 Pique-nique","🍎 Collation","🍽️ Repas invités","📦 Autre"];
+const CMD_USERS = ["mfr018","mfr019"]; // Loïc & Mélina (réception des commandes)
+// Délai pique-nique : au plus tard le mercredi de la semaine PRÉCÉDANT l'événement
+function mercrediLimitePN(dateStr){
+  if(!dateStr) return null;
+  const d=new Date(dateStr+"T12:00:00");
+  const jour=d.getDay(); // 0=dim..6=sam
+  const decalLundi=(jour===0)?6:(jour-1);
+  const lundiEvt=new Date(d); lundiEvt.setDate(d.getDate()-decalLundi);      // lundi de la semaine de l'événement
+  const mercrediPrec=new Date(lundiEvt); mercrediPrec.setDate(lundiEvt.getDate()-7+2); // mercredi de la semaine précédente
+  return mercrediPrec.toISOString().split("T")[0];
+}
+// Renvoie {horsDelai, limite} pour un pique-nique à une date donnée, commandé aujourd'hui
+function pnHorsDelai(type,dateEvt){
+  if(!type || type.indexOf("Pique-nique")<0 || !dateEvt) return {horsDelai:false,limite:null};
+  const limite=mercrediLimitePN(dateEvt);
+  return {horsDelai: today2()>limite, limite};
+}
+function canGererCmd(role,uid){ return role==="direction" || CMD_USERS.includes(uid); }
+
+function rCOMMANDES(){
+  const {role,user}=A.s;
+  const gere=canGererCmd(role,user?.id);
+  const cmds=(A.s.commandes||[]).slice().sort((a,b)=>(a.date+a.heure).localeCompare(b.date+b.heure));
+  // Le gestionnaire voit tout ; un salarié voit ses propres commandes
+  const visibles = gere ? cmds : cmds.filter(c=>c.auteurId===user?.id);
+  const carte=(c)=>{
+    const acc=c.accuse;
+    return `<div class="card" style="margin-bottom:10px;border-left:4px solid ${acc?"#5C6F3E":"#C8A84B"}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
+        <div>
+          <div style="font-size:16px;font-weight:700;color:#3A4425">${c.type} · ${c.nombre} pers. ${c.horsDelai?`<span style="font-size:11px;color:#C0392B;background:#FDECEA;border:1px solid #C0392B;border-radius:5px;padding:1px 6px;vertical-align:middle">⚠️ Hors délai</span>`:""}</div>
+          <div style="font-size:13px;color:#555;margin-top:3px">📅 ${fD(c.date)}${c.heure?` à ${c.heure}`:""} · demandé par ${c.auteurNom}</div>
+          ${c.commentaire?`<div style="font-size:13px;color:#333;margin-top:6px;background:#F7F4EA;border-radius:6px;padding:7px 10px">💬 ${c.commentaire}</div>`:""}
+        </div>
+        <div style="text-align:right">
+          ${acc
+            ? `<span style="font-size:12px;color:#5C6F3E;font-weight:700">✓ Bien reçu</span><div style="font-size:11px;color:#888">par ${acc.par} le ${fD(acc.date)}</div>`
+            : gere
+              ? `<button class="btn bp bsm" data-cmd-accuse="${c.id}">✓ Accuser réception</button>`
+              : `<span style="font-size:12px;color:#B8860B">⏳ En attente de réception</span>`}
+          ${(gere||c.auteurId===user?.id)?`<div><button class="btn bl bsm" data-cmd-suppr="${c.id}" style="margin-top:6px">🗑️ Supprimer</button></div>`:""}
+        </div>
+      </div>
+    </div>`;
+  };
+  const enAttente = gere ? cmds.filter(c=>!c.accuse).length : 0;
+  return `<h2 style="color:#3A4425;font-size:22px;font-weight:800;margin-bottom:4px">🧺 Commandes cuisine</h2>
+  <p style="color:#888;font-size:13px;margin-bottom:12px">Pique-niques, collations et repas invités — à destination de Loïc &amp; Mélina.</p>
+  ${gere&&enAttente?`<div class="wbox" style="background:#FEF9EF;border:1px solid #E8CF9A;margin-bottom:12px">📬 <strong>${enAttente}</strong> commande(s) en attente de votre accusé de réception.</div>`:""}
+  <button class="btn bp" id="btn-new-cmd" style="margin-bottom:14px">＋ Nouvelle commande</button>
+  ${visibles.length?visibles.map(carte).join(""):`<div class="wbox">Aucune commande pour le moment.${gere?"":" Cliquez sur « Nouvelle commande » pour en passer une."}</div>`}`;
+}
+
+function rMdlCommande(){
+  return mdl("🧺 Nouvelle commande cuisine",`
+    <p style="font-size:13px;color:#666;margin-bottom:12px">Votre commande sera transmise à Loïc &amp; Mélina, qui en accuseront réception.</p>
+    ${fld("Type *",sel("cmd-type",CMD_TYPES,"","-- Choisir --"))}
+    <div style="display:flex;gap:10px">
+      <div style="flex:1">${fld("Date *",`<input type="date" id="cmd-date" value="${today2()}" style="width:100%">`)}</div>
+      <div style="flex:1">${fld("Heure",`<input type="time" id="cmd-heure" style="width:100%">`)}</div>
+    </div>
+    <div id="cmd-alerte"></div>
+    <p style="font-size:12px;color:#888;margin:-4px 0 12px">ℹ️ Les pique-niques doivent être commandés au plus tard le mercredi de la semaine précédente.</p>
+    ${fld("Nombre de personnes attendues *",`<input type="number" id="cmd-nb" min="1" placeholder="ex. 24" style="width:100%">`)}
+    ${fld("Commentaire","<textarea id=\"cmd-com\" rows=\"3\" placeholder=\"Allergies, régimes particuliers, précisions d'horaire, lieu…\" style=\"width:100%\"></textarea>")}
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">
+      <button class="btn bl" id="cmd-cancel">Annuler</button>
+      <button class="btn bp" id="cmd-save">Envoyer la commande</button>
+    </div>`);
+}
+
+function bCOMMANDES(){
+  const nb=document.getElementById("btn-new-cmd");
+  if(nb) nb.onclick=()=>A.set({modal:{ty:"commande",data:{}}});
+  document.querySelectorAll("[data-cmd-accuse]").forEach(b=>{
+    b.onclick=()=>{
+      const id=b.dataset.cmdAccuse;
+      const nom=(()=>{const m=(A.s.eq||[]).find(x=>x.id===A.s.user?.id);return m?`${m.pr}`:"Cuisine";})();
+      const l=(A.s.commandes||[]).map(c=>c.id===id?{...c,accuse:{par:nom,date:today2()}}:c);
+      A.save("commandes",l); A.toast("Réception confirmée ✓","success");
+    };
+  });
+  document.querySelectorAll("[data-cmd-suppr]").forEach(b=>{
+    b.onclick=()=>{
+      if(!confirm("Supprimer cette commande ?"))return;
+      const l=(A.s.commandes||[]).filter(c=>c.id!==b.dataset.cmdSuppr);
+      A.save("commandes",l); A.toast("Commande supprimée","success");
+    };
+  });
+}
+
+function bMdlCommande(){
+  const c=document.getElementById("cmd-cancel"); if(c)c.onclick=()=>A.set({modal:null});
+  // Alerte dynamique de délai pour les pique-niques
+  const majAlerte=()=>{
+    const z=document.getElementById("cmd-alerte"); if(!z)return;
+    const type=document.getElementById("cmd-type")?.value;
+    const date=document.getElementById("cmd-date")?.value;
+    const {horsDelai,limite}=pnHorsDelai(type,date);
+    z.innerHTML = horsDelai
+      ? `<div style="background:#FDECEA;border:1.5px solid #C0392B;border-radius:8px;padding:9px 12px;margin-bottom:8px;font-size:13px;color:#8A2318">⚠️ <strong>Commande hors délai.</strong> Le délai pour ce pique-nique était le mercredi ${fD(limite)}. La commande sera tout de même transmise, mais signalée comme hors délai à l'équipe cuisine.</div>`
+      : "";
+  };
+  const t=document.getElementById("cmd-type"); if(t)t.onchange=majAlerte;
+  const d=document.getElementById("cmd-date"); if(d)d.onchange=majAlerte;
+  majAlerte();
+  const s=document.getElementById("cmd-save");
+  if(s) s.onclick=()=>{
+    const type=document.getElementById("cmd-type").value;
+    const date=document.getElementById("cmd-date").value;
+    const heure=document.getElementById("cmd-heure").value;
+    const nb=document.getElementById("cmd-nb").value;
+    const com=document.getElementById("cmd-com").value.trim();
+    if(!type){alert("Choisissez le type de commande.");return;}
+    if(!date){alert("Indiquez la date.");return;}
+    if(!nb||parseInt(nb)<1){alert("Indiquez le nombre de personnes.");return;}
+    const u=A.s.user; const m=(A.s.eq||[]).find(x=>x.id===u?.id);
+    const nom=m?`${m.nom} ${m.pr}`:"—";
+    const {horsDelai}=pnHorsDelai(type,date);
+    const cmd={id:uid(),type,date,heure,nombre:parseInt(nb),commentaire:com,auteurId:u?.id,auteurNom:nom,cree:today2(),accuse:null,horsDelai};
+    A.save("commandes",[...(A.s.commandes||[]),cmd]);
+    A.set({modal:null});
+    A.toast(horsDelai?"Commande transmise ⚠️ (hors délai)":"Commande envoyée à la cuisine ✓","success");
+  };
+}
 
 // ══════════ NOTE RGPD DANS L'APPLICATION + ACCUSÉ DE LECTURE ══════════
 const RGPD_NOTE_LIGNES = [
@@ -3513,7 +3641,7 @@ function bMdlNAff(){
 // ══ SAUVEGARDE / RESTAURATION ════════════════════════════════════
 
 function exporterDonnees(){
-  const keys=["eq","abs","dem","heu","ord","fr","budgets","devis","echeances","locations","formations","affichage","maintenances","vehicules","config","horaires"];
+  const keys=["eq","abs","dem","heu","ord","fr","budgets","devis","echeances","locations","formations","affichage","maintenances","vehicules","config","horaires","commandes"];
   const data={version:1,date:today2(),app:"MFR-RH",contenu:{}};
   keys.forEach(k=>{
     const v=A.s[k]||K.g(k);
@@ -4086,7 +4214,7 @@ function bMAINTENANCE(){
 
 // ── Modal signalement simple (accessible à tous) ────────────────
 // Modal : réinitialiser les données de test (direction, avant mise en service)
-const RESET_COLLECTIONS = ["abs","dem","heu","ord","fr","budgets","devis","echeances","locations","formations","affichage","maintenances"];
+const RESET_COLLECTIONS = ["abs","dem","heu","ord","fr","budgets","devis","echeances","locations","formations","affichage","maintenances","commandes"];
 function rMdlResetTest(){
   return mdl("🧹 Réinitialiser les données de test",`
     <div style="background:#FDECEA;border:1.5px solid #C0392B;border-radius:8px;padding:12px 14px;margin-bottom:12px">
@@ -6895,7 +7023,7 @@ document.addEventListener("DOMContentLoaded",()=>A.init());
 
 
 const A={
-  s:{role:null,user:null,vue:"db",toast:null,tT:null,modal:null,eq:[],abs:[],dem:[],heu:[],ord:[],fr:[],budgets:[],devis:[],budAnneeSco:null,budFilter:null,echeances:[],alertFiltre:"all",locations:[],formations:[],affichage:[],maintenances:[],config:null,horaires:{},synthAnnee:null,maintFiltre:"all",maintAnnee:null,rcplOnglet:"soldes",pMo:undefined,pAn:undefined,formAnneeSco:null,eqFiltreArch:false,planAnneeSco:null},
+  s:{role:null,user:null,vue:"db",toast:null,tT:null,modal:null,eq:[],abs:[],dem:[],heu:[],ord:[],fr:[],budgets:[],devis:[],budAnneeSco:null,budFilter:null,echeances:[],alertFiltre:"all",locations:[],formations:[],affichage:[],maintenances:[],config:null,horaires:{},commandes:[],synthAnnee:null,maintFiltre:"all",maintAnnee:null,rcplOnglet:"soldes",pMo:undefined,pAn:undefined,formAnneeSco:null,eqFiltreArch:false,planAnneeSco:null},
   set(p){Object.assign(A.s,p);A.r();},
   toast(msg,ty="success"){if(A.s.tT)clearTimeout(A.s.tT);const t=setTimeout(()=>A.set({toast:null,tT:null}),3200);A.set({toast:{msg,ty},tT:t});},
   save(k,v){K.s(k,v);A.set({[k]:v});if(fbReady&&FB_COLLECTIONS.includes(k))fbSave(k,v);},
@@ -7016,7 +7144,7 @@ function rMain(){
     
     {id:"hr",ic:"⏱",lb:"Heures"},
     {id:"om",ic:"🗺️",lb:"Missions"},
-    {id:"fr",ic:"💶",lb:"Frais"},{id:"bu",ic:"💰",lb:"Budget"},...(canSeeSynth(role,user?.id)?[{id:"al",ic:"🔔",lb:"Alertes"}]:[]),...(canSeeSynth(role,user?.id)?[{id:"sy",ic:"📊",lb:"Bilan RH"}]:[]),{id:"lo",ic:"🏠",lb:"Locations"},...(canSeeSynth(role,user?.id)?[{id:"fo",ic:"🎓",lb:"Formations"}]:[]),...(canSeeMaint(role,user?.id)?[{id:"mt",ic:"🔧",lb:"Entretien"}]:[]),...(canSeeMaint(role,user?.id)?[{id:"veh",ic:"🚗",lb:"Véhicules"}]:[]),
+    {id:"fr",ic:"💶",lb:"Frais"},{id:"bu",ic:"💰",lb:"Budget"},...(canSeeSynth(role,user?.id)?[{id:"al",ic:"🔔",lb:"Alertes"}]:[]),...(canSeeSynth(role,user?.id)?[{id:"sy",ic:"📊",lb:"Bilan RH"}]:[]),{id:"lo",ic:"🏠",lb:"Locations"},{id:"cmd",ic:"🧺",lb:"Commandes"},...(canSeeSynth(role,user?.id)?[{id:"fo",ic:"🎓",lb:"Formations"}]:[]),...(canSeeMaint(role,user?.id)?[{id:"mt",ic:"🔧",lb:"Entretien"}]:[]),...(canSeeMaint(role,user?.id)?[{id:"veh",ic:"🚗",lb:"Véhicules"}]:[]),
     ...(role==="direction"?[{id:"pc",ic:"🎓",lb:"Classes"},{id:"fi",ic:"📚",lb:"Filières"},{id:"im",ic:"🖨️",lb:"Imprimer"}]:[]),...(canSeeEq(role,user?.id)?[{id:"eq",ic:"👥",lb:"Personnel"}]:[]),...(canSeeEq(role,user?.id)?[{id:"horaires",ic:"🕒",lb:"Horaires"}]:[]),...(role==="direction"?[{id:"pr",ic:"⚙️",lb:"Réglages"}]:[])
   ];
   const nav=navItems.map(n=>`<button class="nb${vue===n.id?" on act":""}" data-v="${n.id}"><span class="nb-ic">${n.ic}</span><span class="nb-lb">${n.lb}</span>${n.bdg>0?`<span class="nb-bdg">${n.bdg}</span>`:""}</button>`).join("");
@@ -7036,6 +7164,7 @@ function rMain(){
   else if(vue==="af")content=rAFFICHAGE();
   else if(vue==="mt")content=rMAINTENANCE();
   else if(vue==="veh")content=rVEHICULES();
+  else if(vue==="cmd")content=rCOMMANDES();
   else if(vue==="horaires"&&canSeeEq(role,user?.id))content=rHORAIRES();
   else if(vue==="pc")content=rPLANNING_CLASSES();
   else if(vue==="fi"&&role==="direction")content=rFILIERES();
@@ -7077,6 +7206,7 @@ function bMain(){
   else if(v==="af")bAFFICHAGE();
   else if(v==="mt")bMAINTENANCE();
   else if(v==="veh")bVEHICULES();
+  else if(v==="cmd")bCOMMANDES();
   else if(v==="horaires")bHORAIRES();
   else if(v==="pc")bPLANNING_CLASSES();
   else if(v==="fi")bFILIERES();
@@ -7084,8 +7214,8 @@ function bMain(){
   else if(v==="eq")bEQ();else if(v==="pr")bPR();
   if(A.s.modal)bMdl();
 }
-function rMdl(){const {modal}=A.s;if(!modal)return"";const m={"nd":rMdlND,"vd":rMdlVD,"ad":rMdlAD,"sa":rMdlSA,"sm":rMdlSM,"dp":rMdlDP,"no":rMdlNO,"do":rMdlDO,"nf":rMdlNF,"df":rMdlDF,"class-filiere":rMdlClassFiliere,"ndevis":rMdlNDevis,"allocuer":rMdlAllocuer,"detailBud":rMdlDetailBud,"paiementDevis":rMdlPaiementDevis,"nEch":rMdlNEch,"nLoc":rMdlNLoc,"nForm":rMdlNForm,"nAff":rMdlNAff,"nMaint":rMdlNMaint,"signalement":rMdlSignalement,"vehEdit":rMdlVehEdit,"vehAno":rMdlVehAno,"changePwd":rMdlChangePwd,"horEdit":rMdlHorEdit,"resetTest":rMdlResetTest}[modal.ty];return m?m():"";} 
-function bMdl(){const {modal}=A.s;const mc=document.getElementById("mcl");if(mc)mc.onclick=()=>A.set({modal:null});const m={"nd":bMdlND,"vd":bMdlVD,"ad":bMdlAD,"sa":bMdlSA,"sm":bMdlSM,"dp":bMdlDP,"no":bMdlNO,"do":bMdlDO,"nf":bMdlNF,"df":bMdlDF,"class-filiere":bMdlClassFiliere,"ndevis":bMdlNDevis,"allocuer":bMdlAllocuer,"detailBud":bMdlDetailBud,"paiementDevis":bMdlPaiementDevis,"nEch":bMdlNEch,"nLoc":bMdlNLoc,"nForm":bMdlNForm,"nAff":bMdlNAff,"nMaint":bMdlNMaint,"signalement":bMdlSignalement,"vehEdit":bMdlVehEdit,"vehAno":bMdlVehAno,"changePwd":bMdlChangePwd,"horEdit":bMdlHorEdit,"resetTest":bMdlResetTest}[modal.ty];if(m)m();}
+function rMdl(){const {modal}=A.s;if(!modal)return"";const m={"nd":rMdlND,"vd":rMdlVD,"ad":rMdlAD,"sa":rMdlSA,"sm":rMdlSM,"dp":rMdlDP,"no":rMdlNO,"do":rMdlDO,"nf":rMdlNF,"df":rMdlDF,"class-filiere":rMdlClassFiliere,"ndevis":rMdlNDevis,"allocuer":rMdlAllocuer,"detailBud":rMdlDetailBud,"paiementDevis":rMdlPaiementDevis,"nEch":rMdlNEch,"nLoc":rMdlNLoc,"nForm":rMdlNForm,"nAff":rMdlNAff,"nMaint":rMdlNMaint,"signalement":rMdlSignalement,"vehEdit":rMdlVehEdit,"vehAno":rMdlVehAno,"changePwd":rMdlChangePwd,"horEdit":rMdlHorEdit,"resetTest":rMdlResetTest,"commande":rMdlCommande}[modal.ty];return m?m():"";} 
+function bMdl(){const {modal}=A.s;const mc=document.getElementById("mcl");if(mc)mc.onclick=()=>A.set({modal:null});const m={"nd":bMdlND,"vd":bMdlVD,"ad":bMdlAD,"sa":bMdlSA,"sm":bMdlSM,"dp":bMdlDP,"no":bMdlNO,"do":bMdlDO,"nf":bMdlNF,"df":bMdlDF,"class-filiere":bMdlClassFiliere,"ndevis":bMdlNDevis,"allocuer":bMdlAllocuer,"detailBud":bMdlDetailBud,"paiementDevis":bMdlPaiementDevis,"nEch":bMdlNEch,"nLoc":bMdlNLoc,"nForm":bMdlNForm,"nAff":bMdlNAff,"nMaint":bMdlNMaint,"signalement":bMdlSignalement,"vehEdit":bMdlVehEdit,"vehAno":bMdlVehAno,"changePwd":bMdlChangePwd,"horEdit":bMdlHorEdit,"resetTest":bMdlResetTest,"commande":bMdlCommande}[modal.ty];if(m)m();}
 
 
 function rRCPL(){
