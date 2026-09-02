@@ -110,7 +110,7 @@ const SVC=["Pédagogie","Administratif","Vie résidentielle","Direction","AESH"]
 const CRENEAUX_SPECIAUX={
   svc_midi:{label:"Service midi",horaire:"12h00-13h00",duree:1},
   svc_soir:{label:"Soir / étude",horaire:"17h30-19h00",duree:1.5},
-  veillee:{label:"Veillée",horaire:"13h30-21h00",duree:7.5,remplace:true},
+  veillee:{label:"Veillée",horaire:"13h00-21h00",duree:8,remplace:true},
 };
 
 // Un salarié effectue des services spéciaux s'il est en Pédagogie ou Vie résidentielle
@@ -369,6 +369,51 @@ function cHebdoHOR(horM){
     return s+cH(dm||"",fm||"")+cH(da||"",fa||"");
   },0);
 }
+
+// Heures théoriques d'une personne pour un jour donné (avec fraction Matin/Après-midi)
+const H_JOUR_DIRECTION = 8; // heures comptées par jour pour la direction (horaire non planifié)
+function estDirectionPers(mid){ const p=(A.s.eq||[]).find(x=>x.id===mid); return !!(p && p.sv==="Direction"); }
+function heuresTheoJour(mid, dateStr, fr){
+  const dow=new Date(dateStr+"T12:00:00").getDay(); // 0=dim..6=sam
+  // Direction : forfait 8h/jour du lundi au vendredi
+  if(estDirectionPers(mid)){
+    if(dow===0||dow===6) return 0;
+    return (fr==="Matin"||fr==="Après-midi")?H_JOUR_DIRECTION/2:H_JOUR_DIRECTION;
+  }
+  const hor=HOR[mid]; if(!hor) return 0;
+  if(dow===0) return 0;
+  const jk=JK[dow-1]; if(!jk) return 0;
+  if(hor.jm){
+    const jour=hor.jm[jk]; if(!jour) return 0;
+    let t=0; jour.forEach(cr=>t+=cH(cr[0]||"",cr[1]||""));
+    return (fr==="Matin"||fr==="Après-midi")?t/2:t;
+  }
+  const j=hor.j&&hor.j[jk]; if(!j) return 0;
+  const[dm,fm,da,fa]=j;
+  const matin=cH(dm||"",fm||""), aprem=cH(da||"",fa||"");
+  if(fr==="Matin") return matin;
+  if(fr==="Après-midi") return aprem;
+  return matin+aprem;
+}
+// Heures créditées par les absences sur une période
+function creditAbsencesHeures(mid, dDeb, dFin){
+  let total=0;
+  (A.s.abs||[]).forEach(a=>{
+    if(a.mid!==mid || a.ty==="Annulée" || !TYPES_ABS_CREDIT.includes(a.ty)) return;
+    let d=new Date((a.dd)+"T12:00:00"); const fin=new Date((a.df||a.dd)+"T12:00:00");
+    while(d<=fin){
+      const ds=d.toISOString().split("T")[0];
+      if(ds>=dDeb && ds<=dFin) total+=heuresTheoJour(mid, ds, a.fr);
+      d.setDate(d.getDate()+1);
+    }
+  });
+  return total;
+}
+// Jour entièrement couvert par une absence (→ pas d'alerte de pointage) ; demi-journée = pointage attendu pour l'autre moitié
+function estAbsentJourComplet(mid, ds){
+  return (A.s.abs||[]).some(a=>a.mid===mid && a.ty!=="Annulée" && TYPES_ABS_NONTRAVAIL.includes(a.ty)
+    && a.dd<=ds && (a.df||a.dd)>=ds && (!a.fr || a.fr==="Journée entière"));
+}
 function fH(h){if(!h)return"0h00";const hh=Math.floor(h),mm=Math.round((h-hh)*60);return`${hh}h${String(mm).padStart(2,"0")}`;}
 function getLun(ds){const d=new Date(ds+"T12:00:00");const j=d.getDay();const l=new Date(d);l.setDate(d.getDate()-(j===0?6:j-1));return l.toISOString().split("T")[0];}
 function getDJ(lun,key){const idx=JK.indexOf(key);const d=new Date(lun+"T12:00:00");d.setDate(d.getDate()+idx);return d.toISOString().split("T")[0];}
@@ -394,7 +439,7 @@ const K={
 //  FIREBASE — Synchronisation temps réel multi-postes
 // ══════════════════════════════════════════════════════════════════
 // Configuration du projet MFR-Neracais-RH
-const APP_VERSION="v98";
+const APP_VERSION="v114";
 const firebaseConfig = {
   apiKey: "AIzaSyAJNsp-EY6DkT8AWa0824HuZh2Wu2Frce4",
   authDomain: "gestion-rh-mfr-du-neracais.firebaseapp.com",
@@ -405,7 +450,7 @@ const firebaseConfig = {
 };
 
 // Collections synchronisées (une par type de donnée)
-const FB_COLLECTIONS = ["eq","abs","dem","heu","ord","fr","budgets","devis","echeances","locations","formations","affichage","maintenances","vehicules","config","horaires","commandes"];
+const FB_COLLECTIONS = ["eq","abs","dem","heu","ord","fr","budgets","devis","echeances","locations","formations","affichage","maintenances","vehicules","config","horaires","commandes","procedures"];
 
 let fbDB = null;          // instance Firestore
 let fbReady = false;      // Firebase initialisé ?
@@ -532,6 +577,10 @@ let hLun=getLun(today2()); // Lundi de la semaine courante (module Heures)
 
 const DEM_TYPES_SAL = ["Congés payés","Récupération","Télétravail","Formation"];
 const DEM_TYPES_DIR = ["Congés payés","Récupération","Télétravail","Formation","Maladie","Absence autorisée","Congé sans solde","Événement familial","Congé maternité","Autre"];
+// Absences qui CRÉDITENT les heures théoriques (tout sauf congé sans solde et télétravail, qui est du travail pointé)
+const TYPES_ABS_CREDIT = ["Congés payés","Récupération","Formation","Maladie","Absence autorisée","Événement familial","Congé maternité","Autre"];
+// Absences excluant l'alerte de pointage (personne réellement absente) — inclut le congé sans solde, pas le télétravail
+const TYPES_ABS_NONTRAVAIL = [...TYPES_ABS_CREDIT,"Congé sans solde"];
 const DEM_FRACTIONS = ["Journée entière","Matin","Après-midi"];
 
 // ── Télétravail : plafond annuel unique, calcul dynamique ──────────
@@ -634,7 +683,7 @@ function rDM(){
   const enAtt=dem.filter(d=>d.st===ST.ATT&&(isSal?d.mid===user?.id:true)).length;
   const app=dem.filter(d=>d.st===ST.APP&&(isSal?d.mid===user?.id:true)).length;
 
-  const kpiH=isDir?`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-bottom:14px">
+  const kpiH=isDir?`${isDir?`<button class="btn bp bsm" id="btn-abs-pdf" style="margin-bottom:12px">📄 Éditer les absences (PDF)</button>`:""}<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-bottom:14px">
     <div class="kpi" style="background:#FEF3E2"><div class="val" style="font-size:24px;font-weight:800;color:#B8670A">${enAtt}</div><div style="font-size:12px;font-weight:600;color:#555">En attente</div></div>
     <div class="kpi" style="background:#E8F5EE"><div class="val" style="font-size:24px;font-weight:800;color:#2E7D52">${app}</div><div style="font-size:12px;font-weight:600;color:#555">Approuvées</div></div>
     <div class="kpi" style="background:#FAF7F0"><div class="val" style="font-size:24px;font-weight:800;color:#3A4425">${vis.length}</div><div style="font-size:12px;font-weight:600;color:#555">Total</div></div>
@@ -710,6 +759,8 @@ function rDM(){
 }
 
 function bDM(){
+  const bap=document.getElementById("btn-abs-pdf");
+  if(bap) bap.onclick=()=>A.set({modal:{ty:"absPdf",data:{}}});
   const {dem,abs,eq,user,role}=A.s;
   const isSal=role==="salarie";
 
@@ -784,13 +835,14 @@ function rMdlND(){
   const mb=eq.find(m=>m.id===user?.id);
   const cp=mb?Math.max(0,(mb.cp||0)-(mb.cpp||0)):0;
   const rc=mb?Math.max(0,(mb.ra||0)-(mb.rp||0)):0;
+  const rcS=mb?((mb.ra||0)-(mb.rp||0)):0;
   const ttr=mb?ttRestant(mb.id):TT_PLAFOND_ANNUEL;
   const types=role==="direction"?DEM_TYPES_DIR:DEM_TYPES_SAL;
 
   return mdl("+ Nouvelle demande",`
     ${role==="salarie"?`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
       <div style="background:#FBF5E0;border-radius:8px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:800;color:#C8A84B">${cp}j</div><div style="font-size:11px;color:#888">Congés payés restants</div></div>
-      <div style="background:#EEF2E6;border-radius:8px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:800;color:#5C6B3A">${fH(rc*7)}</div><div style="font-size:11px;color:#888">Récup. disponible</div></div>
+      <div style="background:#EEF2E6;border-radius:8px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:800;color:${rcS<0?'#C0392B':'#5C6B3A'}">${rcS>=0?'+':'−'}${fH(Math.abs(rcS)*7)}</div><div style="font-size:11px;color:#888">Solde d'heures</div></div>
       <div style="background:#E8F0F5;border-radius:8px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:800;color:#1A6B9A">${fH(ttr)}</div><div style="font-size:11px;color:#888">Télétravail restant</div></div>
     </div>`:""}
     ${fld("Type de demande *",sel("nd-ty",types,"","-- Choisir --"))}
@@ -1369,11 +1421,19 @@ let dbSemaineLundi = getLun(today2());
 
 
 // ── Anniversaires (dashboard Pascale uniquement) ────────────────
+function normNaissance(s){
+  if(!s) return "";
+  s=(""+s).trim();
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;                 // déjà AAAA-MM-JJ
+  let m=s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/); // JJ/MM/AAAA
+  if(m) return `${m[3]}-${m[2].padStart(2,"0")}-${m[1].padStart(2,"0")}`;
+  return s;
+}
 function getAnniversaires(eq){
   const today=new Date(); today.setHours(0,0,0,0);
   const res=[];
   eq.filter(m=>!m.archive&&m.naissance).forEach(m=>{
-    const nais=new Date(m.naissance+"T00:00:00");
+    const nais=new Date(normNaissance(m.naissance)+"T00:00:00");
     const proch=new Date(today.getFullYear(),nais.getMonth(),nais.getDate());
     if(proch<today) proch.setFullYear(proch.getFullYear()+1);
     const diff=Math.round((proch-today)/(1000*60*60*24));
@@ -1540,6 +1600,254 @@ function bMdlHorEdit(){
   };
 }
 function m_nom(mid){const m=(A.s.eq||[]).find(x=>x.id===mid);return m?`${m.nom} ${m.pr}`:"";}
+
+// ══════════ ALERTE LOCATION J-7 (Loïc, Mélina + direction) ══════════
+function rBlocAlerteLocation(){
+  const {role,user}=A.s;
+  const concerne = role==="direction" || ["mfr018","mfr019"].includes(user?.id);
+  if(!concerne) return "";
+  const auj=today2();
+  const d=new Date(auj+"T12:00:00"); d.setDate(d.getDate()+7);
+  const dans7=d.toISOString().split("T")[0];
+  const proches=(A.s.locations||[]).filter(l=>l.debut>=auj && l.debut<=dans7).sort((a,b)=>a.debut.localeCompare(b.debut));
+  if(!proches.length) return "";
+  return `<div style="background:#EAF3FB;border:1.5px solid #1A6B9A;border-radius:10px;padding:14px 16px;margin-bottom:14px">
+    <div style="font-size:15px;font-weight:700;color:#12547A;margin-bottom:8px">🏠 Location(s) à préparer sous 7 jours</div>
+    ${proches.map(l=>`<div style="font-size:13px;color:#333;margin-bottom:5px">📅 <strong>${fD(l.debut)}${l.debut!==l.fin?" → "+fD(l.fin):""}</strong> · ${l.espace||"Site complet"}${l.locataire?` · <em>${l.locataire}</em>`:""}</div>`).join("")}
+  </div>`;
+}
+
+// ══════════ ÉDITION PDF DES ABSENCES (direction — cabinet social) ══════════
+function rMdlAbsPdf(){
+  const auj=today2();
+  const debutMois=auj.slice(0,8)+"01";
+  return mdl("📄 Éditer les absences",`
+    <p style="font-size:13px;color:#666;margin-bottom:12px">Choisissez la période. Le document listera toutes les absences (tous motifs), classées par personne — prêt à transmettre au cabinet social.</p>
+    <div style="display:flex;gap:10px">
+      <div style="flex:1">${fld("Du",`<input type="date" id="abs-du" value="${debutMois}" style="width:100%">`)}</div>
+      <div style="flex:1">${fld("Au",`<input type="date" id="abs-au" value="${auj}" style="width:100%">`)}</div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">
+      <button class="btn bl" id="abspdf-cancel">Annuler</button>
+      <button class="btn bp" id="abspdf-go">📄 Générer le PDF</button>
+    </div>`);
+}
+function bMdlAbsPdf(){
+  const c=document.getElementById("abspdf-cancel"); if(c)c.onclick=()=>A.set({modal:null});
+  const g=document.getElementById("abspdf-go");
+  if(g) g.onclick=()=>{
+    const du=document.getElementById("abs-du").value;
+    const au=document.getElementById("abs-au").value;
+    if(!du||!au){alert("Indiquez la période (du / au).");return;}
+    if(du>au){alert("La date de début doit précéder la date de fin.");return;}
+    A.set({modal:null});
+    pdfAbsences(du,au);
+  };
+}
+function pdfAbsences(du,au){
+  const I=MFR_IDENT;
+  // Une absence est retenue si elle chevauche la période
+  const abs=(A.s.abs||[]).filter(a=>{
+    const dd=a.dd, df=a.df||a.dd;
+    return a.ty!=="Annulée" && dd<=au && df>=du;
+  });
+  // Grouper par personne
+  const byId={};
+  abs.forEach(a=>{ const k=a.mid||a.nm; (byId[k]=byId[k]||{nom:a.nm||nomDe(a.mid),lignes:[]}); byId[k].lignes.push(a); });
+  const cles=Object.keys(byId).sort((x,y)=>(byId[x].nom||"").localeCompare(byId[y].nom||""));
+  const totalAbs=abs.length;
+  const blocs=cles.map(k=>{
+    const p=byId[k]; const lignes=p.lignes.slice().sort((a,b)=>a.dd.localeCompare(b.dd));
+    const totJ=lignes.reduce((s,a)=>s+(a.nj||1),0);
+    return `<div style="margin-bottom:14px;break-inside:avoid">
+      <div style="font-weight:700;color:#3A4425;font-size:14px;border-bottom:1.5px solid #C8A84B;padding-bottom:3px;margin-bottom:6px">${p.nom} <span style="font-weight:400;color:#888;font-size:12px">— ${totJ} jour(s)</span></div>
+      <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+        <thead><tr style="background:#F0ECDD"><th style="text-align:left;padding:4px 8px">Motif</th><th style="text-align:left;padding:4px 8px">Du</th><th style="text-align:left;padding:4px 8px">Au</th><th style="text-align:right;padding:4px 8px">Jours</th></tr></thead>
+        <tbody>${lignes.map(a=>`<tr style="border-bottom:1px solid #eee"><td style="padding:4px 8px">${a.ty}</td><td style="padding:4px 8px">${fD(a.dd)}</td><td style="padding:4px 8px">${fD(a.df||a.dd)}</td><td style="padding:4px 8px;text-align:right">${a.nj||1}</td></tr>`).join("")}</tbody>
+      </table>
+    </div>`;
+  }).join("");
+  const w=window.open("","_blank","width=900,height=740");
+  w.document.write(`<!`+`DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Absences ${fD(du)} au ${fD(au)}</title>
+    <style>body{font-family:Calibri,Arial,sans-serif;color:#222;padding:24px;max-width:800px;margin:auto}h1{color:#3A4425;font-size:20px;margin-bottom:2px}.sub{color:#888;font-size:13px;margin-bottom:16px}.head{border-bottom:2px solid #C8A84B;padding-bottom:10px;margin-bottom:16px}.foot{margin-top:24px;font-size:11px;color:#999;text-align:center}@media print{button{display:none}}</style></head><body>
+    <div style="text-align:center;margin-bottom:12px"><button onclick="window.print()" style="background:#3A4425;color:#fff;border:none;padding:9px 18px;border-radius:8px;font-size:14px;cursor:pointer">🖨 Imprimer / Enregistrer en PDF</button></div>
+    <div class="head">
+      <h1>Relevé des absences</h1>
+      <div class="sub">${I.raisonSociale} · Période du ${fD(du)} au ${fD(au)} · ${totalAbs} absence(s) · Édité le ${fD(today2())}</div>
+    </div>
+    ${blocs||'<p style="color:#888">Aucune absence sur cette période.</p>'}
+    <div class="foot">Document interne établi pour la gestion sociale · ${I.nomCourt}</div>
+    </body></html>`);
+  w.document.close();
+}
+function nomDe(mid){const m=(A.s.eq||[]).find(x=>x.id===mid);return m?`${m.nom} ${m.pr}`:"—";}
+
+// ══════════ DEVIS : notification à l'auteur + impression avec PJ ══════════
+function labelEntite(id){
+  if(id==="ANIMATION")return "Animation";
+  if(id==="SPORT")return "Sport";
+  if(id==="ART_CULTURE")return "Art et Culture";
+  try{ const m=CLASSES_META[id]; if(m&&m.label)return m.label; }catch(e){}
+  return id||"—";
+}
+
+// Bandeau accueil : réponses aux devis de l'utilisateur (accepté / refusé), à accuser
+function rBlocDevisDecides(){
+  const u=A.s.user; if(!u) return "";
+  const mine=(A.s.devis||[]).filter(d=>d.mid===u.id && (d.st===ST_BUD.OK||d.st===ST_BUD.REF) && !d.vuAuteur);
+  if(!mine.length) return "";
+  return `<div style="background:#F3F7EE;border:1.5px solid #5C6F3E;border-radius:10px;padding:14px 16px;margin-bottom:14px">
+    <div style="font-size:15px;font-weight:700;color:#3A4425;margin-bottom:8px">💬 Réponse à vos devis</div>
+    ${mine.map(d=>{
+      const ok=d.st===ST_BUD.OK;
+      return `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:7px 0;border-top:1px solid #E3E8DA">
+        <div style="font-size:13px;color:#333">
+          <span style="font-weight:700;color:${ok?"#2E7D52":"#B03A2E"}">${ok?"✓ Accepté":"✗ Refusé"}</span>
+          — « ${d.objet||"devis"} » (${(d.montant||0).toFixed(2)} €)
+          ${(!ok&&d.reponse)?`<div style="color:#8A2318;margin-top:3px">Motif : ${d.reponse}</div>`:""}
+        </div>
+        <button class="btn bl bsm" data-devis-vu="${d.id}" style="white-space:nowrap">✓ Vu</button>
+      </div>`;
+    }).join("")}
+  </div>`;
+}
+
+// Impression d'un devis + sa pièce jointe
+function pdfDevis(id){
+  const d=(A.s.devis||[]).find(x=>x.id===id);
+  if(!d){alert("Devis introuvable.");return;}
+  const I=MFR_IDENT;
+  const stLabel=Object.entries(ST_BUD).find(([k,v])=>v===d.st);
+  const stTxt=d.st||"—";
+  const pjs=d.pj||[];
+  const images=pjs.filter(p=>p.type&&p.type.startsWith("image/"));
+  const autres=pjs.filter(p=>!(p.type&&p.type.startsWith("image/")));
+  const w=window.open("","_blank","width=900,height=740");
+  const ligne=(lib,val)=>val?`<tr><td style="padding:5px 10px;color:#777;white-space:nowrap">${lib}</td><td style="padding:5px 10px;font-weight:600">${val}</td></tr>`:"";
+  w.document.write(`<!`+`DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Devis — ${d.objet||""}</title>
+   <style>body{font-family:Calibri,Arial,sans-serif;color:#222;padding:24px;max-width:800px;margin:auto}
+   h1{color:#3A4425;font-size:20px;margin:0 0 2px}.sub{color:#888;font-size:13px;margin-bottom:16px}
+   .head{border-bottom:2px solid #C8A84B;padding-bottom:10px;margin-bottom:16px}
+   table{border-collapse:collapse;width:100%;font-size:14px}tr{border-bottom:1px solid #eee}
+   .badge{display:inline-block;padding:3px 10px;border-radius:6px;font-weight:700;font-size:13px}
+   .pj{margin-top:20px}.pj img{max-width:100%;border:1px solid #ccc;border-radius:6px;margin-top:10px}
+   .btn{background:#3A4425;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;margin:4px}
+   .foot{margin-top:24px;font-size:11px;color:#999;text-align:center}@media print{.noprint{display:none}}</style></head><body>
+   <div class="noprint" style="text-align:center;margin-bottom:12px">
+     <button class="btn" onclick="window.print()">🖨 Imprimer / Enregistrer en PDF</button>
+   </div>
+   <div class="head"><h1>Demande de devis / d'achat</h1>
+     <div class="sub">${I.raisonSociale} · Édité le ${fD(today2())}</div></div>
+   <table>
+     ${ligne("Objet",d.objet)}
+     ${ligne("Poste",d.poste)}
+     ${ligne("Entité",labelEntite(d.entityId))}
+     ${ligne("Montant",(d.montant||0).toFixed(2)+" €")}
+     ${ligne("Fournisseur",d.fournisseur)}
+     ${ligne("Date prévue",d.datePrevue?fD(d.datePrevue):"")}
+     ${ligne("Demandé par",d.nm)}
+     ${ligne("Date de la demande",d.cr?fD(d.cr):"")}
+     ${ligne("Statut",`<span class="badge" style="background:${d.st===ST_BUD.OK?"#E8F5EE":d.st===ST_BUD.REF?"#FDECEA":"#FEF3E2"};color:${d.st===ST_BUD.OK?"#2E7D52":d.st===ST_BUD.REF?"#B03A2E":"#B8670A"}">${stTxt}</span>`)}
+     ${d.validePar?ligne("Validé par",`${d.validePar}${d.dateValidation?" le "+fD(d.dateValidation):""}`):""}
+     ${d.reponse?ligne("Motif",d.reponse):""}
+     ${d.commentaire?ligne("Commentaire",d.commentaire):""}
+   </table>
+   ${images.length?`<div class="pj"><div style="font-weight:700;color:#3A4425;margin-bottom:4px">Pièce(s) jointe(s)</div>${images.map(p=>`<img src="${p.data}" alt="${p.name}">`).join("")}</div>`:""}
+   ${autres.length?`<div class="pj noprint"><div style="font-weight:700;color:#3A4425;margin-bottom:6px">Pièce(s) jointe(s) — PDF (à imprimer séparément)</div>${autres.map((p,i)=>`<button class="btn" id="pj${i}">📄 Ouvrir ${p.name}</button>`).join("")}</div>`:""}
+   <div class="foot">${I.nomCourt} · Document interne</div>
+   <script>${autres.map((p,i)=>`document.getElementById("pj${i}").onclick=function(){var w=window.open();w.document.write('<iframe src="${p.data}" style="width:100%;height:100%;border:none"></iframe>');};`).join("")}<\/script>
+   </body></html>`);
+  w.document.close();
+}
+
+// ══════════ PROCÉDURES (bibliothèque de référence) ══════════
+function rPROCEDURES(){
+  const {role,user}=A.s;
+  const isDir=role==="direction";
+  const procs=(A.s.procedures||[]).filter(p=>!p.archivé).sort((a,b)=>(a.titre||"").localeCompare(b.titre||""));
+  const carte=(p)=>`<div data-proc-search="${((p.titre||"")+" "+(p.corps||"")).toLowerCase().replace(/"/g,"")}" style="background:#F7F4EA;border:1px solid #D8CBA0;border-radius:12px;padding:14px 16px;margin-bottom:10px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap">
+      <div style="flex:1">
+        <div style="font-weight:800;font-size:16px;color:#3A4425;margin-bottom:6px">📑 ${p.titre}</div>
+        ${p.corps?`<div style="font-size:14px;color:#2A2A2A;line-height:1.5;white-space:pre-wrap">${p.corps}</div>`:""}
+        ${(p.pj||[]).length>0?`<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">
+          ${(p.pj||[]).map(f=>f.type&&f.type.startsWith("image/")
+            ?`<img src="${f.data}" style="max-width:160px;max-height:120px;object-fit:cover;border-radius:8px;border:1px solid #DDD;cursor:pointer" data-preview-proc="${f.data}" title="${f.name}">`
+            :`<a href="${f.data}" download="${f.name}" style="display:inline-flex;align-items:center;gap:6px;background:#fff;border:1.5px solid #5C6F3E;border-radius:8px;padding:6px 12px;font-size:13px;color:#5C6F3E;font-weight:600;text-decoration:none">📄 ${f.name}</a>`
+          ).join("")}
+        </div>`:""}
+        ${p.maj?`<div style="font-size:12px;color:#888;margin-top:8px">Mise à jour le ${fD(p.maj)}</div>`:""}
+      </div>
+      ${isDir?`<div style="display:flex;gap:5px">
+        <button class="btn bl bsm" data-edit-proc="${p.id}">✏️</button>
+        <button class="btn bd bsm" data-arch-proc="${p.id}">📦</button>
+      </div>`:""}
+    </div>
+  </div>`;
+  return `<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+    <h2 style="color:#3A4425;font-size:22px;font-weight:800">📑 Procédures</h2>
+    ${isDir?`<button class="btn bp" id="btn-new-proc">+ Nouvelle procédure</button>`:""}
+  </div>
+  ${!isDir?`<div class="ibox">Les procédures internes de l'établissement. Consultez-les à tout moment.</div>`:""}
+  <input id="proc-search" placeholder="🔎 Rechercher une procédure…" style="width:100%;border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px;margin-bottom:12px">
+  <div id="proc-liste">${procs.length?procs.map(carte).join(""):`<div class="wbox">Aucune procédure pour le moment.</div>`}</div>`;
+}
+
+function rMdlProc(){
+  const edit=A.s.modal.data.edit||null;
+  return mdl(edit?"✏️ Modifier la procédure":"📑 Nouvelle procédure",`
+    ${fld("Titre *",`<input id="proc-titre" value="${edit?.titre||""}" placeholder="ex: Accueil d'un nouvel apprenant" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px;width:100%">`)}
+    ${fld("Contenu",`<textarea id="proc-corps" rows="6" placeholder="Décrivez la procédure étape par étape…" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px;width:100%;resize:vertical">${edit?.corps||""}</textarea>`)}
+    <p style="font-size:13px;font-weight:700;color:#3A4425;margin-bottom:8px">📎 Pièces jointes (PDF ou images)</p>
+    <label class="btn bl bsm" style="cursor:pointer">📷 Joindre un fichier<input type="file" id="proc-pj-input" accept="image/*,application/pdf" multiple style="display:none"></label>
+    <div id="proc-pj-list" style="margin-top:8px"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px">
+      <button class="btn bl" id="proc-cancel">Annuler</button>
+      <button class="btn bp" id="proc-submit">${edit?"Enregistrer":"Publier"}</button>
+    </div>`);
+}
+
+function bPROCEDURES(){
+  const s=document.getElementById("proc-search");
+  if(s) s.oninput=()=>{const q=s.value.toLowerCase();document.querySelectorAll("[data-proc-search]").forEach(c=>{c.style.display=c.dataset.procSearch.includes(q)?"":"none";});};
+  const bn=document.getElementById("btn-new-proc");
+  if(bn) bn.onclick=()=>A.set({modal:{ty:"proc",data:{}}});
+  document.querySelectorAll("[data-edit-proc]").forEach(b=>{b.onclick=()=>{const p=(A.s.procedures||[]).find(x=>x.id===b.dataset.editProc);A.set({modal:{ty:"proc",data:{edit:p}}});};});
+  document.querySelectorAll("[data-arch-proc]").forEach(b=>{b.onclick=()=>{if(!confirm("Archiver cette procédure ?"))return;const l=(A.s.procedures||[]).map(x=>x.id===b.dataset.archProc?{...x,archivé:true}:x);A.save("procedures",l);A.toast("Procédure archivée","success");};});
+  document.querySelectorAll("[data-preview-proc]").forEach(img=>{img.onclick=()=>{const w=window.open("","_blank","width=800,height=600");w.document.write(`<img src="${img.dataset.previewProc}" style="max-width:100%;max-height:100vh">`);w.document.close();};});
+}
+
+function bMdlProc(){
+  const edit=A.s.modal.data.edit||null;
+  let pj=[...(edit?.pj||[])];
+  const renderList=()=>{const list=document.getElementById("proc-pj-list");if(!list)return;list.innerHTML=pj.map((p,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 10px;background:#FAF7F0;border:1px solid #DDD;border-radius:8px;margin-bottom:4px"><span style="flex:1;font-size:13px">${p.name}</span>${p.type&&p.type.startsWith("image/")?`<img src="${p.data}" style="width:38px;height:28px;object-fit:cover;border-radius:3px">`:"<span>📄</span>"}<button class="btn bd bsm" data-rm-pj="${i}">✕</button></div>`).join("");list.querySelectorAll("[data-rm-pj]").forEach(b=>{b.onclick=()=>{pj.splice(parseInt(b.dataset.rmPj),1);renderList();};});};
+  renderList();
+  const inp=document.getElementById("proc-pj-input");
+  if(inp) inp.onchange=async(e)=>{
+    for(const f of Array.from(e.target.files)){
+      if(f.size>5*1024*1024){alert(`${f.name} trop volumineux (max 5 Mo).`);continue;}
+      const data=await new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.readAsDataURL(f);});
+      pj.push({name:f.name,type:f.type,size:f.size,data});
+    }
+    renderList();
+  };
+  const c=document.getElementById("proc-cancel");if(c)c.onclick=()=>A.set({modal:null});
+  const sub=document.getElementById("proc-submit");
+  if(sub) sub.onclick=()=>{
+    const titre=document.getElementById("proc-titre").value.trim();
+    const corps=document.getElementById("proc-corps").value.trim();
+    if(!titre){alert("Indiquez un titre.");return;}
+    const u=A.s.user;
+    if(edit){
+      const l=(A.s.procedures||[]).map(x=>x.id===edit.id?{...x,titre,corps,pj,maj:today2()}:x);
+      A.save("procedures",l);
+    } else {
+      const np={id:uid(),titre,corps,pj,cree:today2(),maj:today2(),auteur:u?`${u.pr||""} ${u.nom||""}`.trim():"Direction",archivé:false};
+      A.save("procedures",[...(A.s.procedures||[]),np]);
+    }
+    A.set({modal:null});A.toast("Procédure enregistrée ✓","success");
+  };
+}
 
 // ══════════ COMMANDES CUISINE (pique-niques, collations, invités) ══════════
 const CMD_TYPES = ["🥪 Pique-nique","🍎 Collation","🍽️ Repas invités","📦 Autre"];
@@ -1727,7 +2035,7 @@ const SIGNES = [
 ];
 function signeAstro(dateNaiss){
   if(!dateNaiss) return null;
-  const d=new Date(dateNaiss+"T00:00:00");
+  const d=new Date(normNaissance(dateNaiss)+"T00:00:00");
   if(isNaN(d)) return null;
   const mois=d.getMonth()+1, jour=d.getDate();
   for(const s of SIGNES){
@@ -1985,6 +2293,8 @@ function rDB(){
       </div>
       ${absFilH}
       ${anticipH}
+      ${rBlocAlerteLocation()}
+      ${rBlocDevisDecides()}
       ${rBlocPointagesIncompletsDirection()}
       ${rBlocAlerteVoie2()}
       ${rBlocRappelSauvegarde()}
@@ -2010,6 +2320,8 @@ function rDB(){
   return`<h2 style="color:#3A4425;font-size:22px;font-weight:800;margin-bottom:4px">Bonjour, ${user?.pr||""} 👋</h2>
     <p style="color:#888;font-size:13px;margin-bottom:14px">Période : ${getAS()}</p>
     ${rBlocRgpdAck()}
+    ${rBlocAlerteLocation()}
+    ${rBlocDevisDecides()}
     ${affBandeau}
     ${rBlocRappelPointageSalarie()}
     ${rBlocAlertesMaint()}
@@ -2026,6 +2338,7 @@ function rDB(){
 }
 
 function bDB(){
+  document.querySelectorAll("[data-devis-vu]").forEach(b=>{b.onclick=()=>{const id=b.dataset.devisVu;const l=(A.s.devis||[]).map(d=>d.id===id?{...d,vuAuteur:true}:d);A.save("devis",l);};});
   document.querySelectorAll("[data-nav]").forEach(b=>b.onclick=()=>A.set({vue:b.dataset.nav,modal:null}));
   const bsig=document.getElementById("btn-signaler");
   if(bsig) bsig.onclick=()=>A.set({modal:{ty:"signalement",data:{}}});
@@ -2387,6 +2700,13 @@ function logAction(ficheId, action, user){
 
 // Coordinateur pédagogique
 const COORD_PEDA_ID = "mfr002"; // Benoît BOURSINHAC
+const MAISON_ID = "mfr018"; // Loïc Durosier, maître de maison (valide les devis d'animation)
+function estAnimationEntite(entityId){ return entityId==="ANIMATION"||entityId==="SPORT"||entityId==="ART_CULTURE"; }
+function peutValiderDevis(d,user,role){
+  if(role==="direction") return true;              // la direction valide tout
+  if(estAnimationEntite(d.entityId)) return user?.id===MAISON_ID;  // animation → maître de maison
+  return user?.id===COORD_PEDA_ID;                 // classe → coordinateur
+}
 
 // Postes budgétaires par défaut
 const BUDGET_POSTES = ["Sorties pédagogiques","Matériel pédagogique","Intervenants","Documentation","Numériques/Logiciels","Animation","Option sport","Option art et culture","Projets spéciaux","Divers"];
@@ -3455,6 +3775,8 @@ const AFF_TYPES={
   "Réunion":    {ic:"📅",c:"#5C6B3A",bg:"#EEF2E6"},
   "Félicitation":{ic:"🎉",c:"#C8A84B",bg:"#FBF5E0"},
   "Rappel":     {ic:"🔔",c:"#B8670A",bg:"#FEF3E2"},
+  "Note de service":{ic:"📋",c:"#3A4425",bg:"#EDEFE3"},
+  "Compte rendu":   {ic:"🗒️",c:"#7A5C2E",bg:"#F3ECDD"},
 };
 
 
@@ -3507,11 +3829,13 @@ function rBlocActualites(limit=3){
   return html;
 }
 
+function defaultMoisOuverts(){const ms=(A.s.affichage||[]).filter(m=>!m.archivé);const mois=[...new Set(ms.map(m=>(m.cr||"").slice(0,7)))].sort().reverse();return mois.length?[mois[0]]:[];}
 function rAFFICHAGE(){
   initAffichage();
   const {role,user}=A.s;
   const isDir=role==="direction";
-  const msgs=(A.s.affichage||[]).filter(m=>!m.archivé).sort((a,b)=>b.cr.localeCompare(a.cr));
+  const filtreAff=A.s.affFiltre||"tout";
+  const msgs=(A.s.affichage||[]).filter(m=>!m.archivé && (filtreAff==="tout"||m.type===filtreAff)).sort((a,b)=>b.cr.localeCompare(a.cr));
 
   let listeH="";
   if(!msgs.length){
@@ -3520,10 +3844,13 @@ function rAFFICHAGE(){
       <p>Aucune annonce pour le moment.</p>
     </div>`;
   } else {
+    const cartesParMois={},countParMois={};
     msgs.forEach(m=>{
+      const _ym=(m.cr||"").slice(0,7);
+      countParMois[_ym]=(countParMois[_ym]||0)+1;
       const t=AFF_TYPES[m.type]||AFF_TYPES["Information"];
       const isNew=m.cr>=new Date(Date.now()-7*24*3600*1000).toISOString().split("T")[0];
-      listeH+=`<div style="background:${t.bg};border:2px solid ${t.c};border-radius:12px;padding:14px 16px;margin-bottom:10px">
+      cartesParMois[_ym]=(cartesParMois[_ym]||"")+`<div style="background:${t.bg};border:2px solid ${t.c};border-radius:12px;padding:14px 16px;margin-bottom:10px">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
           <div style="flex:1">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
@@ -3548,6 +3875,14 @@ function rAFFICHAGE(){
         </div>
       </div>`;
     });
+    const MOIS_FR=["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+    const moisTries=Object.keys(cartesParMois).sort().reverse();
+    const ouvertsAff=A.s.affMoisOuverts||defaultMoisOuverts();
+    listeH=moisTries.map(ym=>{
+      const p=ym.split("-"); let lbl=(MOIS_FR[parseInt(p[1])-1]||ym)+" "+p[0]; lbl=lbl.charAt(0).toUpperCase()+lbl.slice(1);
+      const ouvert=ouvertsAff.includes(ym);
+      return `<div style="margin-bottom:12px"><button data-aff-mois="${ym}" style="width:100%;text-align:left;background:#F0ECDD;border:1px solid #D8CBA0;border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:700;color:#3A4425;font-size:15px;display:flex;justify-content:space-between;align-items:center"><span>${ouvert?"▼":"▶"} ${lbl}</span><span style="font-weight:400;color:#888;font-size:13px">${countParMois[ym]} document${countParMois[ym]>1?"s":""}</span></button>${ouvert?`<div style="margin-top:8px">${cartesParMois[ym]}</div>`:""}</div>`;
+    }).join("");
   }
 
   return`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
@@ -3555,10 +3890,15 @@ function rAFFICHAGE(){
     ${isDir?`<button class="btn bp" id="btn-new-aff">+ Publier une actualité</button>`:""}
   </div>
   ${!isDir?`<div class="ibox">Les annonces sont publiées par la direction. Consultez régulièrement cet espace.</div>`:""}
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+    ${[["tout","📰 Tout"],["Note de service","📋 Notes de service"],["Compte rendu","🗒️ Comptes rendus"]].map(([v,l])=>`<button class="btn ${filtreAff===v?"bp":"bl"} bsm" data-aff-filtre="${v}">${l}</button>`).join("")}
+  </div>
   ${listeH}`;
 }
 
 function bAFFICHAGE(){
+  document.querySelectorAll("[data-aff-filtre]").forEach(b=>{b.onclick=()=>A.set({affFiltre:b.dataset.affFiltre});});
+  document.querySelectorAll("[data-aff-mois]").forEach(b=>{b.onclick=()=>{const ym=b.dataset.affMois;let cur=A.s.affMoisOuverts||defaultMoisOuverts();cur=cur.includes(ym)?cur.filter(x=>x!==ym):[...cur,ym];A.set({affMoisOuverts:cur});};});
   const bn=document.getElementById("btn-new-aff");
   if(bn) bn.onclick=()=>A.set({modal:{ty:"nAff",data:{}}});
   document.querySelectorAll("[data-edit-aff]").forEach(b=>{
@@ -3652,7 +3992,10 @@ function exporterDonnees(){
   const url=URL.createObjectURL(blob);
   const a=document.createElement("a");
   a.href=url;a.download=`MFR-RH_sauvegarde_${today2()}.json`;
-  a.click();URL.revokeObjectURL(url);
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
   A.toast(`✓ Sauvegarde téléchargée — ${Math.round(json.length/1024)}Ko`,"success");
   K.s("derniereSauvegarde", today2());
 }
@@ -3672,6 +4015,7 @@ function joursIncompletsSemaine(mid, lundiSemaine){
     if(!jourTravaille) return;                          // jour non travaillé → banalisé
     const ds=getDJ(lundiSemaine,jk);
     if(ds>today2()) return;                             // jour futur → on n'attend pas encore la saisie
+    if(estAbsentJourComplet(mid,ds)) return;            // jour couvert par un congé approuvé → banalisé
     const pointe=(A.s.heu||[]).some(x=>x.mid===mid && x.dt===ds);
     if(!pointe) manquants.push({jk,ds});
   });
@@ -5141,18 +5485,20 @@ function pdfSynthese(annee){
   // Tableau annualisation
   const annualRows=actifs.map(m=>{
     const horM=HOR[m.id];
-    const hTheoHebdo=cHebdoHOR(horM);
+    const hTheoHebdo=(m.sv==="Direction")?(H_JOUR_DIRECTION*5):cHebdoHOR(horM);
     const veil=estVeilleur(horM);
             const annu=veil?calcAnnualisationNuit(horM,44):null;
             const hTheoAn=veil?Math.round(annu.totalEquiv):Math.round(hTheoHebdo*44);
     const hDecl=(heu||[]).filter(x=>x.mid===m.id&&x.dt>=dateDebStr&&x.dt<=dateFinStr&&x.st==="Approuvée").reduce((s,x)=>s+(x.hr||0),0);
     const hSup=(heu||[]).filter(x=>x.mid===m.id&&x.dt>=dateDebStr&&x.dt<=dateFinStr&&x.st==="Approuvée"&&x.dep>0).reduce((s,x)=>s+(x.dep||0),0);
-    const ecart=hDecl>0&&hTheoAn>0?hDecl-hTheoAn:null;
+    const hCredit=creditAbsencesHeures(m.id,dateDebStr,dateFinStr);
+    const hFaites=hDecl+hCredit;
+    const ecart=hFaites>0&&hTheoAn>0?hFaites-hTheoAn:null;
     return`<tr>
       <td style="padding:5px 10px;border:1px solid #DDD;font-weight:600">${m.nom} ${m.pr}</td>
       <td style="padding:5px 10px;border:1px solid #DDD;font-size:11px;color:#888">${m.sv||""}</td>
       <td style="padding:5px 8px;border:1px solid #DDD;text-align:right">${hTheoAn>0?fH(hTheoAn):"—"}</td>
-      <td style="padding:5px 8px;border:1px solid #DDD;text-align:right;font-weight:700">${hDecl>0?fH(hDecl):"—"}</td>
+      <td style="padding:5px 8px;border:1px solid #DDD;text-align:right;font-weight:700">${hFaites>0?fH(hFaites):"—"}${hCredit>0?`<div style="font-size:10px;color:#888;font-weight:400">dont ${fH(hCredit)} congés</div>`:""}</td>
       <td style="padding:5px 8px;border:1px solid #DDD;text-align:right;font-weight:700;color:${ecart===null?"#888":ecart>10?"#C0392B":ecart<-10?"#B8670A":"#2E7D52"}">${ecart!==null?(ecart>0?"+":"")+fH(ecart):"—"}</td>
       <td style="padding:5px 8px;border:1px solid #DDD;text-align:right;color:#B8670A">${hSup>0?fH(hSup):"—"}</td>
     </tr>`;
@@ -5294,13 +5640,15 @@ function rBUDGET(){
   const isCoord=user?.id===COORD_PEDA_ID;
   const isDir=role==="direction";
   const isSandrine=user?.id==="mfr015";
-  const canAdmin=isDir||isSandrine;
+  const canAdmin=isDir||isSandrine||isCoord;
   const canValidate=isCoord||isDir;
 
   // Entités budgétaires
   const entites=[
     ...CLASSES_ORDER.map(k=>({id:k,...CLASSES_META[k],type:"classe"})),
     {id:"ANIMATION",label:"Animation",filiere:"Animation",type:"animation"},
+    {id:"SPORT",label:"Sport",filiere:"Animation",type:"animation"},
+    {id:"ART_CULTURE",label:"Art et Culture",filiere:"Animation",type:"animation"},
   ];
 
   // Sélecteur année scolaire
@@ -5313,7 +5661,7 @@ function rBUDGET(){
   const totalEngage=entites.reduce((s,e)=>s+calcBudget(e.id,annee).engage,0);
   const totalPaye=entites.reduce((s,e)=>s+calcBudget(e.id,annee).paye,0);
   const totalRestant=totalAlloue-totalEngage-totalPaye;
-  const devisEnAtt=(A.s.devis||[]).filter(d=>d.annee===annee&&d.st===ST_BUD.ATT).length;
+  const devisEnAtt=(A.s.devis||[]).filter(d=>d.annee===annee&&d.st===ST_BUD.ATT&&peutValiderDevis(d,user,role)).length;
 
   let kpiH=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:16px">
     <div class="kpi" style="background:#EEF2E6"><div class="val" style="font-size:22px;font-weight:800;color:#3A4425">${totalAlloue.toFixed(0)} €</div><div style="font-size:13px;color:#555;font-weight:600">Budget alloué</div></div>
@@ -5399,23 +5747,16 @@ function rBUDGET(){
   tableH+=`</tbody></table></div>`;
 
   // Bouton nouveau devis (tous sauf Sandrine consultante)
-  let actionsH="";
-  if(role==="salarie"&&!isSandrine){
-    actionsH=`<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+  // Tout le monde peut soumettre un devis (créé en attente de validation)
+  let actionsH=`<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
       <button class="btn bp" id="btn-new-devis">+ Soumettre un devis</button>
-    </div>`;
-  }
-  if(canValidate){
-    actionsH=`<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-      ${isDir?`<button class="btn bp" id="btn-new-devis">+ Saisir un devis</button>`:""}
       ${devisEnAtt>0?`<button class="btn bw" data-bud-filter="att">⏳ Voir les ${devisEnAtt} devis en attente</button>`:""}
     </div>`;
-  }
 
   // Liste des devis récents
   const devisVis=(A.s.devis||[]).filter(d=>{
     if(d.annee!==annee)return false;
-    if(role==="salarie"&&!canValidate&&!isSandrine&&d.mid!==user?.id)return false;
+    if(role==="salarie"&&!isSandrine&&d.mid!==user?.id&&!peutValiderDevis(d,user,role))return false;
     if(A.s.budFilter==="att"&&d.st!==ST_BUD.ATT)return false;
     return true;
   }).sort((a,b)=>(b.cr||"").localeCompare(a.cr||""));
@@ -5451,12 +5792,13 @@ function rBUDGET(){
             </div>`:""}
           </div>
           <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end">
-            ${canValidate&&d.st===ST_BUD.ATT?`
+            ${peutValiderDevis(d,user,role)&&d.st===ST_BUD.ATT?`
               <button class="btn bs bsm" data-val-devis="${d.id}" data-vst-devis="${ST_BUD.OK}">✓ Accepter</button>
               <button class="btn bd bsm" data-val-devis="${d.id}" data-vst-devis="${ST_BUD.REF}">✗ Refuser</button>
             `:""}
             ${canAdmin&&d.st===ST_BUD.OK?`<button class="btn bi bsm" data-val-devis="${d.id}" data-vst-devis="${ST_BUD.PAY}">💳 Marquer payé</button>`:""}
             ${(d.mid===user?.id&&d.st===ST_BUD.ATT)?`<button class="btn bw bsm" data-val-devis="${d.id}" data-vst-devis="${ST_BUD.ANN}">Annuler</button>`:""}
+            <button class="btn bl bsm" data-print-devis="${d.id}">🖨 Imprimer</button>
           </div>
         </div>
       </div>`;
@@ -5472,6 +5814,7 @@ function rBUDGET(){
 }
 
 function bBUDGET(){
+  document.querySelectorAll("[data-print-devis]").forEach(b=>{b.onclick=()=>pdfDevis(b.dataset.printDevis);});
   initBudgets();
   const annee=A.s.budAnneeSco||getAS();
 
@@ -5554,6 +5897,8 @@ function rMdlNDevis(){
   const entites=[
     ...CLASSES_ORDER.map(k=>({id:k,...CLASSES_META[k]})),
     {id:"ANIMATION",label:"Animation",filiere:"Animation"},
+    {id:"SPORT",label:"Sport",filiere:"Animation"},
+    {id:"ART_CULTURE",label:"Art et Culture",filiere:"Animation"},
   ];
   return mdl("+ Soumettre un devis",`
     <div class="ibox">Ce devis sera soumis à Benoît BOURSINHAC (coordinateur pédagogique) pour validation.</div>
@@ -6856,7 +7201,7 @@ function bEQ(){
     };
   });
 }
-function rMdlSM(){const i=A.s.modal.data?.init||{};return mdl(i.id?"Modifier":"Ajouter un membre",`<div class="g2">${fld("Prénom *",`<input id="mbpr" value="${i.pr||""}">`)} ${fld("Nom *",`<input id="mbno" value="${i.nom||""}">`)}</div>${fld("Service *",sel("mbsv",SVC,i.sv||"","-- Choisir --"))}${fld("Poste",`<input id="mbpo" value="${i.po||""}" placeholder="ex: Formateur…">`)}${fld("Email",`<input type="email" id="mbem" value="${i.em||""}">`)}${fld("Date d'entrée",`<input id="mbde" value="${i.de||""}" placeholder="ex: 01/09/2025">`)}${fld("Date de naissance",`<input id="mbnais" value="${i.naissance||""}" placeholder="ex: 15/03/1985">`,"pour les anniversaires sur l'accueil")}
+function rMdlSM(){const i=A.s.modal.data?.init||{};return mdl(i.id?"Modifier":"Ajouter un membre",`<div class="g2">${fld("Prénom *",`<input id="mbpr" value="${i.pr||""}">`)} ${fld("Nom *",`<input id="mbno" value="${i.nom||""}">`)}</div>${fld("Service *",sel("mbsv",SVC,i.sv||"","-- Choisir --"))}${fld("Poste",`<input id="mbpo" value="${i.po||""}" placeholder="ex: Formateur…">`)}${fld("Email",`<input type="email" id="mbem" value="${i.em||""}">`)}${fld("Date d'entrée",`<input id="mbde" value="${i.de||""}" placeholder="ex: 01/09/2025">`)}${fld("Date de naissance",`<input type="date" id="mbnais" value="${normNaissance(i.naissance||"")}">`,"pour les anniversaires sur l'accueil")}
     ${fld("Mot de passe",`<input type="password" id="mbpw" placeholder="${i.id?"Laisser vide pour ne pas changer":"Définir un mot de passe"}">`,i.id?"Laisser vide = mot de passe inchangé":"")}<div class="dvd"></div><div class="g2">${fld("Congés payés acquis par mois (j)",`<input type="number" id="mbcpmens" value="${i.cpMensuel??2.5}" min="0" step="0.5" title="Jours de congés payés crédités automatiquement chaque 1er du mois">`,"2,5j standard · 5j direction · crédité chaque 1er du mois") } ${fld("Solde congés payés actuel (j)",`<input type="number" id="mbcp" value="${i.cp??0}" min="0" step="0.5">`)} ${fld("Plafond Télétravail",`<div style="padding:9px 12px;background:#F4F1E8;border-radius:8px;font-size:13px;color:#5C6B3A"><strong>160 h / an</strong> — identique pour tous (1er sept → 31 août)</div>`)}</div>
     <div class="g2">${fld("Quotité temps de travail (%)",`<input type="number" id="mbquot" value="${i.quotite??100}" min="0" max="100" step="1" title="100% = temps plein (1599h/an) · 80% = 1279h...">`,"100% = 1599h/an · sert au tableau d'annualisation")}${fld("Taux horaire brut (€/h)",`<input type="number" id="mb-taux" value="${i.tauxHoraire??25}" min="0" step="0.01" placeholder="ex: 25.00">`,"sert au calcul du coût de main d'œuvre (entretien) — confidentiel")}</div><div class="dvd"></div><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn bl" id="smcn">Annuler</button><button class="btn bp" id="smsb">${i.id?"Mettre à jour":"Ajouter"}</button></div>`);}
 function bMdlSM(){
@@ -6879,7 +7224,7 @@ function bMdlSM(){
         po:document.getElementById("mbpo").value,sv,
         em:document.getElementById("mbem").value,
         de:document.getElementById("mbde").value,
-        naissance:document.getElementById("mbnais")?.value||i.naissance||"",
+        naissance:normNaissance(document.getElementById("mbnais")?.value||i.naissance||""),
         cp:parseFloat(document.getElementById("mbcp").value)||0,
         cpp:i.cpp||0,ra:i.ra||0,rp:i.rp||0,
         ttp:TT_PLAFOND_ANNUEL,
@@ -6995,6 +7340,10 @@ function rPR(){
 }
 
 function bPR(){
+  const bexp=document.getElementById("btn-export-data");
+  if(bexp) bexp.onclick=()=>exporterDonnees();
+  const brest=document.getElementById("inp-restore");
+  if(brest) brest.onchange=(e)=>{const f=e.target.files&&e.target.files[0];if(f)restaurerDonnees(f);};
   const bReset=document.getElementById("btn-reset-test");
   if(bReset) bReset.onclick=()=>A.set({modal:{ty:"resetTest",data:{}}});
   const blo=document.getElementById("btn-logout");
@@ -7023,7 +7372,7 @@ document.addEventListener("DOMContentLoaded",()=>A.init());
 
 
 const A={
-  s:{role:null,user:null,vue:"db",toast:null,tT:null,modal:null,eq:[],abs:[],dem:[],heu:[],ord:[],fr:[],budgets:[],devis:[],budAnneeSco:null,budFilter:null,echeances:[],alertFiltre:"all",locations:[],formations:[],affichage:[],maintenances:[],config:null,horaires:{},commandes:[],synthAnnee:null,maintFiltre:"all",maintAnnee:null,rcplOnglet:"soldes",pMo:undefined,pAn:undefined,formAnneeSco:null,eqFiltreArch:false,planAnneeSco:null},
+  s:{role:null,user:null,vue:"db",toast:null,tT:null,modal:null,eq:[],abs:[],dem:[],heu:[],ord:[],fr:[],budgets:[],devis:[],budAnneeSco:null,budFilter:null,echeances:[],alertFiltre:"all",locations:[],formations:[],affichage:[],maintenances:[],config:null,horaires:{},commandes:[],procedures:[],synthAnnee:null,maintFiltre:"all",maintAnnee:null,rcplOnglet:"soldes",pMo:undefined,pAn:undefined,formAnneeSco:null,eqFiltreArch:false,planAnneeSco:null},
   set(p){Object.assign(A.s,p);A.r();},
   toast(msg,ty="success"){if(A.s.tT)clearTimeout(A.s.tT);const t=setTimeout(()=>A.set({toast:null,tT:null}),3200);A.set({toast:{msg,ty},tT:t});},
   save(k,v){K.s(k,v);A.set({[k]:v});if(fbReady&&FB_COLLECTIONS.includes(k))fbSave(k,v);},
@@ -7144,7 +7493,7 @@ function rMain(){
     
     {id:"hr",ic:"⏱",lb:"Heures"},
     {id:"om",ic:"🗺️",lb:"Missions"},
-    {id:"fr",ic:"💶",lb:"Frais"},{id:"bu",ic:"💰",lb:"Budget"},...(canSeeSynth(role,user?.id)?[{id:"al",ic:"🔔",lb:"Alertes"}]:[]),...(canSeeSynth(role,user?.id)?[{id:"sy",ic:"📊",lb:"Bilan RH"}]:[]),{id:"lo",ic:"🏠",lb:"Locations"},{id:"cmd",ic:"🧺",lb:"Commandes"},...(canSeeSynth(role,user?.id)?[{id:"fo",ic:"🎓",lb:"Formations"}]:[]),...(canSeeMaint(role,user?.id)?[{id:"mt",ic:"🔧",lb:"Entretien"}]:[]),...(canSeeMaint(role,user?.id)?[{id:"veh",ic:"🚗",lb:"Véhicules"}]:[]),
+    {id:"fr",ic:"💶",lb:"Frais"},{id:"bu",ic:"💰",lb:"Budget"},...(canSeeSynth(role,user?.id)?[{id:"al",ic:"🔔",lb:"Alertes"}]:[]),...(canSeeSynth(role,user?.id)?[{id:"sy",ic:"📊",lb:"Bilan RH"}]:[]),{id:"lo",ic:"🏠",lb:"Locations"},{id:"cmd",ic:"🧺",lb:"Commandes"},{id:"proc",ic:"📑",lb:"Procédures"},...(canSeeSynth(role,user?.id)?[{id:"fo",ic:"🎓",lb:"Formations"}]:[]),...(canSeeMaint(role,user?.id)?[{id:"mt",ic:"🔧",lb:"Entretien"}]:[]),...(canSeeMaint(role,user?.id)?[{id:"veh",ic:"🚗",lb:"Véhicules"}]:[]),
     ...(role==="direction"?[{id:"pc",ic:"🎓",lb:"Classes"},{id:"fi",ic:"📚",lb:"Filières"},{id:"im",ic:"🖨️",lb:"Imprimer"}]:[]),...(canSeeEq(role,user?.id)?[{id:"eq",ic:"👥",lb:"Personnel"}]:[]),...(canSeeEq(role,user?.id)?[{id:"horaires",ic:"🕒",lb:"Horaires"}]:[]),...(role==="direction"?[{id:"pr",ic:"⚙️",lb:"Réglages"}]:[])
   ];
   const nav=navItems.map(n=>`<button class="nb${vue===n.id?" on act":""}" data-v="${n.id}"><span class="nb-ic">${n.ic}</span><span class="nb-lb">${n.lb}</span>${n.bdg>0?`<span class="nb-bdg">${n.bdg}</span>`:""}</button>`).join("");
@@ -7165,6 +7514,7 @@ function rMain(){
   else if(vue==="mt")content=rMAINTENANCE();
   else if(vue==="veh")content=rVEHICULES();
   else if(vue==="cmd")content=rCOMMANDES();
+  else if(vue==="proc")content=rPROCEDURES();
   else if(vue==="horaires"&&canSeeEq(role,user?.id))content=rHORAIRES();
   else if(vue==="pc")content=rPLANNING_CLASSES();
   else if(vue==="fi"&&role==="direction")content=rFILIERES();
@@ -7207,6 +7557,7 @@ function bMain(){
   else if(v==="mt")bMAINTENANCE();
   else if(v==="veh")bVEHICULES();
   else if(v==="cmd")bCOMMANDES();
+  else if(v==="proc")bPROCEDURES();
   else if(v==="horaires")bHORAIRES();
   else if(v==="pc")bPLANNING_CLASSES();
   else if(v==="fi")bFILIERES();
@@ -7214,8 +7565,8 @@ function bMain(){
   else if(v==="eq")bEQ();else if(v==="pr")bPR();
   if(A.s.modal)bMdl();
 }
-function rMdl(){const {modal}=A.s;if(!modal)return"";const m={"nd":rMdlND,"vd":rMdlVD,"ad":rMdlAD,"sa":rMdlSA,"sm":rMdlSM,"dp":rMdlDP,"no":rMdlNO,"do":rMdlDO,"nf":rMdlNF,"df":rMdlDF,"class-filiere":rMdlClassFiliere,"ndevis":rMdlNDevis,"allocuer":rMdlAllocuer,"detailBud":rMdlDetailBud,"paiementDevis":rMdlPaiementDevis,"nEch":rMdlNEch,"nLoc":rMdlNLoc,"nForm":rMdlNForm,"nAff":rMdlNAff,"nMaint":rMdlNMaint,"signalement":rMdlSignalement,"vehEdit":rMdlVehEdit,"vehAno":rMdlVehAno,"changePwd":rMdlChangePwd,"horEdit":rMdlHorEdit,"resetTest":rMdlResetTest,"commande":rMdlCommande}[modal.ty];return m?m():"";} 
-function bMdl(){const {modal}=A.s;const mc=document.getElementById("mcl");if(mc)mc.onclick=()=>A.set({modal:null});const m={"nd":bMdlND,"vd":bMdlVD,"ad":bMdlAD,"sa":bMdlSA,"sm":bMdlSM,"dp":bMdlDP,"no":bMdlNO,"do":bMdlDO,"nf":bMdlNF,"df":bMdlDF,"class-filiere":bMdlClassFiliere,"ndevis":bMdlNDevis,"allocuer":bMdlAllocuer,"detailBud":bMdlDetailBud,"paiementDevis":bMdlPaiementDevis,"nEch":bMdlNEch,"nLoc":bMdlNLoc,"nForm":bMdlNForm,"nAff":bMdlNAff,"nMaint":bMdlNMaint,"signalement":bMdlSignalement,"vehEdit":bMdlVehEdit,"vehAno":bMdlVehAno,"changePwd":bMdlChangePwd,"horEdit":bMdlHorEdit,"resetTest":bMdlResetTest,"commande":bMdlCommande}[modal.ty];if(m)m();}
+function rMdl(){const {modal}=A.s;if(!modal)return"";const m={"nd":rMdlND,"vd":rMdlVD,"ad":rMdlAD,"sa":rMdlSA,"sm":rMdlSM,"dp":rMdlDP,"no":rMdlNO,"do":rMdlDO,"nf":rMdlNF,"df":rMdlDF,"class-filiere":rMdlClassFiliere,"ndevis":rMdlNDevis,"allocuer":rMdlAllocuer,"detailBud":rMdlDetailBud,"paiementDevis":rMdlPaiementDevis,"nEch":rMdlNEch,"nLoc":rMdlNLoc,"nForm":rMdlNForm,"nAff":rMdlNAff,"nMaint":rMdlNMaint,"signalement":rMdlSignalement,"vehEdit":rMdlVehEdit,"vehAno":rMdlVehAno,"changePwd":rMdlChangePwd,"horEdit":rMdlHorEdit,"resetTest":rMdlResetTest,"commande":rMdlCommande,"absPdf":rMdlAbsPdf,"proc":rMdlProc}[modal.ty];return m?m():"";} 
+function bMdl(){const {modal}=A.s;const mc=document.getElementById("mcl");if(mc)mc.onclick=()=>A.set({modal:null});const m={"nd":bMdlND,"vd":bMdlVD,"ad":bMdlAD,"sa":bMdlSA,"sm":bMdlSM,"dp":bMdlDP,"no":bMdlNO,"do":bMdlDO,"nf":bMdlNF,"df":bMdlDF,"class-filiere":bMdlClassFiliere,"ndevis":bMdlNDevis,"allocuer":bMdlAllocuer,"detailBud":bMdlDetailBud,"paiementDevis":bMdlPaiementDevis,"nEch":bMdlNEch,"nLoc":bMdlNLoc,"nForm":bMdlNForm,"nAff":bMdlNAff,"nMaint":bMdlNMaint,"signalement":bMdlSignalement,"vehEdit":bMdlVehEdit,"vehAno":bMdlVehAno,"changePwd":bMdlChangePwd,"horEdit":bMdlHorEdit,"resetTest":bMdlResetTest,"commande":bMdlCommande,"absPdf":bMdlAbsPdf,"proc":bMdlProc}[modal.ty];if(m)m();}
 
 
 function rRCPL(){
@@ -7525,7 +7876,7 @@ function rHR(){
 
             <!-- Horaires théoriques ou veillée -->
             ${isVeillee
-              ?`<div style="font-size:14px;color:#6A2A8A;font-weight:600">🌙 Veillée : 13h30 → 21h00 = ${fH(CRENEAUX_SPECIAUX.veillee.duree)} <span style="font-size:12px;color:#888;font-weight:400">(remplace les horaires habituels)</span></div>`
+              ?`<div style="font-size:14px;color:#6A2A8A;font-weight:600">🌙 Veillée : 13h00 → 21h00 = ${fH(CRENEAUX_SPECIAUX.veillee.duree)} <span style="font-size:12px;color:#888;font-weight:400">(remplace les horaires habituels)</span></div>`
               :jT?`<div style="font-size:14px;color:#555">Théorique : <strong>${jT[0]||"—"}${jT[1]?` → ${jT[1]}`:""}</strong>${jT[2]||jT[3]?` / <strong>${jT[2]||"—"}${jT[3]?` → ${jT[3]}`:""}</strong>`:""} <span style="color:#5C6B3A;font-weight:600">(${fH(hT)})</span></div>`:""
             }
 
@@ -7760,14 +8111,18 @@ function bHR(){
   document.querySelectorAll("[data-val-sem]").forEach(b=>{
     b.onclick=()=>{
       const[mid,lun]=b.dataset.valSem.split("_");
-      let neq=[...A.s.eq];
+      // ANNUALISATION : on crédite le SOLDE NET (plus ET moins) de la semaine
+      let netH=0;
       const l=A.s.heu.map(x=>{
-        if(x.mid!==mid||x.lun!==lun||x.st!==ST.ATT||x.dep<=0)return x;
-        neq=neq.map(m=>{if(m.id!==mid)return m;return{...m,ra:(m.ra||0)+(x.rc||0)/7};});
+        if(x.mid!==mid||x.lun!==lun||x.st!==ST.ATT)return x;
+        const htj=(x.ht!=null?x.ht:gHT(x.mid,x.jk));
+        netH += (x.hr||0)-htj;   // écart signé du jour
         return{...x,st:ST.APP,valPar:nomValidateur(),dateVal:today2()};
       });
+      const neq=A.s.eq.map(m=>m.id===mid?{...m,ra:(m.ra||0)+netH/7}:m);
       K.s("eq",neq);A.s.eq=neq;
-      A.save("heu",l);A.toast("Récupérations créditées ✓","success");
+      A.save("heu",l);
+      A.toast(netH>0?`Semaine validée · +${fH(netH)} au solde ✓`:(netH<0?`Semaine validée · ${fH(netH)} au solde`:"Semaine validée ✓"),"success");
     };
   });
   document.querySelectorAll("[data-ref-sem]").forEach(b=>{
