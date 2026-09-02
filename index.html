@@ -439,7 +439,7 @@ const K={
 //  FIREBASE — Synchronisation temps réel multi-postes
 // ══════════════════════════════════════════════════════════════════
 // Configuration du projet MFR-Neracais-RH
-const APP_VERSION="v114";
+const APP_VERSION="v115";
 const firebaseConfig = {
   apiKey: "AIzaSyAJNsp-EY6DkT8AWa0824HuZh2Wu2Frce4",
   authDomain: "gestion-rh-mfr-du-neracais.firebaseapp.com",
@@ -1438,7 +1438,7 @@ function getAnniversaires(eq){
     if(proch<today) proch.setFullYear(proch.getFullYear()+1);
     const diff=Math.round((proch-today)/(1000*60*60*24));
     const age=proch.getFullYear()-nais.getFullYear();
-    if(diff<=15) res.push({...m,prochAnniv:proch.toISOString().split("T")[0],diffJours:diff,age});
+    if(diff<=15) res.push({...m,prochAnniv:`${proch.getFullYear()}-${String(proch.getMonth()+1).padStart(2,"0")}-${String(proch.getDate()).padStart(2,"0")}`,diffJours:diff,age});
   });
   return res.sort((a,b)=>a.diffJours-b.diffJours);
 }
