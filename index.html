@@ -154,6 +154,7 @@ const TC={
   "Congés payés":{bg:"#FBF3DC",c:"#7A5A10",b:"#C8A84B",e:"🌴"},
   "Récupération":{bg:"#F9EDE6",c:"#7A3520",b:"#C87050",e:"🔄"},
   "Récupération veillée":{bg:"#F5EAF8",c:"#6A2A8A",b:"#A060C0",e:"🌙"},
+  "Récupération conventionnelle":{bg:"#E6F2EE",c:"#1A6A4A",b:"#3A9070",e:"⚖️"},
   "Heures supp.":{bg:"#F0E8F5",c:"#4A1A7A",b:"#9060C0",e:"⏱"},
   "Formation":{bg:"#E0F0F0",c:"#1A5A5A",b:"#3A9090",e:"📚"},
   "Maladie":{bg:"#FDE8E6",c:"#7A1A1A",b:"#C04040",e:"🤒"},
@@ -298,6 +299,7 @@ function nJO(d1,d2,c=1){
 }
 function hStr(h){if(!h&&h!==0)return"—";const hh=Math.floor(Math.abs(h)),mm=Math.round((Math.abs(h)-hh)*60);return`${h<0?"-":""}${hh}h${mm>0?String(mm).padStart(2,"0"):"00"}`;}
 function getAS(){const n=new Date(),m=n.getMonth(),y=n.getFullYear();return m>=8?`${y}-${y+1}`:`${y-1}-${y}`;}
+function debutPeriodeRef(){return getAS().split("-")[0]+"-09-01";}
 function getMC(){const n=new Date();return`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,"0")}`;}
 function pH(s){if(!s)return 0;const[h,m]=s.split(":").map(Number);return h+(m||0)/60;}
 function cH(d,f){if(!d||!f)return 0;return Math.max(0,pH(f)-pH(d));}
@@ -439,7 +441,7 @@ const K={
 //  FIREBASE — Synchronisation temps réel multi-postes
 // ══════════════════════════════════════════════════════════════════
 // Configuration du projet MFR-Neracais-RH
-const APP_VERSION="v115";
+const APP_VERSION="v129";
 const firebaseConfig = {
   apiKey: "AIzaSyAJNsp-EY6DkT8AWa0824HuZh2Wu2Frce4",
   authDomain: "gestion-rh-mfr-du-neracais.firebaseapp.com",
@@ -576,9 +578,9 @@ let hLun=getLun(today2()); // Lundi de la semaine courante (module Heures)
 // ══ DEMANDES DE CONGÉS / RÉCUPÉRATION ═══════════════════════════
 
 const DEM_TYPES_SAL = ["Congés payés","Récupération","Télétravail","Formation"];
-const DEM_TYPES_DIR = ["Congés payés","Récupération","Télétravail","Formation","Maladie","Absence autorisée","Congé sans solde","Événement familial","Congé maternité","Autre"];
+const DEM_TYPES_DIR = ["Congés payés","Récupération","Récupération conventionnelle","Télétravail","Formation","Maladie","Absence autorisée","Congé sans solde","Événement familial","Congé maternité","Autre"];
 // Absences qui CRÉDITENT les heures théoriques (tout sauf congé sans solde et télétravail, qui est du travail pointé)
-const TYPES_ABS_CREDIT = ["Congés payés","Récupération","Formation","Maladie","Absence autorisée","Événement familial","Congé maternité","Autre"];
+const TYPES_ABS_CREDIT = ["Congés payés","Récupération","Récupération conventionnelle","Formation","Maladie","Absence autorisée","Événement familial","Congé maternité","Autre"];
 // Absences excluant l'alerte de pointage (personne réellement absente) — inclut le congé sans solde, pas le télétravail
 const TYPES_ABS_NONTRAVAIL = [...TYPES_ABS_CREDIT,"Congé sans solde"];
 const DEM_FRACTIONS = ["Journée entière","Matin","Après-midi"];
@@ -731,7 +733,7 @@ function rDM(){
               <button class="btn bs bsm" data-val-dem="${d.id}" data-val-st="${ST.APP}">✓ Approuver</button>
               <button class="btn bd bsm" data-val-dem="${d.id}" data-val-st="${ST.REF}">✗ Refuser</button>
             `:""}
-            ${(isSal||isDir)&&d.st===ST.ATT?`<button class="btn bw bsm" data-ann-dem="${d.id}">Annuler</button>`:""}
+            ${d.st===ST.ATT&&(isSal||isDir)?`<button class="btn bw bsm" data-ann-dem="${d.id}">Annuler</button>`:""}${d.st===ST.APP?(d.annulDemandee?(isDir?`<button class="btn bs bsm" data-val-annul="${d.id}">✓ Valider l'annulation</button><button class="btn bd bsm" data-ref-annul="${d.id}">✗ Refuser</button>`:`<span style="font-size:12px;color:#B8670A;font-weight:700">⏳ Annulation demandée</span>`):(isDir?`<button class="btn bw bsm" data-ann-dem="${d.id}">Annuler</button>`:`<button class="btn bw bsm" data-req-annul="${d.id}">Demander l'annulation</button>`)):""}
           </div>
         </div>
       </div>`;
@@ -796,20 +798,67 @@ function bDM(){
           const newEq=eq.map(m=>m.id===mb.id?newMb:m);
           A.s.eq=newEq;A.save("eq",newEq);
         }
+        // Lien automatique vers l'onglet Formations (évite la double saisie)
+        if(d.ty==="Formation" && !(A.s.formations||[]).some(f=>f.demId===id)){
+          const fEntry={id:uid(),mid:d.mid,nm:d.nm,
+            intitule:(d.co&&d.co.trim())?d.co.trim():"Formation",
+            type:"",organisme:"",date:d.dd,heures:(d.th||0),
+            statut:"Planifiée",annee:getAS(),
+            note:`Depuis la demande de ${d.nm} (${fD(d.dd)}${d.df&&d.df!==d.dd?" → "+fD(d.df):""})`,
+            demId:id};
+          const nf=[...(A.s.formations||[]),fEntry];
+          A.s.formations=nf;A.save("formations",nf);
+        }
       }
       const newDem=dem.map(x=>x.id===id?{...x,st,mo:mo||"",dateRep:today2(),valPar:nomValidateur()}:x);
       A.save("dem",newDem);
-      A.toast(st===ST.APP?"✅ Demande approuvée":"✗ Demande refusée",st===ST.APP?"success":"error");
+      A.toast(st===ST.APP?(d.ty==="Formation"?"✅ Demande approuvée · formation ajoutée à l'onglet Formations":"✅ Demande approuvée"):"✗ Demande refusée",st===ST.APP?"success":"error");
     };
   });
 
   // Annuler (salarié ou direction)
+  const reverseDemande=(d)=>{
+    A.s.abs=(A.s.abs||[]).filter(a=>a.demId!==d.id); A.save("abs",A.s.abs);
+    const mb=A.s.eq.find(m=>m.id===d.mid);
+    if(mb){ const nj=d.nj||1; let nmb={...mb};
+      if(d.ty==="Congés payés") nmb.cpp=Math.max(0,(mb.cpp||0)-nj);
+      if(d.ty==="Récupération") nmb.rp=Math.max(0,(mb.rp||0)-nj);
+      A.s.eq=A.s.eq.map(m=>m.id===mb.id?nmb:m); A.save("eq",A.s.eq); }
+    if(d.ty==="Formation"){ A.s.formations=(A.s.formations||[]).filter(f=>f.demId!==d.id); A.save("formations",A.s.formations); }
+  };
+  // Annuler : direct pour une demande EN ATTENTE, ou annulation directe par la direction sur une approuvée
   document.querySelectorAll("[data-ann-dem]").forEach(b=>{
     b.onclick=()=>{
-      if(!confirm("Annuler cette demande ?")) return;
-      const newDem=dem.map(x=>x.id===b.dataset.annDem?{...x,st:ST.ANN}:x);
-      A.save("dem",newDem);
+      const d=dem.find(x=>x.id===b.dataset.annDem); if(!d) return;
+      if(!confirm(d.st===ST.APP?"Annuler définitivement cette demande approuvée ?\nL'absence sera retirée et le solde restauré.":"Annuler cette demande ?")) return;
+      if(d.st===ST.APP) reverseDemande(d);
+      A.save("dem",dem.map(x=>x.id===d.id?{...x,st:ST.ANN,annulDemandee:false}:x));
       A.toast("Demande annulée","warn");
+    };
+  });
+  // Salarié : DEMANDER l'annulation d'une demande approuvée (soumise à validation)
+  document.querySelectorAll("[data-req-annul]").forEach(b=>{
+    b.onclick=()=>{
+      if(!confirm("Demander l'annulation de cette demande approuvée ?\nLa direction devra la valider.")) return;
+      A.save("dem",dem.map(x=>x.id===b.dataset.reqAnnul?{...x,annulDemandee:true,annulDate:today2()}:x));
+      A.toast("Demande d'annulation envoyée à la direction","success");
+    };
+  });
+  // Direction : VALIDER l'annulation demandée
+  document.querySelectorAll("[data-val-annul]").forEach(b=>{
+    b.onclick=()=>{
+      const d=dem.find(x=>x.id===b.dataset.valAnnul); if(!d) return;
+      if(!confirm("Valider l'annulation ? L'absence sera retirée et le solde restauré.")) return;
+      reverseDemande(d);
+      A.save("dem",dem.map(x=>x.id===d.id?{...x,st:ST.ANN,annulDemandee:false}:x));
+      A.toast("Annulation validée · absence et solde mis à jour","success");
+    };
+  });
+  // Direction : REFUSER l'annulation demandée
+  document.querySelectorAll("[data-ref-annul]").forEach(b=>{
+    b.onclick=()=>{
+      A.save("dem",dem.map(x=>x.id===b.dataset.refAnnul?{...x,annulDemandee:false}:x));
+      A.toast("Annulation refusée · la demande reste approuvée","warn");
     };
   });
   // Sous-onglets Demandes/Absences
@@ -1176,21 +1225,22 @@ function pdfOM(o){const w=window.open("","_blank","width=800,height=700");w.docu
 
 
 const FILIERES = {
-  "Orientation": {color:"#1A6B9A", bg:"#E3F1FA", classes:["4A","3A","3B"]},
+  "Orientation": {color:"#1A6B9A", bg:"#E3F1FA", classes:["4A","3EME"]},
   "SAPAT":       {color:"#2E7D52", bg:"#E8F5EE", classes:["2SAPAT","1SAPAT","TSAPAT"]},
   "EPC":         {color:"#B8670A", bg:"#FEF3E2", classes:["EPC1","EPC2"]},
+  "Renfort":     {color:"#6A2A8A", bg:"#F0E8F5", classes:["RENFORT"]},
 };
 const CLASSES_META = {
   "4A":     {filiere:"Orientation", label:"4ème A"},
-  "3A":     {filiere:"Orientation", label:"3ème A"},
-  "3B":     {filiere:"Orientation", label:"3ème B"},
+  "3EME":   {filiere:"Orientation", label:"3ème"},
   "2SAPAT": {filiere:"SAPAT",       label:"2nde SAPAT"},
   "1SAPAT": {filiere:"SAPAT",       label:"1ère SAPAT"},
   "TSAPAT": {filiere:"SAPAT",       label:"Term SAPAT"},
   "EPC1":   {filiere:"EPC",         label:"CAP EPC 1ère"},
   "EPC2":   {filiere:"EPC",         label:"CAP EPC 2nde"},
+  "RENFORT":{filiere:"Renfort",     label:"Renfort"},
 };
-const CLASSES_ORDER = ["4A","3A","3B","2SAPAT","1SAPAT","TSAPAT","EPC1","EPC2"];
+const CLASSES_ORDER = ["4A","3EME","2SAPAT","1SAPAT","TSAPAT","EPC1","EPC2","RENFORT"];
 
 
 
@@ -1601,6 +1651,41 @@ function bMdlHorEdit(){
 }
 function m_nom(mid){const m=(A.s.eq||[]).find(x=>x.id===mid);return m?`${m.nom} ${m.pr}`:"";}
 
+// Format d'affichage d'une date de naissance enfant (AAAA-MM-JJ) → MM/AAAA
+function moisAnneeDe(naissance){
+  if(!naissance) return "";
+  const p=(""+naissance).split("-");
+  if(p.length>=2) return `${p[1]}/${p[0]}`;
+  return naissance;
+}
+// Alerte : enfant atteignant 21 ans le mois PROCHAIN (perte des 2 points enfants) — direction + assistante de direction
+function rBlocAlertePointsEnfants(){
+  const {role,user}=A.s;
+  const concerne = role==="direction" || user?.id==="mfr015";
+  if(!concerne) return "";
+  const today=new Date();
+  const mp=new Date(today.getFullYear(), today.getMonth()+1, 1);
+  const mpY=mp.getFullYear(), mpM=mp.getMonth();
+  const alertes=[];
+  (A.s.eq||[]).forEach(m=>{
+    if(m.archive) return;
+    (m.enfants||[]).forEach(enf=>{
+      if(!enf.naissance) return;
+      const d21=new Date(enf.naissance+"T00:00:00");
+      if(isNaN(d21)) return;
+      d21.setFullYear(d21.getFullYear()+21);
+      if(d21.getFullYear()===mpY && d21.getMonth()===mpM){
+        alertes.push({nm:`${m.nom} ${m.pr}`, enfant:enf.prenom||"l'enfant", mois:MNS[mpM]+" "+mpY});
+      }
+    });
+  });
+  if(!alertes.length) return "";
+  return `<div style="background:#F0E8F5;border:1.5px solid #6A2A8A;border-radius:12px;padding:12px 16px;margin-bottom:14px">
+    <div style="font-size:14px;font-weight:800;color:#4A1A7A;margin-bottom:6px">👶 Points enfants à charge — à anticiper</div>
+    ${alertes.map(a=>`<div style="font-size:13px;color:#333;margin-bottom:3px">• <strong>${a.nm}</strong> : ${a.enfant} atteint 21 ans en <strong>${a.mois}</strong> → perte de 2 points enfants à charge le mois prochain.</div>`).join("")}
+  </div>`;
+}
+
 // ══════════ ALERTE LOCATION J-7 (Loïc, Mélina + direction) ══════════
 function rBlocAlerteLocation(){
   const {role,user}=A.s;
@@ -1850,7 +1935,7 @@ function bMdlProc(){
 }
 
 // ══════════ COMMANDES CUISINE (pique-niques, collations, invités) ══════════
-const CMD_TYPES = ["🥪 Pique-nique","🍎 Collation","🍽️ Repas invités","📦 Autre"];
+const CMD_TYPES = ["🥪 Pique-nique","🍎 Collation","🍽️ Repas invités","👔 Repas administrateurs","📦 Autre"];
 const CMD_USERS = ["mfr018","mfr019"]; // Loïc & Mélina (réception des commandes)
 // Délai pique-nique : au plus tard le mercredi de la semaine PRÉCÉDANT l'événement
 function mercrediLimitePN(dateStr){
@@ -2294,6 +2379,7 @@ function rDB(){
       ${absFilH}
       ${anticipH}
       ${rBlocAlerteLocation()}
+      ${rBlocAlertePointsEnfants()}
       ${rBlocDevisDecides()}
       ${rBlocPointagesIncompletsDirection()}
       ${rBlocAlerteVoie2()}
@@ -2321,6 +2407,7 @@ function rDB(){
     <p style="color:#888;font-size:13px;margin-bottom:14px">Période : ${getAS()}</p>
     ${rBlocRgpdAck()}
     ${rBlocAlerteLocation()}
+    ${rBlocAlertePointsEnfants()}
     ${rBlocDevisDecides()}
     ${affBandeau}
     ${rBlocRappelPointageSalarie()}
@@ -2701,7 +2788,7 @@ function logAction(ficheId, action, user){
 // Coordinateur pédagogique
 const COORD_PEDA_ID = "mfr002"; // Benoît BOURSINHAC
 const MAISON_ID = "mfr018"; // Loïc Durosier, maître de maison (valide les devis d'animation)
-function estAnimationEntite(entityId){ return entityId==="ANIMATION"||entityId==="SPORT"||entityId==="ART_CULTURE"; }
+function estAnimationEntite(entityId){ return entityId==="ANIMATION"||entityId==="ART_CULTURE"; }
 function peutValiderDevis(d,user,role){
   if(role==="direction") return true;              // la direction valide tout
   if(estAnimationEntite(d.entityId)) return user?.id===MAISON_ID;  // animation → maître de maison
@@ -4015,6 +4102,7 @@ function joursIncompletsSemaine(mid, lundiSemaine){
     if(!jourTravaille) return;                          // jour non travaillé → banalisé
     const ds=getDJ(lundiSemaine,jk);
     if(ds>today2()) return;                             // jour futur → on n'attend pas encore la saisie
+    if(ds<debutPeriodeRef()) return;                    // période de référence close → pas d'alerte
     if(estAbsentJourComplet(mid,ds)) return;            // jour couvert par un congé approuvé → banalisé
     const pointe=(A.s.heu||[]).some(x=>x.mid===mid && x.dt===ds);
     if(!pointe) manquants.push({jk,ds});
@@ -4185,7 +4273,7 @@ const VEHICULES_DEFAUT = [
   {id:"veh1", nom:"Minibus Peugeot", type:"Minibus", marque:"Peugeot", immat:"", ct:"", assurance:"", revision:"", anomalies:[]},
   {id:"veh2", nom:"Minibus Ford", type:"Minibus", marque:"Ford", immat:"", ct:"", assurance:"", revision:"", anomalies:[]},
   {id:"veh3", nom:"Voiture Ford", type:"Voiture", marque:"Ford", immat:"", ct:"", assurance:"", revision:"", anomalies:[]},
-  {id:"veh4", nom:"Voiture Peugeot", type:"Voiture", marque:"Peugeot", immat:"", ct:"", assurance:"", revision:"", anomalies:[]},
+  {id:"veh4", nom:"Voiture Renault", type:"Voiture", marque:"Renault", immat:"", ct:"", assurance:"", revision:"", anomalies:[]},
 ];
 const VEH_ECHEANCES = [
   {cle:"ct", label:"Contrôle technique", icone:"🔧"},
@@ -4234,6 +4322,7 @@ function rVEHICULES(){
           <div style="font-size:12px;color:#888">${v.immat||"Immatriculation non renseignée"}</div>
         </div>
         <button class="btn bl bsm" data-veh-edit="${v.id}">✏️ Modifier</button>
+        <button class="btn bd bsm" data-veh-del="${v.id}" title="Supprimer">🗑</button>
       </div>
       <div style="margin-bottom:8px">${echH}</div>
       <div style="background:#FAF7F0;border-radius:8px;padding:8px 10px">
@@ -4244,16 +4333,22 @@ function rVEHICULES(){
     </div>`;
   }).join("");
 
-  return `<h2 style="color:#3A4425;font-size:22px;font-weight:800;margin-bottom:8px">🚗 Véhicules</h2>
-  <div class="wbox" style="margin-bottom:12px">Suivi des 4 véhicules de la MFR : échéances (contrôle technique, assurance, révision) et anomalies. Les échéances proches et les anomalies remontent en alerte sur l'accueil de l'équipe d'entretien.</div>
+  return `<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:8px"><h2 style="color:#3A4425;font-size:22px;font-weight:800">🚗 Véhicules</h2><button class="btn bp" id="btn-veh-add">+ Ajouter un véhicule</button></div>
+  <div class="wbox" style="margin-bottom:12px">Suivi du parc automobile de la MFR : échéances (contrôle technique, assurance, révision) et anomalies. Les échéances proches et les anomalies remontent en alerte sur l'accueil de l'équipe d'entretien.</div>
   ${cards}`;
 }
 
 // Modal : modifier un véhicule (immat + échéances)
 function rMdlVehEdit(){
-  const v=(A.s.vehicules||[]).find(x=>x.id===A.s.modal.data.id);
+  const nouveau=A.s.modal.data.nouveau;
+  const v=nouveau?{id:"",nom:"",type:"Voiture",marque:"",immat:"",ct:"",assurance:"",revision:"",anomalies:[]}:(A.s.vehicules||[]).find(x=>x.id===A.s.modal.data.id);
   if(!v) return mdl("Erreur","Véhicule introuvable.");
-  return mdl(`✏️ ${v.nom}`,`
+  return mdl(nouveau?"➕ Nouveau véhicule":`✏️ ${v.nom}`,`
+    ${fld("Nom *",`<input id="veh-nom" value="${v.nom||""}" placeholder="ex: Voiture Renault" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px;width:100%">`)}
+    <div class="g2">
+      <div>${fld("Type",sel("veh-type",["Voiture","Minibus","Camionnette","Autre"],v.type||"Voiture"))}</div>
+      <div>${fld("Marque",`<input id="veh-marque" value="${v.marque||""}" placeholder="ex: Renault" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px;width:100%">`)}</div>
+    </div>
     ${fld("Immatriculation",`<input id="veh-immat" value="${v.immat||""}" placeholder="ex: AB-123-CD" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px;width:100%">`)}
     <div class="dvd"></div>
     <div style="font-size:13px;font-weight:700;color:#3A4425;margin-bottom:8px">Échéances</div>
@@ -4270,17 +4365,26 @@ function bMdlVehEdit(){
   const c=document.getElementById("veh-cancel"); if(c)c.onclick=()=>A.set({modal:null});
   const s=document.getElementById("veh-save");
   if(s) s.onclick=()=>{
-    const id=A.s.modal.data.id;
+    const nouveau=A.s.modal.data.nouveau;
+    const nom=document.getElementById("veh-nom").value.trim();
+    const type=document.getElementById("veh-type").value;
+    const marque=document.getElementById("veh-marque").value.trim();
     const immat=document.getElementById("veh-immat").value.trim();
     const ct=document.getElementById("veh-ct").value;
     const assurance=document.getElementById("veh-assurance").value;
     const revision=document.getElementById("veh-revision").value;
-    const l=(A.s.vehicules||[]).map(v=>v.id===id?{...v,immat,ct,assurance,revision}:v);
-    A.save("vehicules",l); A.set({modal:null}); A.toast("Véhicule mis à jour ✓","success");
+    if(!nom){alert("Indiquez un nom pour le véhicule.");return;}
+    if(nouveau){
+      const nv={id:uid(),nom,type,marque,immat,ct,assurance,revision,anomalies:[]};
+      A.save("vehicules",[...(A.s.vehicules||[]),nv]);
+    } else {
+      const id=A.s.modal.data.id;
+      const l=(A.s.vehicules||[]).map(v=>v.id===id?{...v,nom,type,marque,immat,ct,assurance,revision}:v);
+      A.save("vehicules",l);
+    }
+    A.set({modal:null}); A.toast(nouveau?"Véhicule ajouté ✓":"Véhicule mis à jour ✓","success");
   };
 }
-
-// Modal : signaler une anomalie sur un véhicule
 function rMdlVehAno(){
   const v=(A.s.vehicules||[]).find(x=>x.id===A.s.modal.data.id);
   if(!v) return mdl("Erreur","Véhicule introuvable.");
@@ -4309,6 +4413,16 @@ function bMdlVehAno(){
 
 // Bindings de la vue Véhicules
 function bVEHICULES(){
+  const ba=document.getElementById("btn-veh-add");
+  if(ba) ba.onclick=()=>A.set({modal:{ty:"vehEdit",data:{nouveau:true}}});
+  document.querySelectorAll("[data-veh-del]").forEach(b=>{
+    b.onclick=()=>{
+      const v=(A.s.vehicules||[]).find(x=>x.id===b.dataset.vehDel);
+      if(!confirm(`Supprimer le véhicule « ${v?v.nom:""} » ? Cette action est définitive.`)) return;
+      A.save("vehicules",(A.s.vehicules||[]).filter(x=>x.id!==b.dataset.vehDel));
+      A.toast("Véhicule supprimé","warn");
+    };
+  });
   document.querySelectorAll("[data-veh-edit]").forEach(b=>{
     b.onclick=()=>A.set({modal:{ty:"vehEdit",data:{id:b.dataset.vehEdit}}});
   });
@@ -5585,54 +5699,48 @@ function pdfSynthese(annee){
 
 // ── Recharge automatique CP au 1er septembre ────────────────────
 function rechargerCPAnnuels(){
-  // ── Acquisition MENSUELLE progressive des CP ──
-  // Période de référence : 1er septembre → 31 août
-  // Chaque 1er du mois : +2,5j (ou montant custom par salarié, ex. direction = 5j)
-  // ⚠ Démarrage : ne crédite RIEN avant le 1er septembre 2026.
-  // ⚠ Anti-doublon MULTI-POSTES : le marqueur est stocké dans la fiche (m.cpDernierCredit),
-  //    synchronisée via Firebase → un seul crédit par mois quel que soit le poste.
+  // ── Acquisition MENSUELLE des CP — créditée EN FIN DE MOIS ──
+  // Le crédit du mois M n'est appliqué qu'une fois M TERMINÉ (dès qu'on entre dans M+1).
+  // ADDITIF UNIQUEMENT : n'écrase JAMAIS les soldes saisis manuellement (pas de réinitialisation).
+  // +2,5j/mois par défaut (montant custom possible via m.cpMensuel, ex. direction = 5j).
   const today=new Date();
-  const mm=today.getMonth()+1; // 1-12
-  const yyyy=today.getFullYear();
-
-  // Ne rien faire avant la date de mise en place (1er septembre 2026)
   const dateActive=new Date("2026-09-01T00:00:00");
   if(today < dateActive) return;
 
-  // Année de référence : Sept-Déc → yyyy ; Jan-Août → yyyy-1
+  // Migration unique (septembre 2026) : neutraliser les marqueurs de l'ancien mécanisme
+  // (crédit au 1er + réinitialisation), pour repartir proprement sans re-créditer.
+  if(today.getFullYear()===2026 && today.getMonth()===8){
+    try{
+      if(!localStorage.getItem("cpMarkersCleared2026")){
+        A.s.eq=(A.s.eq||[]).map(m=>({...m, cpDernierCredit:null}));
+        A.save("eq",A.s.eq);
+        localStorage.setItem("cpMarkersCleared2026","1");
+      }
+    }catch(e){}
+  }
+
+  // Mois PRÉCÉDENT = le mois qui vient de se terminer
+  const prev=new Date(today.getFullYear(), today.getMonth()-1, 1);
+  if(prev < dateActive) return; // mois terminé antérieur à la mise en place → rien à créditer
+  const mm=prev.getMonth()+1, yyyy=prev.getFullYear();
   const anneeRef = mm>=9 ? yyyy : yyyy-1;
-  // Identifiant unique du mois de crédit (ex: "2026-09")
   const moisCle = `${anneeRef}-${String(mm).padStart(2,"0")}`;
 
   const eq=A.s.eq||[];
   let nb=0;
   const newEq=eq.map(m=>{
     if(m.archive) return m;
+    if(m.cpDernierCredit===moisCle) return m; // ce mois déjà crédité pour ce salarié
     const mensuel = (m.cpMensuel!=null ? m.cpMensuel : 2.5);
-    // Anti-doublon partagé : si ce mois a déjà été crédité pour ce salarié, on saute
-    if(m.cpDernierCredit===moisCle) return m;
-
-    // Réinitialisation en septembre (nouvelle période de référence)
-    if(mm===9){
-      const soldeActuel=Math.max(0,(m.cp||0)-(m.cpp||0));
-      const report=Math.min(5,soldeActuel); // report max 5j (CCN MFR)
-      nb++;
-      return {...m, cp:mensuel+report, cpp:0, _cpAcquis:mensuel, cpDernierCredit:moisCle};
-    }
-    // Autres mois : créditer l'incrément mensuel
     nb++;
     return {...m, cp:(m.cp||0)+mensuel, _cpAcquis:(m._cpAcquis||0)+mensuel, cpDernierCredit:moisCle};
   });
-
   if(nb>0){
     A.s.eq=newEq;
-    // Sauvegarde synchronisée (Firebase + local) pour propager le marqueur à tous les postes
     A.save("eq",newEq);
     A.s._cpRechargeInfo={date:today.toISOString().split("T")[0],nb,mois:MNS[mm-1]};
   }
 }
-
-
 function rBUDGET(){
   const {role,user,eq}=A.s;
   initBudgets();
@@ -5647,7 +5755,7 @@ function rBUDGET(){
   const entites=[
     ...CLASSES_ORDER.map(k=>({id:k,...CLASSES_META[k],type:"classe"})),
     {id:"ANIMATION",label:"Animation",filiere:"Animation",type:"animation"},
-    {id:"SPORT",label:"Sport",filiere:"Animation",type:"animation"},
+    {id:"SPORT",label:"Sport",filiere:"Pédagogie",type:"pedagogie"},
     {id:"ART_CULTURE",label:"Art et Culture",filiere:"Animation",type:"animation"},
   ];
 
@@ -5798,6 +5906,8 @@ function rBUDGET(){
             `:""}
             ${canAdmin&&d.st===ST_BUD.OK?`<button class="btn bi bsm" data-val-devis="${d.id}" data-vst-devis="${ST_BUD.PAY}">💳 Marquer payé</button>`:""}
             ${(d.mid===user?.id&&d.st===ST_BUD.ATT)?`<button class="btn bw bsm" data-val-devis="${d.id}" data-vst-devis="${ST_BUD.ANN}">Annuler</button>`:""}
+            ${d.st===ST_BUD.OK&&(canAdmin||peutValiderDevis(d,user,role))?`<button class="btn bw bsm" data-val-devis="${d.id}" data-vst-devis="${ST_BUD.ANN}">🗑 Annuler</button>`:""}
+            ${d.st===ST_BUD.PAY&&canAdmin?`<button class="btn bw bsm" data-val-devis="${d.id}" data-vst-devis="${ST_BUD.ANN}">🗑 Annuler</button>`:""}
             <button class="btn bl bsm" data-print-devis="${d.id}">🖨 Imprimer</button>
           </div>
         </div>
@@ -5874,6 +5984,16 @@ function bBUDGET(){
         return;
       }
 
+      // Annulation : libère le budget engagé
+      if(st===ST_BUD.ANN){
+        const dd=(A.s.devis||[]).find(x=>x.id===id);
+        const etaitPaye=dd&&dd.st===ST_BUD.PAY;
+        if(!confirm(etaitPaye?"Annuler ce devis DÉJÀ PAYÉ ?\nÀ n'utiliser qu'en cas d'erreur — vérifiez avec la comptabilité.":"Annuler ce devis ? Le budget engagé sera libéré.")) return;
+        A.save("devis",(A.s.devis||[]).map(d=>d.id!==id?d:{...d,st:ST_BUD.ANN,dateValidation:today2(),validePar}));
+        A.toast("Devis annulé · budget libéré","warn");
+        return;
+      }
+
       // Accepter
       const list=(A.s.devis||[]).map(d=>d.id!==id?d:{...d,st,dateValidation:today2(),heureValidation:heure,validePar});
       A.save("devis",list);
@@ -5897,7 +6017,7 @@ function rMdlNDevis(){
   const entites=[
     ...CLASSES_ORDER.map(k=>({id:k,...CLASSES_META[k]})),
     {id:"ANIMATION",label:"Animation",filiere:"Animation"},
-    {id:"SPORT",label:"Sport",filiere:"Animation"},
+    {id:"SPORT",label:"Sport",filiere:"Pédagogie"},
     {id:"ART_CULTURE",label:"Art et Culture",filiere:"Animation"},
   ];
   return mdl("+ Soumettre un devis",`
@@ -7202,8 +7322,8 @@ function bEQ(){
   });
 }
 function rMdlSM(){const i=A.s.modal.data?.init||{};return mdl(i.id?"Modifier":"Ajouter un membre",`<div class="g2">${fld("Prénom *",`<input id="mbpr" value="${i.pr||""}">`)} ${fld("Nom *",`<input id="mbno" value="${i.nom||""}">`)}</div>${fld("Service *",sel("mbsv",SVC,i.sv||"","-- Choisir --"))}${fld("Poste",`<input id="mbpo" value="${i.po||""}" placeholder="ex: Formateur…">`)}${fld("Email",`<input type="email" id="mbem" value="${i.em||""}">`)}${fld("Date d'entrée",`<input id="mbde" value="${i.de||""}" placeholder="ex: 01/09/2025">`)}${fld("Date de naissance",`<input type="date" id="mbnais" value="${normNaissance(i.naissance||"")}">`,"pour les anniversaires sur l'accueil")}
-    ${fld("Mot de passe",`<input type="password" id="mbpw" placeholder="${i.id?"Laisser vide pour ne pas changer":"Définir un mot de passe"}">`,i.id?"Laisser vide = mot de passe inchangé":"")}<div class="dvd"></div><div class="g2">${fld("Congés payés acquis par mois (j)",`<input type="number" id="mbcpmens" value="${i.cpMensuel??2.5}" min="0" step="0.5" title="Jours de congés payés crédités automatiquement chaque 1er du mois">`,"2,5j standard · 5j direction · crédité chaque 1er du mois") } ${fld("Solde congés payés actuel (j)",`<input type="number" id="mbcp" value="${i.cp??0}" min="0" step="0.5">`)} ${fld("Plafond Télétravail",`<div style="padding:9px 12px;background:#F4F1E8;border-radius:8px;font-size:13px;color:#5C6B3A"><strong>160 h / an</strong> — identique pour tous (1er sept → 31 août)</div>`)}</div>
-    <div class="g2">${fld("Quotité temps de travail (%)",`<input type="number" id="mbquot" value="${i.quotite??100}" min="0" max="100" step="1" title="100% = temps plein (1599h/an) · 80% = 1279h...">`,"100% = 1599h/an · sert au tableau d'annualisation")}${fld("Taux horaire brut (€/h)",`<input type="number" id="mb-taux" value="${i.tauxHoraire??25}" min="0" step="0.01" placeholder="ex: 25.00">`,"sert au calcul du coût de main d'œuvre (entretien) — confidentiel")}</div><div class="dvd"></div><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn bl" id="smcn">Annuler</button><button class="btn bp" id="smsb">${i.id?"Mettre à jour":"Ajouter"}</button></div>`);}
+    ${fld("Mot de passe",`<input type="password" id="mbpw" placeholder="${i.id?"Laisser vide pour ne pas changer":"Définir un mot de passe"}">`,i.id?"Laisser vide = mot de passe inchangé":"")}<div class="dvd"></div><div class="g2">${fld("Congés payés acquis par mois (j)",`<input type="number" id="mbcpmens" value="${i.cpMensuel??2.5}" min="0" step="0.5" title="Jours de congés payés crédités automatiquement chaque 1er du mois">`,"2,5j standard · 5j direction · crédité en fin de mois") } ${fld("Solde congés payés actuel (j)",`<input type="number" id="mbcp" value="${i.cp??0}" min="0" step="0.5">`)} ${fld("Plafond Télétravail",`<div style="padding:9px 12px;background:#F4F1E8;border-radius:8px;font-size:13px;color:#5C6B3A"><strong>160 h / an</strong> — identique pour tous (1er sept → 31 août)</div>`)}</div>
+    <div class="g2">${fld("Quotité temps de travail (%)",`<input type="number" id="mbquot" value="${i.quotite??100}" min="0" max="100" step="1" title="100% = temps plein (1599h/an) · 80% = 1279h...">`,"100% = 1599h/an · sert au tableau d'annualisation")}${fld("Taux horaire brut (€/h)",`<input type="number" id="mb-taux" value="${i.tauxHoraire??25}" min="0" step="0.01" placeholder="ex: 25.00">`,"sert au calcul du coût de main d'œuvre (entretien) — confidentiel")}</div><div class="dvd"></div>${fld("Enfants à charge (points enfants)",`<textarea id="mb-enfants" rows="3" placeholder="Un enfant par ligne — format : Prénom · MM/AAAA (ex: Léa · 05/2005)" style="width:100%;border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px;resize:vertical">${(i.enfants||[]).map(e=>`${e.prenom||""} · ${moisAnneeDe(e.naissance)}`).join("\n")}</textarea>`,"Au mois des 21 ans de l'enfant, les 2 points sont perdus. Une alerte prévient la direction le mois précédent.")}<div class="dvd"></div><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn bl" id="smcn">Annuler</button><button class="btn bp" id="smsb">${i.id?"Mettre à jour":"Ajouter"}</button></div>`);}
 function bMdlSM(){
   document.getElementById("smcn").onclick=()=>A.set({modal:null});
   document.getElementById("smsb").onclick=()=>{
@@ -7218,7 +7338,11 @@ function bMdlSM(){
       const typeContrat=document.getElementById("mb-contrat")?.value||"CDI";
       const enfantsRaw=document.getElementById("mb-enfants")?.value||"";
       const enfants=enfantsRaw.split("\n").filter(l=>l.trim()).map(l=>{
-        const[p,n]=(l.split("·").map(x=>x.trim()));return{prenom:p||"",naissance:n||""};
+        const[p,n]=(l.split("·").map(x=>x.trim()));
+        let naissance=n||"";
+        const mmYY=naissance.match(/^(\d{1,2})[\/\-.](\d{4})$/);
+        if(mmYY) naissance=`${mmYY[2]}-${mmYY[1].padStart(2,"0")}-01`;
+        return{prenom:p||"",naissance};
       });
       const e={id:i.id||uid(),nom,pr,
         po:document.getElementById("mbpo").value,sv,
@@ -7753,9 +7877,20 @@ function bRCPL(){
 }
 
 function rHR(){
+  const {role,user}=A.s;
+  const estDir = role==="direction" || user?.id==="mfr001";
+  if(!estDir) return rHRInner();
+  const vue=A.s.hrVue||"equipe";
+  const toggle=`<div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
+    <button class="btn ${vue==="equipe"?"bp":"bl"} bsm" data-hr-vue="equipe">👥 Déclarations de l'équipe</button>
+    <button class="btn ${vue==="perso"?"bp":"bl"} bsm" data-hr-vue="perso">👤 Mes heures</button>
+  </div>`;
+  return toggle + rHRInner();
+}
+function rHRInner(){
   const {role,user,eq,heu}=A.s;
   const mb=eq.find(m=>m.id===user?.id);
-  const saisiePerso=mb&&(role==="salarie"||user?.id==="mfr001");
+  const saisiePerso=mb&&(role==="salarie"||((user?.id==="mfr001"||role==="direction")&&(A.s.hrVue||"equipe")==="perso"));
 
   if(saisiePerso){
     const prof=HOR[mb.id];
@@ -8003,6 +8138,7 @@ function rHR(){
 }
 
 function bHR(){
+  document.querySelectorAll("[data-hr-vue]").forEach(b=>{b.onclick=()=>{A.s.hrVue=b.dataset.hrVue;A.r();};});
   const pv=document.getElementById("hpv");
   if(pv)pv.onclick=()=>{const d=new Date(hLun+"T12:00:00");d.setDate(d.getDate()-7);hLun=d.toISOString().split("T")[0];A.r();};
   const nx=document.getElementById("hnx");
