@@ -424,6 +424,19 @@ function estAbsentJourComplet(mid, ds){
   return (A.s.abs||[]).some(a=>a.mid===mid && a.ty!=="Annulée" && TYPES_ABS_NONTRAVAIL.includes(a.ty)
     && a.dd<=ds && (a.df||a.dd)>=ds && (!a.fr || a.fr==="Journée entière"));
 }
+// Absence validée couvrant un jour, par demi-journée (congé / récup / maladie…)
+function absenceJour(mid, ds){
+  const res={matin:false,aprem:false,journee:false,motif:""};
+  (A.s.abs||[]).forEach(a=>{
+    if(a.mid!==mid||a.ty==="Annulée"||!TYPES_ABS_NONTRAVAIL.includes(a.ty)) return;
+    if(!(a.dd<=ds && (a.df||a.dd)>=ds)) return;
+    res.motif=a.ty;
+    if(!a.fr || a.fr==="Journée entière"){ res.journee=true; res.matin=true; res.aprem=true; }
+    else if(a.fr==="Matin") res.matin=true;
+    else if(a.fr==="Après-midi") res.aprem=true;
+  });
+  return res;
+}
 function fH(h){if(!h)return"0h00";const hh=Math.floor(h),mm=Math.round((h-hh)*60);return`${hh}h${String(mm).padStart(2,"0")}`;}
 function getLun(ds){const d=new Date(ds+"T12:00:00");const j=d.getDay();const l=new Date(d);l.setDate(d.getDate()-(j===0?6:j-1));return l.toISOString().split("T")[0];}
 function getDJ(lun,key){const idx=JK.indexOf(key);const d=new Date(lun+"T12:00:00");d.setDate(d.getDate()+idx);return d.toISOString().split("T")[0];}
@@ -449,7 +462,7 @@ const K={
 //  FIREBASE — Synchronisation temps réel multi-postes
 // ══════════════════════════════════════════════════════════════════
 // Configuration du projet MFR-Neracais-RH
-const APP_VERSION="v140";
+const APP_VERSION="v146";
 const firebaseConfig = {
   apiKey: "AIzaSyAJNsp-EY6DkT8AWa0824HuZh2Wu2Frce4",
   authDomain: "gestion-rh-mfr-du-neracais.firebaseapp.com",
@@ -557,6 +570,19 @@ function fbActiverSync(){
           let _migr3=false;
           if((key==="budgets"||key==="devis") && Array.isArray(data)){
             data = data.map(it=>{ if(it&&(it.entityId==="3A"||it.entityId==="3B")){_migr3=true;return{...it,entityId:"3EME"};} return it; });
+          }
+          // Intégration unique du budget 4ème B (300 €)
+          if(key==="budgets" && Array.isArray(data)){
+            try{
+              if(!localStorage.getItem("budget4B300")){
+                const _as=getAS();
+                if(!data.some(b=>b&&b.entityId==="4B"&&b.annee===_as)){
+                  data=[...data,{id:uid(),entityId:"4B",annee:_as,montant:300,source:"Budget établissement",note:"Budget 4ème B",date:today2(),creePar:"Direction"}];
+                  _migr3=true;
+                }
+                localStorage.setItem("budget4B300","1");
+              }
+            }catch(e){}
           }
           // Mettre à jour l'état local + cache, sans réécrire dans Firebase
           A.s[key] = data;
@@ -770,12 +796,14 @@ function rDM(){
 
   return`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
     <h2 style="color:#3A4425;font-size:22px;font-weight:800">🗓 Congés & absences</h2>
-    <button class="btn bp" id="btn-new-dem">+ Nouvelle demande</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">${isDir?`<button class="btn bp" id="btn-new-abs">+ Saisir une absence</button>`:""}<button class="btn ${isDir?"bl":"bp"}" id="btn-new-dem">+ Nouvelle demande</button></div>
   </div>
   ${tabsH}${kpiH}${listeH}`;
 }
 
 function bDM(){
+  {const s=document.getElementById("ab-filtre-pers");if(s)s.onchange=()=>{A.s.abFiltrePers=s.value;A.r();};}
+  document.querySelectorAll("[data-ab-mois]").forEach(b=>{b.onclick=()=>{const ym=b.dataset.abMois;let cur=A.s.abMoisOuverts||defaultAbMois();cur=cur.includes(ym)?cur.filter(x=>x!==ym):[...cur,ym];A.set({abMoisOuverts:cur});};});
   const bap=document.getElementById("btn-abs-pdf");
   if(bap) bap.onclick=()=>A.set({modal:{ty:"absPdf",data:{}}});
   const {dem,abs,eq,user,role}=A.s;
@@ -1111,29 +1139,36 @@ function bMdlSA(){
 // ══ ABSENCES ═════════════════════════════════════════════════════
 
 
+function defaultAbMois(){
+  const ms=[...new Set((A.s.abs||[]).filter(a=>a.ty!=="Annulée").map(a=>(a.dd||"").slice(0,7)))].sort().reverse();
+  return ms.length?[ms[0]]:[];
+}
 function rABContenu(){
   const {role,user,abs,eq}=A.s;
   const isSal=role==="salarie";
   const isDir=role==="direction";
-  const vis=isSal
+  let vis=isSal
     ? abs.filter(a=>a.mid===user?.id&&a.ty!=="Annulée")
     : abs.filter(a=>a.ty!=="Annulée");
-  const sorted=vis.slice().sort((a,b)=>(b.dd||"").localeCompare(a.dd||""));
-  if(!sorted.length){
-    return`<div class="card" style="text-align:center;padding:40px"><p style="color:#888">Aucune absence enregistrée</p></div>`;
+  const filtrePers=A.s.abFiltrePers||"tous";
+  if(isDir && filtrePers!=="tous") vis=vis.filter(a=>a.mid===filtrePers);
+  const dropdownH = isDir
+    ? `<div style="margin-bottom:12px;max-width:340px">${sel("ab-filtre-pers",[{v:"tous",l:"👥 Tout le personnel"},...sortEq(eq.filter(m=>!m.archive)).map(m=>({v:m.id,l:`${m.nom} ${m.pr}`}))],filtrePers)}</div>`
+    : "";
+  if(!vis.length){
+    return dropdownH+`<div class="card" style="text-align:center;padding:36px"><p style="color:#888">Aucune absence enregistrée${(isDir&&filtrePers!=="tous")?" pour cette personne":""}.</p></div>`;
   }
-  let listeH="";
-  sorted.forEach(a=>{
-    const tc=TC[a.ty]||TC["Autre"];
+  const carte=(a)=>{
+    const tc=TC[a.ty]||TC["Autre"]||{b:"#AAA",bg:"#EEE",c:"#444",e:"📋"};
     const mb=isDir?eq.find(m=>m.id===a.mid):null;
-    listeH+=`<div class="card ca" style="border-left-color:${tc.b};margin-bottom:7px">
+    return `<div class="card ca" style="border-left-color:${tc.b};margin-bottom:7px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
         <div>
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
             <span style="font-size:18px">${tc.e||"📋"}</span>
             <span style="font-weight:800;font-size:15px;color:#3A4425">${a.ty}</span>
             ${mb?`<span class="tsv">${mb.nom} ${mb.pr}</span>`:""}
-            <span style="background:${tc.bg};color:${tc.c};border:1.5px solid ${tc.b};border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700">${a.nj||1}j</span>
+            <span style="background:${tc.bg};color:${tc.c};border:1.5px solid ${tc.b};border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700">${a.nj||1}j${a.fr&&a.fr!=="Journée entière"?" · "+a.fr:""}</span>
           </div>
           <div style="font-size:14px;color:#555">📅 ${fD(a.dd)}${a.df&&a.df!==a.dd?" → "+fD(a.df):""}</div>
           ${a.co?`<div style="font-size:12px;color:#888;margin-top:2px">💬 ${a.co}</div>`:""}
@@ -1141,10 +1176,20 @@ function rABContenu(){
         ${isDir?`<button class="btn bd bsm" data-del-abs="${a.id}">✕</button>`:""}
       </div>
     </div>`;
-  });
-  return listeH;
+  };
+  const MOIS_FR=["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+  const parMois={};
+  vis.forEach(a=>{ const ym=(a.dd||"").slice(0,7); (parMois[ym]=parMois[ym]||[]).push(a); });
+  const moisTries=Object.keys(parMois).sort().reverse();
+  const ouverts=A.s.abMoisOuverts||defaultAbMois();
+  const listeH=moisTries.map(ym=>{
+    const p=ym.split("-"); let lbl=(MOIS_FR[parseInt(p[1])-1]||ym)+" "+p[0]; lbl=lbl.charAt(0).toUpperCase()+lbl.slice(1);
+    const ouvert=ouverts.includes(ym);
+    const cartes=parMois[ym].slice().sort((a,b)=>(b.dd||"").localeCompare(a.dd||"")).map(carte).join("");
+    return `<div style="margin-bottom:10px"><button data-ab-mois="${ym}" style="width:100%;text-align:left;background:#F0ECDD;border:1px solid #D8CBA0;border-radius:10px;padding:9px 14px;cursor:pointer;font-weight:700;color:#3A4425;font-size:15px;display:flex;justify-content:space-between;align-items:center"><span>${ouvert?"▼":"▶"} ${lbl}</span><span style="font-weight:400;color:#888;font-size:13px">${parMois[ym].length} absence${parMois[ym].length>1?"s":""}</span></button>${ouvert?`<div style="margin-top:8px">${cartes}</div>`:""}</div>`;
+  }).join("");
+  return dropdownH+listeH;
 }
-
 function rAB(){
   const {role,user,abs,eq}=A.s;
   const isSal=role==="salarie";
@@ -1206,12 +1251,12 @@ function rOM(){
   const {role,user,eq,ord}=A.s;const vis=(role==="salarie"?ord.filter(o=>o.mid===user?.id):ord).sort((a,b)=>(b.cr||"").localeCompare(a.cr||""));const enOM=ord.filter(o=>o.st===ST.ATT).length;
   let lH="";
   if(!vis.length)lH=`<div class="card" style="text-align:center;padding:40px"><p style="color:#888">Aucun ordre de mission${role==="salarie"?" — cliquez sur '+ Nouvel ordre de mission'":""}</p></div>`;
-  else vis.forEach(o=>{const ac=o.st===ST.APP?"#2E7D52":o.st===ST.REF?"#C0392B":"#B8670A";lH+=`<div class="card ca" style="border-left-color:${ac}"><div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px"><div style="flex:1"><div style="display:flex;align-items:center;gap:7px;margin-bottom:5px;flex-wrap:wrap">${role==="direction"?`<span style="font-weight:800;font-size:17px;color:#3A4425">${o.nm}</span>`:""}<span class="tsv">${o.sv||""}</span>${sBdg(o.st)}</div><div style="font-size:17px;font-weight:600;margin-bottom:3px">📋 ${o.ob}${o.ty?` <span style="background:#EEF2E6;color:#3A5220;border:1px solid #7A9A4A;border-radius:12px;padding:1px 9px;font-size:12px;font-weight:700;margin-left:6px">${o.ty}</span>`:""}</div><div style="font-size:16px;color:#555">📅 ${fD(o.dd)} · ${o.hd} de ${o.ld}${o.hr?` · retour ${o.hr}`:""}</div><div style="font-size:15px;color:#888;margin-top:2px">🚗 Véhicule : ${o.ve==="oui"?"Oui":"Non"} · ${(o.dests||[]).length} dest.</div>${o.st===ST.APP?`<div style="font-size:15px;color:#2E7D52;margin-top:3px">✅ Validé le ${fD(o.dv||"")}</div>`:""}<div style="font-size:15px;color:#888;margin-top:2px">Soumis le ${fD(o.cr)}</div></div><div style="display:flex;gap:6px;flex-wrap:wrap">${o.st===ST.APP?`<button class="btn bg bsm" data-pom="${o.id}">🖨 PDF</button>`:""} ${role==="direction"&&o.st===ST.ATT?`<button class="btn bs bsm" data-vom="${o.id}" data-voms="${ST.APP}">✓</button><button class="btn bd bsm" data-vom="${o.id}" data-voms="${ST.REF}">✗</button>`:""} <button class="btn bl bsm" data-dom="${o.id}">Détail</button></div></div></div>`;});
+  else vis.forEach(o=>{const ac=o.st===ST.APP?"#2E7D52":o.st===ST.REF?"#C0392B":"#B8670A";lH+=`<div class="card ca" style="border-left-color:${ac}"><div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px"><div style="flex:1"><div style="display:flex;align-items:center;gap:7px;margin-bottom:5px;flex-wrap:wrap">${role==="direction"?`<span style="font-weight:800;font-size:17px;color:#3A4425">${o.nm}</span>`:""}<span class="tsv">${o.sv||""}</span>${sBdg(o.st)}</div><div style="font-size:17px;font-weight:600;margin-bottom:3px">📋 ${o.ob}${o.ty?` <span style="background:#EEF2E6;color:#3A5220;border:1px solid #7A9A4A;border-radius:12px;padding:1px 9px;font-size:12px;font-weight:700;margin-left:6px">${o.ty}</span>`:""}</div><div style="font-size:16px;color:#555">📅 ${fD(o.dd)} · ${o.hd} de ${o.ld}${o.hr?` · retour ${o.hr}`:""}</div><div style="font-size:15px;color:#888;margin-top:2px">🚗 Véhicule : ${o.ve==="oui"?"Oui":"Non"} · ${(o.dests||[]).length} dest.</div>${o.st===ST.APP?`<div style="font-size:15px;color:#2E7D52;margin-top:3px">✅ Validé le ${fD(o.dv||"")}</div>`:""}<div style="font-size:15px;color:#888;margin-top:2px">Soumis le ${fD(o.cr)}</div></div><div style="display:flex;gap:6px;flex-wrap:wrap">${o.st===ST.APP?`<button class="btn bg bsm" data-pom="${o.id}">🖨 PDF</button>`:""} ${role==="direction"&&o.st===ST.ATT?`<button class="btn bs bsm" data-vom="${o.id}" data-voms="${ST.APP}">✓</button><button class="btn bd bsm" data-vom="${o.id}" data-voms="${ST.REF}">✗</button>`:""} ${((role==="direction"&&(o.st===ST.ATT||o.st===ST.APP))||(o.mid===A.s.user?.id&&o.st===ST.ATT))?`<button class="btn bw bsm" data-vom="${o.id}" data-voms="${ST.ANN}">🗑 Annuler</button>`:""} <button class="btn bl bsm" data-dom="${o.id}">Détail</button></div></div></div>`;});
   return`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px"><h2 style="color:#3A4425;font-size:22px;font-weight:800">🗺️ Ordres de mission</h2><div style="display:flex;gap:8px;align-items:center">${role==="direction"&&enOM>0?`<span style="background:#FEF3E2;color:#B8670A;border:1.5px solid #E8A030;border-radius:20px;padding:3px 12px;font-size:15px;font-weight:700">${enOM} en attente</span>`:""} ${role==="salarie"?`<button class="btn bp" id="bnom">+ Nouvel ordre de mission</button>`:""}</div></div>${lH}`;
 }
 function bOM(){
   const b=document.getElementById("bnom");if(b){omD=[{dest:"",jeu:""}];b.onclick=()=>A.set({modal:{ty:"no"}});}
-  document.querySelectorAll("[data-vom]").forEach(b=>{b.onclick=()=>{const id=b.dataset.vom,st=b.dataset.voms;const l=A.s.ord.map(o=>o.id===id?{...o,st,dv:today2()}:o);A.save("ord",l);A.toast(`Ordre de mission ${st.toLowerCase()} ✓`,st===ST.APP?"success":"error");};});
+  document.querySelectorAll("[data-vom]").forEach(b=>{b.onclick=()=>{const id=b.dataset.vom,st=b.dataset.voms;if(st===ST.ANN&&!confirm("Annuler cet ordre de mission ?"))return;const l=A.s.ord.map(o=>o.id===id?{...o,st,dv:today2()}:o);A.save("ord",l);A.toast(`Ordre de mission ${st.toLowerCase()} ✓`,st===ST.APP?"success":st===ST.ANN?"warn":"error");};});
   document.querySelectorAll("[data-pom]").forEach(b=>{b.onclick=()=>{const o=A.s.ord.find(x=>x.id===b.dataset.pom);if(o)pdfOM(o);};});
   document.querySelectorAll("[data-dom]").forEach(b=>{b.onclick=()=>{const o=A.s.ord.find(x=>x.id===b.dataset.dom);if(o)A.set({modal:{ty:"do",data:{o}}});};});
 }
@@ -1240,13 +1285,14 @@ function pdfOM(o){const w=window.open("","_blank","width=800,height=700");w.docu
 
 
 const FILIERES = {
-  "Orientation": {color:"#1A6B9A", bg:"#E3F1FA", classes:["4A","3EME"]},
+  "Orientation": {color:"#1A6B9A", bg:"#E3F1FA", classes:["4A","4B","3EME"]},
   "SAPAT":       {color:"#2E7D52", bg:"#E8F5EE", classes:["2SAPAT","1SAPAT","TSAPAT"]},
   "EPC":         {color:"#B8670A", bg:"#FEF3E2", classes:["EPC1","EPC2"]},
   "Renfort":     {color:"#6A2A8A", bg:"#F0E8F5", classes:["RENFORT"]},
 };
 const CLASSES_META = {
   "4A":     {filiere:"Orientation", label:"4ème A"},
+  "4B":     {filiere:"Orientation", label:"4ème B"},
   "3EME":   {filiere:"Orientation", label:"3ème"},
   "2SAPAT": {filiere:"SAPAT",       label:"2nde SAPAT"},
   "1SAPAT": {filiere:"SAPAT",       label:"1ère SAPAT"},
@@ -1255,7 +1301,7 @@ const CLASSES_META = {
   "EPC2":   {filiere:"EPC",         label:"CAP EPC 2nde"},
   "RENFORT":{filiere:"Renfort",     label:"Renfort"},
 };
-const CLASSES_ORDER = ["4A","3EME","2SAPAT","1SAPAT","TSAPAT","EPC1","EPC2","RENFORT"];
+const CLASSES_ORDER = ["4A","4B","3EME","2SAPAT","1SAPAT","TSAPAT","EPC1","EPC2","RENFORT"];
 
 
 
@@ -7915,8 +7961,8 @@ function rRCPL(){
       let txt="";
       let title="";
       if(ab){
-        const tyColors={"CP":"#C8A84B","Récup":"#5C6B3A","Maladie":"#C0392B","Maternité":"#6A2A8A","AT":"#E8A030","Formation":"#1A6B9A"};
-        bg=tyColors[ab.ty]||"#888";txt=`<span style="color:#fff;font-size:9px;font-weight:700">${(ab.ty||"").substring(0,2)}</span>`;title=ab.ty;
+        const tc=TC[ab.ty]||{b:"#888",e:""};
+        bg=tc.b;txt=`<span style="font-size:12px" title="${ab.ty}">${tc.e||`<span style="color:#fff;font-size:9px;font-weight:700">${(ab.ty||"").substring(0,2)}</span>`}</span>`;title=ab.ty;
       }
       if(isToday) bg="#C8A84B44";
       cells+=`<td style="padding:2px;background:${bg};text-align:center;border:1px solid #EDE8D8" title="${title}">${txt}</td>`;
@@ -7928,7 +7974,7 @@ function rRCPL(){
     </tr>`;
   });
   // Légende
-  const leg=[["CP","#C8A84B"],["Récup","#5C6B3A"],["Maladie","#C0392B"],["Maternité","#6A2A8A"],["Formation","#1A6B9A"],["Férié","#FEF3E2"],["W-E","#EDE8D8"]];
+  const leg=[["🌴 Congés",(TC["Congés payés"]||{}).b||"#C8A84B"],["🔄 Récup",(TC["Récupération"]||{}).b||"#C87050"],["🏠 Télétravail",(TC["Télétravail"]||{}).b||"#4A85B0"],["📚 Formation",(TC["Formation"]||{}).b||"#3A9090"],["🤒 Maladie",(TC["Maladie"]||{}).b||"#C04040"],["👨‍👩‍👧 Évt familial",(TC["Événement familial"]||{}).b||"#C050A0"],["Férié","#FEF3E2"],["W-E","#EDE8D8"]];
 
   return`<h2 style="color:#3A4425;font-size:22px;font-weight:800;margin-bottom:14px">📋 Équipe — Récap & Planning</h2>
     ${tabs}
@@ -8087,8 +8133,14 @@ function rHRInner(){
     JK.forEach(jk=>{
       const ds=getDJ(hLun,jk);
       const jT=prof?.j[jk];
-      const hT=gHT(mb.id,jk);
+      let hT=gHT(mb.id,jk);
       const dc=heu.find(x=>x.mid===mb.id&&x.dt===ds);
+      const absJ=absenceJour(mb.id,ds);
+      let noteAbs="";
+      if(jT&&!dc){
+        if(absJ.aprem&&!absJ.matin){ hT=cH(jT[0]||"",jT[1]||""); noteAbs="Après-midi : "+absJ.motif+" (validé)"; }
+        else if(absJ.matin&&!absJ.aprem){ hT=cH(jT[2]||"",jT[3]||""); noteAbs="Matin : "+absJ.motif+" (validé)"; }
+      }
       const isPast=ds<=today2();
       const isDim=new Date(ds+"T12:00:00").getDay()===0;
 
@@ -8103,6 +8155,10 @@ function rHRInner(){
           <span style="font-size:14px;color:#999">${JL[jk]} ${fD(ds)} — <em>Non travaillé</em></span>
           ${isPast?`<button class="btn bl bsm" style="font-size:12px;color:#5C6B3A" data-dpj="${jk}" data-dpd="${ds}">＋ J'ai travaillé exceptionnellement</button>`:""}
         </div>`;
+        return;
+      }
+      if(absJ.journee&&!dc){
+        h+=`<div style="padding:10px 14px;background:#EEF2E6;border-radius:10px;margin-bottom:7px;border-left:3px solid #7A9A4A"><span style="font-weight:700;font-size:15px;color:#3A5220">${JL[jk]} <span style="font-size:13px;color:#888;font-weight:400">${fD(ds)}</span></span><div style="font-size:13px;color:#3A5220;margin-top:3px">🏖️ ${absJ.motif} — journée entière (validé) · aucune heure à saisir</div></div>`;
         return;
       }
       // Pour une personne sans horaire théorique (direction), ne pas afficher "Repos" — proposer la saisie
@@ -8122,7 +8178,7 @@ function rHRInner(){
             <!-- Horaires théoriques ou veillée -->
             ${isVeillee
               ?`<div style="font-size:14px;color:#6A2A8A;font-weight:600">🌙 Veillée : 13h00 → 21h00 = ${fH(CRENEAUX_SPECIAUX.veillee.duree)} <span style="font-size:12px;color:#888;font-weight:400">(remplace les horaires habituels)</span></div>`
-              :jT?`<div style="font-size:14px;color:#555">Théorique : <strong>${jT[0]||"—"}${jT[1]?` → ${jT[1]}`:""}</strong>${jT[2]||jT[3]?` / <strong>${jT[2]||"—"}${jT[3]?` → ${jT[3]}`:""}</strong>`:""} <span style="color:#5C6B3A;font-weight:600">(${fH(hT)})</span></div>`:""
+              :jT?`<div style="font-size:14px;color:#555">Théorique : <strong>${jT[0]||"—"}${jT[1]?` → ${jT[1]}`:""}</strong>${jT[2]||jT[3]?` / <strong>${jT[2]||"—"}${jT[3]?` → ${jT[3]}`:""}</strong>`:""} <span style="color:#5C6B3A;font-weight:600">(${fH(hT)})</span></div>`:""}${noteAbs?`<div style="font-size:13px;color:#B8670A;font-weight:600;margin-top:2px">🏖️ ${noteAbs} — ne saisir que l'autre demi-journée</div>`:""
             }
 
             <!-- Services spéciaux cochés -->
@@ -8260,9 +8316,14 @@ function bHR(){
   document.querySelectorAll("[data-conf]").forEach(b=>{
     b.onclick=()=>{
       const jk=b.dataset.conf,ds=b.dataset.cds;if(!mb)return;
-      const ht=gHT(mb.id,jk);const jT=HOR[mb.id]?.j[jk];if(!jT)return;
+      const jT=HOR[mb.id]?.j[jk];if(!jT)return;
+      const aj=absenceJour(mb.id,ds);
+      let ht,hd,hf;
+      if(aj.aprem&&!aj.matin){ ht=cH(jT[0]||"",jT[1]||""); hd=jT[0]||""; hf=jT[1]||""; }
+      else if(aj.matin&&!aj.aprem){ ht=cH(jT[2]||"",jT[3]||""); hd=jT[2]||""; hf=jT[3]||""; }
+      else { ht=gHT(mb.id,jk); hd=jT[0]||""; hf=jT[3]||jT[1]||""; }
       const e={id:uid(),mid:mb.id,nm:`${mb.nom} ${mb.pr}`,sv:mb.sv,dt:ds,jk,
-        hd:jT[0]||"",hf:jT[3]||jT[1]||"",ht,hr:ht,dep:0,rc:0,mo:"",
+        hd,hf,ht,hr:ht,dep:0,rc:0,mo:"",
         st:ST.APP,cr:today2(),lun:hLun,conf:true,svcMidi:false,svcSoir:false,veillee:false};
       const l=[...A.s.heu.filter(x=>!(x.mid===mb.id&&x.dt===ds)),e];
       A.save("heu",l);A.toast("Journée confirmée ✓","success");
