@@ -462,7 +462,7 @@ const K={
 //  FIREBASE — Synchronisation temps réel multi-postes
 // ══════════════════════════════════════════════════════════════════
 // Configuration du projet MFR-Neracais-RH
-const APP_VERSION="v146";
+const APP_VERSION="v155";
 const firebaseConfig = {
   apiKey: "AIzaSyAJNsp-EY6DkT8AWa0824HuZh2Wu2Frce4",
   authDomain: "gestion-rh-mfr-du-neracais.firebaseapp.com",
@@ -473,7 +473,7 @@ const firebaseConfig = {
 };
 
 // Collections synchronisées (une par type de donnée)
-const FB_COLLECTIONS = ["eq","abs","dem","heu","ord","fr","budgets","devis","echeances","locations","formations","affichage","maintenances","vehicules","config","horaires","commandes","procedures"];
+const FB_COLLECTIONS = ["eq","abs","dem","heu","ord","fr","budgets","devis","echeances","locations","formations","affichage","maintenances","vehicules","config","horaires","commandes","procedures","hcse"];
 
 let fbDB = null;          // instance Firestore
 let fbReady = false;      // Firebase initialisé ?
@@ -587,6 +587,8 @@ function fbActiverSync(){
           // Mettre à jour l'état local + cache, sans réécrire dans Firebase
           A.s[key] = data;
           K.s(key, data);
+          // Les horaires modifiés doivent être recompilés après synchro
+          if(key==="horaires" && typeof rebuildHOR==="function") rebuildHOR();
           // Réécrire en base uniquement si une réaffectation a eu lieu
           if(_migr3) A.save(key, data);
           // Rafraîchir l'affichage seulement si pertinent
@@ -711,6 +713,70 @@ function rBlocEffectifs(d){
   </div>`;
 }
 
+// ══════════ HEURES CSE (délégation) ══════════
+function rHCSEContenu(){
+  const {role,user,eq}=A.s;
+  const isDir=role==="direction";
+  const isSandrine=user?.id==="mfr015";
+  const canSee=isDir||isSandrine;
+  if(!canSee) return `<div class="wbox">🔒 Les heures CSE sont réservées à la direction.</div>`;
+  let vis=(A.s.hcse||[]);
+  const filtre=A.s.hcseFiltre||"tous";
+  if(filtre!=="tous") vis=vis.filter(x=>x.mid===filtre);
+  vis=vis.slice().sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+  const totals={};
+  (A.s.hcse||[]).forEach(x=>{ totals[x.mid]=(totals[x.mid]||0)+(x.heures||0); });
+  const totalGen=Object.values(totals).reduce((s,v)=>s+v,0);
+  const dropdownH = `<div style="margin-bottom:12px;max-width:340px">${sel("hcse-filtre",[{v:"tous",l:"👥 Tout le personnel"},...sortEq(eq.filter(m=>!m.archive)).map(m=>({v:m.id,l:`${m.nom} ${m.pr}`}))],filtre)}</div>`;
+  const addBtn = `<button class="btn bp" id="btn-new-hcse" style="margin-bottom:12px">+ Ajouter des heures CSE</button>`;
+  const info = `<div class="wbox" style="margin-bottom:12px">🏛️ Heures de délégation CSE — comptées en heures.</div>`;
+  // Récapitulatif confidentiel (cumul par personne + total)
+  const persAvec=Object.keys(totals).filter(mid=>totals[mid]>0).map(mid=>{const mb=eq.find(m=>m.id===mid);return{mid,nm:mb?`${mb.nom} ${mb.pr}`:mid,h:totals[mid]};}).sort((a,b)=>b.h-a.h);
+  let recapH=`<div class="card" style="border:1.5px solid #6A2A8A;background:#F7F2FB;margin-bottom:14px">
+    <div style="font-size:15px;font-weight:800;color:#4A1A7A;margin-bottom:8px">🔒 Récapitulatif confidentiel — cumul des heures CSE <span style="font-size:11px;font-weight:400;color:#888">(direction uniquement)</span></div>`;
+  if(!persAvec.length){ recapH+=`<div style="font-size:13px;color:#888">Aucune heure CSE enregistrée.</div>`; }
+  else {
+    recapH+=`<table style="width:100%;border-collapse:collapse;font-size:13px">${persAvec.map(p=>`<tr><td style="padding:4px 8px;border-bottom:1px solid #E8DDF2">${p.nm}</td><td style="padding:4px 8px;border-bottom:1px solid #E8DDF2;text-align:right;font-weight:700;color:#4A1A7A">${fH(p.h)}</td></tr>`).join("")}<tr><td style="padding:6px 8px;font-weight:800">TOTAL</td><td style="padding:6px 8px;text-align:right;font-weight:800;color:#4A1A7A">${fH(totalGen)}</td></tr></table>`;
+  }
+  recapH+=`</div>`;
+  let cumulH="";
+  if(filtre!=="tous"){ cumulH=`<div style="text-align:right;font-weight:800;color:#4A1A7A;margin-bottom:8px">Cumul (sélection) : ${fH(totals[filtre]||0)}</div>`; }
+  let rows;
+  if(!vis.length){ rows=`<div class="card" style="text-align:center;padding:30px"><p style="color:#888">Aucune heure CSE enregistrée${filtre!=="tous"?" pour cette personne":""}.</p></div>`; }
+  else {
+    rows=vis.map(x=>{
+      const mb=eq.find(m=>m.id===x.mid);
+      return `<div class="card" style="border-left-color:#6A2A8A;margin-bottom:6px"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><div><span style="font-weight:800;color:#4A1A7A;font-size:15px">🏛️ ${fH(x.heures)}</span> ${mb?`<span class="tsv">${mb.nom} ${mb.pr}</span>`:""} <span style="font-size:13px;color:#555">· ${fD(x.date)}</span>${x.note?`<div style="font-size:12px;color:#888;margin-top:2px">💬 ${x.note}</div>`:""}</div><button class="btn bd bsm" data-del-hcse="${x.id}">✕</button></div></div>`;
+    }).join("");
+  }
+  return addBtn+info+recapH+dropdownH+cumulH+rows;
+}
+
+function rMdlHcse(){
+  const eqA=sortEq((A.s.eq||[]).filter(m=>!m.archive));
+  return mdl("🏛️ Ajouter des heures CSE",`
+    ${fld("Salarié *",sel("hcse-mb",eqA.map(m=>({v:m.id,l:`${m.nom} ${m.pr}`})),""," -- Choisir --"))}
+    ${fld("Date *",`<input type="date" id="hcse-date" value="${today2()}" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px;width:100%">`)}
+    ${fld("Nombre d'heures *",`<input type="number" id="hcse-h" min="0" step="0.5" placeholder="ex: 2" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px;width:100%">`)}
+    ${fld("Note (optionnel)",`<input id="hcse-note" placeholder="ex: réunion CSE mensuelle" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px;width:100%">`)}
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px"><button class="btn bl" id="hcse-cancel">Annuler</button><button class="btn bp" id="hcse-submit">✓ Enregistrer</button></div>`);
+}
+function bMdlHcse(){
+  const c=document.getElementById("hcse-cancel"); if(c)c.onclick=()=>A.set({modal:null});
+  const s=document.getElementById("hcse-submit");
+  if(s) s.onclick=()=>{
+    const mid=document.getElementById("hcse-mb").value;
+    const date=document.getElementById("hcse-date").value;
+    const heures=parseFloat(document.getElementById("hcse-h").value)||0;
+    const note=document.getElementById("hcse-note").value.trim();
+    if(!mid||!date||!heures){alert("Salarié, date et nombre d'heures sont obligatoires.");return;}
+    const mb=(A.s.eq||[]).find(m=>m.id===mid);
+    const e={id:uid(),mid,nm:mb?`${mb.nom} ${mb.pr}`:"",date,heures,note,cr:today2()};
+    A.save("hcse",[...(A.s.hcse||[]),e]);
+    A.set({modal:null}); A.toast("Heures CSE enregistrées ✓","success");
+  };
+}
+
 function rDM(){
   const {role,user,dem,eq}=A.s;
   const isSal=role==="salarie";
@@ -785,8 +851,14 @@ function rDM(){
   const tabsH=`<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
     <button class="btn ${sousOnglet==="demandes"?"bp":"bl"} bsm" data-dm-tab="demandes">📨 Demandes</button>
     <button class="btn ${sousOnglet==="absences"?"bp":"bl"} bsm" data-dm-tab="absences">📅 Absences enregistrées</button>
+    ${(isDir||user?.id==="mfr015")?`<button class="btn ${sousOnglet==="hcse"?"bp":"bl"} bsm" data-dm-tab="hcse">🏛️ Heures CSE</button>`:""}
   </div>`;
 
+  if(sousOnglet==="hcse"){
+    return`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+      <h2 style="color:#3A4425;font-size:22px;font-weight:800">🏛️ Heures CSE</h2>
+    </div>${tabsH}${rHCSEContenu()}`;
+  }
   if(sousOnglet==="absences"){
     return`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
       <h2 style="color:#3A4425;font-size:22px;font-weight:800">🗓 Congés & absences</h2>
@@ -802,6 +874,9 @@ function rDM(){
 }
 
 function bDM(){
+  {const b=document.getElementById("btn-new-hcse");if(b)b.onclick=()=>A.set({modal:{ty:"hcse",data:{}}});}
+  {const s=document.getElementById("hcse-filtre");if(s)s.onchange=()=>{A.s.hcseFiltre=s.value;A.r();};}
+  document.querySelectorAll("[data-del-hcse]").forEach(b=>{b.onclick=()=>{if(!confirm("Supprimer cette saisie d'heures CSE ?"))return;A.save("hcse",(A.s.hcse||[]).filter(x=>x.id!==b.dataset.delHcse));A.toast("Supprimé","warn");};});
   {const s=document.getElementById("ab-filtre-pers");if(s)s.onchange=()=>{A.s.abFiltrePers=s.value;A.r();};}
   document.querySelectorAll("[data-ab-mois]").forEach(b=>{b.onclick=()=>{const ym=b.dataset.abMois;let cur=A.s.abMoisOuverts||defaultAbMois();cur=cur.includes(ym)?cur.filter(x=>x!==ym):[...cur,ym];A.set({abMoisOuverts:cur});};});
   const bap=document.getElementById("btn-abs-pdf");
@@ -927,14 +1002,14 @@ function rMdlND(){
   const mb=eq.find(m=>m.id===user?.id);
   const cp=mb?Math.max(0,soldeCP(mb)):0;
   const rc=mb?Math.max(0,(mb.ra||0)-(mb.rp||0)):0;
-  const rcS=mb?((mb.ra||0)-(mb.rp||0)):0;
+  const rcS=mb?soldeHsupH(mb):0; // en heures
   const ttr=mb?ttRestant(mb.id):TT_PLAFOND_ANNUEL;
   const types=role==="direction"?DEM_TYPES_DIR:DEM_TYPES_SAL;
 
   return mdl("+ Nouvelle demande",`
     ${role==="salarie"?`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
       <div style="background:#FBF5E0;border-radius:8px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:800;color:#C8A84B">${cp}j</div><div style="font-size:11px;color:#888">Congés payés restants</div></div>
-      <div style="background:#EEF2E6;border-radius:8px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:800;color:${rcS<0?'#C0392B':'#5C6B3A'}">${rcS>=0?'+':'−'}${fH(Math.abs(rcS)*7)}</div><div style="font-size:11px;color:#888">Solde d'heures</div></div>
+      <div style="background:#EEF2E6;border-radius:8px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:800;color:${rcS<0?'#C0392B':'#5C6B3A'}">${rcS>=0?'+':'−'}${fH(Math.abs(rcS))}</div><div style="font-size:11px;color:#888">Solde d'heures</div></div>
       <div style="background:#E8F0F5;border-radius:8px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:800;color:#1A6B9A">${fH(ttr)}</div><div style="font-size:11px;color:#888">Télétravail restant</div></div>
     </div>`:""}
     ${fld("Type de demande *",sel("nd-ty",types,"","-- Choisir --"))}
@@ -1713,6 +1788,20 @@ function bMdlHorEdit(){
 function m_nom(mid){const m=(A.s.eq||[]).find(x=>x.id===mid);return m?`${m.nom} ${m.pr}`:"";}
 
 // Format d'affichage d'une date de naissance enfant (AAAA-MM-JJ) → MM/AAAA
+function fDT(iso){if(!iso)return"—";const d=new Date(iso);if(isNaN(d))return"—";return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()} à ${String(d.getHours()).padStart(2,"0")}h${String(d.getMinutes()).padStart(2,"0")}`;}
+function date21(naissance){
+  const d=new Date((naissance||"")+"T00:00:00"); if(isNaN(d)) return "";
+  d.setFullYear(d.getFullYear()+21);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+function finDroitPE(naissance){
+  const b21=date21(naissance); if(!b21) return "";
+  const p=b21.split("-").map(Number); const y=p[0],m=p[1];
+  // Fin de droit = dernier jour du mois précédant le mois anniversaire (M-1)
+  const debutMoisAnniv=new Date(y, m-1, 1);
+  const finM1=new Date(debutMoisAnniv.getTime()-86400000);
+  return `${finM1.getFullYear()}-${String(finM1.getMonth()+1).padStart(2,"0")}-${String(finM1.getDate()).padStart(2,"0")}`;
+}
 function moisAnneeDe(naissance){
   if(!naissance) return "";
   const p=(""+naissance).split("-");
@@ -1726,26 +1815,22 @@ function blocPointsEnfants(du,au){
     if(m.archive) return;
     (m.enfants||[]).forEach(enf=>{
       if(!enf.naissance) return;
-      const d21=new Date(enf.naissance+"T00:00:00"); if(isNaN(d21)) return;
-      d21.setFullYear(d21.getFullYear()+21);
-      const ds=d21.toISOString().split("T")[0];
-      if(ds>=du && ds<=au){
-        items.push(`<tr><td style="padding:6px 10px;border:1px solid #DDD">${m.nom} ${m.pr}</td><td style="padding:6px 10px;border:1px solid #DDD">${enf.prenom||"—"}</td><td style="padding:6px 10px;border:1px solid #DDD;text-align:center">${fD(ds)}</td><td style="padding:6px 10px;border:1px solid #DDD">Fin des 2 points « enfant à charge » (CCN MFR)</td></tr>`);
+      const b=date21(enf.naissance); const fin=finDroitPE(enf.naissance);
+      if(!fin) return;
+      if((fin>=du && fin<=au) || (b>=du && b<=au)){
+        items.push(`<tr><td style="padding:6px 10px;border:1px solid #DDD">${m.nom} ${m.pr}</td><td style="padding:6px 10px;border:1px solid #DDD">${enf.prenom||"—"}</td><td style="padding:6px 10px;border:1px solid #DDD;text-align:center">${fD(b)}</td><td style="padding:6px 10px;border:1px solid #DDD;text-align:center;font-weight:700">${fD(fin)}</td><td style="padding:6px 10px;border:1px solid #DDD">Fin des 2 points « enfant à charge » (CCN MFR, art. V — appréciation au 1er septembre)</td><td style="padding:6px 10px;border:1px solid #DDD;text-align:center;font-size:11px">${enf.courrierVu?fDT(enf.courrierVu):"non lu"}</td></tr>`);
       }
     });
   });
   if(!items.length) return "";
   return `<h2 style="font-size:15px;color:#3A4425;margin:22px 0 10px;border-bottom:1px solid #C8A84B;padding-bottom:4px">Points « enfant à charge » — fin de droit sur la période</h2>
-    <table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#EEF2E6"><th style="padding:6px 10px;border:1px solid #DDD;text-align:left">Salarié</th><th style="padding:6px 10px;border:1px solid #DDD;text-align:left">Enfant</th><th style="padding:6px 10px;border:1px solid #DDD">21 ans le</th><th style="padding:6px 10px;border:1px solid #DDD;text-align:left">Effet</th></tr></thead><tbody>${items.join("")}</tbody></table>`;
+    <table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#EEF2E6"><th style="padding:6px 10px;border:1px solid #DDD;text-align:left">Salarié</th><th style="padding:6px 10px;border:1px solid #DDD;text-align:left">Enfant</th><th style="padding:6px 10px;border:1px solid #DDD">21 ans le</th><th style="padding:6px 10px;border:1px solid #DDD">Fin de droit</th><th style="padding:6px 10px;border:1px solid #DDD;text-align:left">Effet</th><th style="padding:6px 10px;border:1px solid #DDD">Pris connaissance le</th></tr></thead><tbody>${items.join("")}</tbody></table>`;
 }
-
-// ── Courrier au salarié : extinction des points enfant à charge ──
 function courrierPointsEnfants(mid, enfIdx){
   const I=MFR_IDENT;
   const m=(A.s.eq||[]).find(x=>x.id===mid); if(!m){A.toast("Salarié introuvable","error");return;}
   const enf=(m.enfants||[])[enfIdx]; if(!enf||!enf.naissance){A.toast("Enfant introuvable","error");return;}
-  const d21=new Date(enf.naissance+"T00:00:00"); d21.setFullYear(d21.getFullYear()+21);
-  const dateStr=fD(d21.toISOString().split("T")[0]);
+  const dateStr=fD(date21(enf.naissance)); const b21=date21(enf.naissance); const finStr=fD(finDroitPE(enf.naissance)); const bp=(b21||"").split("-"); const moisAnnivNom=(bp.length>=2)?(MNS[parseInt(bp[1])-1]+" "+bp[0]):""; const moisAnnivStr="1er "+moisAnnivNom;
   const w=window.open("","_blank");
   w.document.write(`<html><head><meta charset="UTF-8"><title>Courrier — Points enfant à charge</title>${cssImpression()}</head><body>
     <div style="text-align:right;margin-bottom:16px"><button onclick="window.print()" style="background:#3A4425;color:#fff;border:none;padding:9px 18px;border-radius:8px;font-size:14px;cursor:pointer">🖨 Imprimer / Enregistrer en PDF</button></div>
@@ -1755,7 +1840,8 @@ function courrierPointsEnfants(mid, enfIdx){
     <p style="margin-bottom:16px"><strong>Objet :</strong> Extinction du bénéfice des points « enfant à charge »</p>
     <p style="margin-bottom:14px">Madame, Monsieur ${m.pr} ${m.nom},</p>
     <p style="margin-bottom:14px;line-height:1.7">Nous vous informons que votre enfant ${enf.prenom||""} atteint l'âge de <strong>21 ans le ${dateStr}</strong>.</p>
-    <p style="margin-bottom:14px;line-height:1.7">Conformément aux dispositions de la Convention collective nationale des Maisons Familiales Rurales (IDCC 7508), le bénéfice des <strong>deux points « enfant à charge »</strong> attachés à cet enfant <strong>s'éteint à compter de cette date</strong>. Votre rémunération sera ajustée en conséquence sur la paie du mois correspondant.</p>
+    <p style="margin-bottom:14px;line-height:1.7">Conformément à l'<strong>Article V « Classification et traitement »</strong> de la Convention collective nationale des Maisons Familiales Rurales (IDCC 7508), le salaire de base intègre une majoration de <strong>2 points par mois et par enfant à charge, jusqu'à l'âge de 21 ans</strong>.</p>
+    <p style="margin-bottom:14px;line-height:1.7">Le bénéfice des <strong>deux points « enfant à charge »</strong> attachés à cet enfant s'éteint le mois précédant la date anniversaire : il est <strong>maintenu jusqu'au ${finStr} inclus</strong> et <strong>cesse à compter du ${moisAnnivStr}</strong>. Votre rémunération sera ajustée en conséquence à compter de la paie de ${moisAnnivNom}.</p>
     <p style="margin-bottom:14px;line-height:1.7">Nous restons à votre disposition pour toute information complémentaire et vous prions d'agréer, Madame, Monsieur, l'expression de nos salutations distinguées.</p>
     <div style="margin-top:44px;text-align:right"><strong>Pascale Daugé</strong><br>Directrice<br>${I.nomCourt}</div>
     </body></html>`);
@@ -1767,52 +1853,51 @@ function rBlocCourrierEnfant(){
   const {role,user}=A.s;
   if(role!=="salarie"||!user) return "";
   const m=(A.s.eq||[]).find(x=>x.id===user.id); if(!m) return "";
-  const today=new Date(); const cy=today.getFullYear(), cm=today.getMonth();
+  const auj=today2();
+  const dl=new Date(); dl.setDate(dl.getDate()+120);
+  const lim=`${dl.getFullYear()}-${String(dl.getMonth()+1).padStart(2,"0")}-${String(dl.getDate()).padStart(2,"0")}`;
+  const db=new Date(); db.setDate(db.getDate()-90);
+  const bas=`${db.getFullYear()}-${String(db.getMonth()+1).padStart(2,"0")}-${String(db.getDate()).padStart(2,"0")}`;
   let html="";
   (m.enfants||[]).forEach((enf,idx)=>{
     if(!enf.naissance) return;
-    const d21=new Date(enf.naissance+"T00:00:00"); if(isNaN(d21)) return;
-    d21.setFullYear(d21.getFullYear()+21);
-    if(d21.getFullYear()===cy && d21.getMonth()===cm){
+    const fin=finDroitPE(enf.naissance); if(!fin) return;
+    if(fin>=bas && fin<=lim){
       html+=`<div style="background:#F0E8F5;border:1.5px solid #6A2A8A;border-radius:12px;padding:12px 16px;margin-bottom:14px">
         <div style="font-size:14px;font-weight:800;color:#4A1A7A;margin-bottom:4px">📄 Courrier à votre attention</div>
-        <div style="font-size:13px;color:#333;margin-bottom:8px">Votre enfant ${enf.prenom||""} atteint 21 ans ce mois-ci. Un courrier vous informe de la fin du bénéfice des 2 points « enfant à charge » (CCN MFR).</div>
+        <div style="font-size:13px;color:#333;margin-bottom:8px">Le bénéfice des 2 points « enfant à charge » pour ${enf.prenom||"votre enfant"} prend fin au 1er septembre ${fin.split("-")[0]} (CCN MFR). Un courrier vous en informe.</div>
         <button class="btn bp bsm" data-courrier-enf="${idx}">📄 Voir le courrier</button>
       </div>`;
     }
   });
   return html;
 }
-
-// Alerte : enfant atteignant 21 ans le mois PROCHAIN (perte des 2 points enfants) — direction + assistante de direction
 function rBlocAlertePointsEnfants(){
   const {role,user}=A.s;
   const concerne = role==="direction" || user?.id==="mfr015";
   if(!concerne) return "";
-  const today=new Date();
-  const mp=new Date(today.getFullYear(), today.getMonth()+1, 1);
-  const mpY=mp.getFullYear(), mpM=mp.getMonth();
+  const auj=today2();
+  const dl=new Date(); dl.setDate(dl.getDate()+120);
+  const lim=`${dl.getFullYear()}-${String(dl.getMonth()+1).padStart(2,"0")}-${String(dl.getDate()).padStart(2,"0")}`;
+  const db=new Date(); db.setDate(db.getDate()-90);
+  const bas=`${db.getFullYear()}-${String(db.getMonth()+1).padStart(2,"0")}-${String(db.getDate()).padStart(2,"0")}`;
   const alertes=[];
   (A.s.eq||[]).forEach(m=>{
     if(m.archive) return;
     (m.enfants||[]).forEach(enf=>{
       if(!enf.naissance) return;
-      const d21=new Date(enf.naissance+"T00:00:00");
-      if(isNaN(d21)) return;
-      d21.setFullYear(d21.getFullYear()+21);
-      if(d21.getFullYear()===mpY && d21.getMonth()===mpM){
-        alertes.push({nm:`${m.nom} ${m.pr}`, enfant:enf.prenom||"l'enfant", mois:MNS[mpM]+" "+mpY, mid:m.id, idx:m.enfants.indexOf(enf)});
+      const fin=finDroitPE(enf.naissance); if(!fin) return;
+      if(fin>=bas && fin<=lim){
+        alertes.push({nm:`${m.nom} ${m.pr}`, enfant:enf.prenom||"l'enfant", fin:fD(fin), anFin:fin.split("-")[0], mid:m.id, idx:m.enfants.indexOf(enf)});
       }
     });
   });
   if(!alertes.length) return "";
   return `<div style="background:#F0E8F5;border:1.5px solid #6A2A8A;border-radius:12px;padding:12px 16px;margin-bottom:14px">
-    <div style="font-size:14px;font-weight:800;color:#4A1A7A;margin-bottom:6px">👶 Points enfants à charge — à anticiper</div>
-    ${alertes.map(a=>`<div style="font-size:13px;color:#333;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><span>• <strong>${a.nm}</strong> : ${a.enfant} atteint 21 ans en <strong>${a.mois}</strong> → perte de 2 points.</span><button class="btn bl bsm" data-courrier-enf-dir="${a.mid}|${a.idx}">📄 Courrier</button></div>`).join("")}
+    <div style="font-size:14px;font-weight:800;color:#4A1A7A;margin-bottom:6px">👶 Points enfants à charge — fin de droit à anticiper</div>
+    ${alertes.map(a=>`<div style="font-size:13px;color:#333;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><span>• <strong>${a.nm}</strong> : ${a.enfant} — fin de droit au <strong>${a.fin}</strong> (perte de 2 points au 1er septembre ${a.anFin})</span><button class="btn bl bsm" data-courrier-enf-dir="${a.mid}|${a.idx}">📄 Courrier</button></div>`).join("")}
   </div>`;
 }
-
-// ══════════ ALERTE LOCATION J-7 (Loïc, Mélina + direction) ══════════
 function rBlocAlerteLocation(){
   const {role,user}=A.s;
   const concerne = role==="direction" || ["mfr018","mfr019"].includes(user?.id);
@@ -2574,7 +2659,12 @@ function rDB(){
 }
 
 function bDB(){
-  document.querySelectorAll("[data-courrier-enf]").forEach(b=>{b.onclick=()=>courrierPointsEnfants(A.s.user.id, parseInt(b.dataset.courrierEnf));});
+  document.querySelectorAll("[data-courrier-enf]").forEach(b=>{b.onclick=()=>{
+    const idx=parseInt(b.dataset.courrierEnf); const u=A.s.user;
+    const l=(A.s.eq||[]).map(m=>{ if(m.id!==u.id) return m; const enfants=(m.enfants||[]).map((e,i)=> (i===idx && !e.courrierVu) ? {...e, courrierVu:new Date().toISOString()} : e); return {...m, enfants}; });
+    A.save("eq",l); A.s.user=l.find(m=>m.id===u.id);
+    courrierPointsEnfants(u.id, idx);
+  };});
   document.querySelectorAll("[data-courrier-enf-dir]").forEach(b=>{b.onclick=()=>{const[mid,ix]=b.dataset.courrierEnfDir.split("|");courrierPointsEnfants(mid,parseInt(ix));};});
   document.querySelectorAll("[data-devis-vu]").forEach(b=>{b.onclick=()=>{const id=b.dataset.devisVu;const l=(A.s.devis||[]).map(d=>d.id===id?{...d,vuAuteur:true}:d);A.save("devis",l);};});
   document.querySelectorAll("[data-nav]").forEach(b=>b.onclick=()=>A.set({vue:b.dataset.nav,modal:null}));
@@ -5852,6 +5942,7 @@ function pdfSynthese(annee){
 function cpN1V(m){return (m&&m.cpN1!=null)?m.cpN1:((m&&m.cp)||0);}
 function cpAcqV(m){return (m&&m.cpAcquis)||0;}
 function soldeCP(m){return cpN1V(m)+cpAcqV(m)-((m&&m.cpp)||0);}
+function soldeHsupH(m){return ((m&&m.hsN1)||0)+((((m&&m.ra)||0)-((m&&m.rp)||0))*7);} // solde heures sup en heures (report N-1 + récup acquise-prise)
 function rechargerCPAnnuels(){
   // ── Acquisition MENSUELLE des CP — créditée EN FIN DE MOIS ──
   // Le crédit du mois M n'est appliqué qu'une fois M TERMINÉ (dès qu'on entre dans M+1).
@@ -7476,8 +7567,8 @@ function bEQ(){
   });
 }
 function rMdlSM(){const i=A.s.modal.data?.init||{};return mdl(i.id?"Modifier":"Ajouter un membre",`<div class="g2">${fld("Prénom *",`<input id="mbpr" value="${i.pr||""}">`)} ${fld("Nom *",`<input id="mbno" value="${i.nom||""}">`)}</div>${fld("Service *",sel("mbsv",SVC,i.sv||"","-- Choisir --"))}${fld("Poste",`<input id="mbpo" value="${i.po||""}" placeholder="ex: Formateur…">`)}${fld("Email",`<input type="email" id="mbem" value="${i.em||""}">`)}${fld("Date d'entrée",`<input id="mbde" value="${i.de||""}" placeholder="ex: 01/09/2025">`)}${fld("Date de naissance",`<input type="date" id="mbnais" value="${normNaissance(i.naissance||"")}">`,"pour les anniversaires sur l'accueil")}
-    ${fld("Mot de passe",`<input type="password" id="mbpw" placeholder="${i.id?"Laisser vide pour ne pas changer":"Définir un mot de passe"}">`,i.id?"Laisser vide = mot de passe inchangé":"")}<div class="dvd"></div><div class="g2">${fld("Congés payés acquis par mois (j)",`<input type="number" id="mbcpmens" value="${i.cpMensuel??2.5}" min="0" step="0.5" title="Jours de congés payés crédités automatiquement chaque 1er du mois">`,"2,5j standard · 5j direction · crédité en fin de mois") } ${fld("Solde congés N-1 (à saisir)",`<input type="number" id="mbcpn1" value="${cpN1V(i)}" min="0" step="0.5">`,"Report de l'année précédente")}${fld("Congés en cours d'acquisition",`<input type="number" id="mbcpacq" value="${cpAcqV(i)}" min="0" step="0.5">`,"Alimenté en fin de mois — ajustable si besoin")} ${fld("Plafond Télétravail",`<div style="padding:9px 12px;background:#F4F1E8;border-radius:8px;font-size:13px;color:#5C6B3A"><strong>160 h / an</strong> — identique pour tous (1er sept → 31 août)</div>`)}</div>
-    <div class="g2">${fld("Quotité temps de travail (%)",`<input type="number" id="mbquot" value="${i.quotite??100}" min="0" max="100" step="1" title="100% = temps plein (1599h/an) · 80% = 1279h...">`,"100% = 1599h/an · sert au tableau d'annualisation")}${fld("Taux horaire brut (€/h)",`<input type="number" id="mb-taux" value="${i.tauxHoraire??25}" min="0" step="0.01" placeholder="ex: 25.00">`,"sert au calcul du coût de main d'œuvre (entretien) — confidentiel")}</div><div class="dvd"></div>${fld("Enfants à charge (points enfants — 5 max)",`${[0,1,2,3,4].map(ie=>{const e=(i.enfants||[])[ie]||{};return `<div style="display:flex;gap:6px;margin-bottom:5px"><input id="mb-enf-pr-${ie}" value="${e.prenom||""}" placeholder="Prénom enfant ${ie+1}" style="flex:1;border:1.5px solid #DDD5B8;border-radius:8px;padding:7px 10px"><input id="mb-enf-dt-${ie}" value="${moisAnneeDe(e.naissance)}" placeholder="MM/AAAA" style="width:110px;border:1.5px solid #DDD5B8;border-radius:8px;padding:7px 10px"></div>`;}).join("")}`,"Prénom + mois/année (MM/AAAA) par enfant. À ses 21 ans, les 2 points s'éteignent — la direction est alertée et un courrier part sur le compte du salarié.")}<div class="dvd"></div><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn bl" id="smcn">Annuler</button><button class="btn bp" id="smsb">${i.id?"Mettre à jour":"Ajouter"}</button></div>`);}
+    ${fld("Mot de passe",`<input type="password" id="mbpw" placeholder="${i.id?"Laisser vide pour ne pas changer":"Définir un mot de passe"}">`,i.id?"Laisser vide = mot de passe inchangé":"")}<div class="dvd"></div><div class="g2">${fld("Congés payés acquis par mois (j)",`<input type="number" id="mbcpmens" value="${i.cpMensuel??2.5}" min="0" step="0.5" title="Jours de congés payés crédités automatiquement chaque 1er du mois">`,"2,5j standard · 5j direction · crédité en fin de mois") } ${fld("Solde congés N-1 (à saisir)",`<input type="number" id="mbcpn1" value="${cpN1V(i)}" min="0" step="0.5">`,"Report de l'année précédente")}${fld("Congés en cours d'acquisition",`<input type="number" id="mbcpacq" value="${cpAcqV(i)}" min="0" step="0.5">`,"Alimenté en fin de mois — ajustable si besoin")}${fld("Solde heures sup. N-1 (h)",`<input type="number" id="mbhsn1" value="${i.hsN1||0}" step="0.5">`,"Report des heures supplémentaires de l'année précédente")} ${fld("Plafond Télétravail",`<div style="padding:9px 12px;background:#F4F1E8;border-radius:8px;font-size:13px;color:#5C6B3A"><strong>160 h / an</strong> — identique pour tous (1er sept → 31 août)</div>`)}</div>
+    <div class="g2">${fld("Quotité temps de travail (%)",`<input type="number" id="mbquot" value="${i.quotite??100}" min="0" max="100" step="1" title="100% = temps plein (1599h/an) · 80% = 1279h...">`,"100% = 1599h/an · sert au tableau d'annualisation")}${fld("Taux horaire brut (€/h)",`<input type="number" id="mb-taux" value="${i.tauxHoraire??25}" min="0" step="0.01" placeholder="ex: 25.00">`,"sert au calcul du coût de main d'œuvre (entretien) — confidentiel")}</div><div class="dvd"></div>${fld("Enfants à charge (points enfants — 5 max)",`${[0,1,2,3,4].map(ie=>{const e=(i.enfants||[])[ie]||{};return `<div style="display:flex;gap:6px;margin-bottom:5px"><input id="mb-enf-pr-${ie}" value="${e.prenom||""}" placeholder="Prénom enfant ${ie+1}" style="flex:1;border:1.5px solid #DDD5B8;border-radius:8px;padding:7px 10px"><input type="date" id="mb-enf-dt-${ie}" value="${e.naissance||""}" style="width:150px;border:1.5px solid #DDD5B8;border-radius:8px;padding:6px 8px"></div>`;}).join("")}`,"Prénom + mois/année (MM/AAAA) par enfant. À ses 21 ans, les 2 points s'éteignent — la direction est alertée et un courrier part sur le compte du salarié.")}<div class="dvd"></div><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn bl" id="smcn">Annuler</button><button class="btn bp" id="smsb">${i.id?"Mettre à jour":"Ajouter"}</button></div>`);}
 function bMdlSM(){
   document.getElementById("smcn").onclick=()=>A.set({modal:null});
   document.getElementById("smsb").onclick=()=>{
@@ -7495,7 +7586,7 @@ function bMdlSM(){
         const pr=(document.getElementById("mb-enf-pr-"+ie)?.value||"").trim();
         let dt=(document.getElementById("mb-enf-dt-"+ie)?.value||"").trim();
         if(!pr&&!dt) continue;
-        const mmYY=dt.match(/^(\d{1,2})[\/\-.](\d{4})$/);
+        const mmYY=dt.match(/^(\d{1,2})[\/\-.](\d{4})$/); // compat ancienne saisie MM/AAAA
         if(mmYY) dt=`${mmYY[2]}-${mmYY[1].padStart(2,"0")}-01`;
         enfants.push({prenom:pr,naissance:dt});
       }
@@ -7504,7 +7595,7 @@ function bMdlSM(){
         em:document.getElementById("mbem").value,
         de:document.getElementById("mbde").value,
         naissance:normNaissance(document.getElementById("mbnais")?.value||i.naissance||""),
-        cpN1:parseFloat(document.getElementById("mbcpn1")?.value)||0,cpAcquis:parseFloat(document.getElementById("mbcpacq")?.value)||0,
+        cpN1:parseFloat(document.getElementById("mbcpn1")?.value)||0,cpAcquis:parseFloat(document.getElementById("mbcpacq")?.value)||0,hsN1:parseFloat(document.getElementById("mbhsn1")?.value)||0,
         cpp:i.cpp||0,ra:i.ra||0,rp:i.rp||0,
         ttp:TT_PLAFOND_ANNUEL,
         ttu:i.ttu||0,
@@ -7653,7 +7744,7 @@ document.addEventListener("DOMContentLoaded",()=>A.init());
 
 
 const A={
-  s:{role:null,user:null,vue:"db",toast:null,tT:null,modal:null,eq:[],abs:[],dem:[],heu:[],ord:[],fr:[],budgets:[],devis:[],budAnneeSco:null,budFilter:null,echeances:[],alertFiltre:"all",locations:[],formations:[],affichage:[],maintenances:[],config:null,horaires:{},commandes:[],procedures:[],synthAnnee:null,maintFiltre:"all",maintAnnee:null,rcplOnglet:"soldes",pMo:undefined,pAn:undefined,formAnneeSco:null,eqFiltreArch:false,planAnneeSco:null},
+  s:{role:null,user:null,vue:"db",toast:null,tT:null,modal:null,eq:[],abs:[],dem:[],heu:[],ord:[],fr:[],budgets:[],devis:[],budAnneeSco:null,budFilter:null,echeances:[],alertFiltre:"all",locations:[],formations:[],affichage:[],maintenances:[],config:null,horaires:{},commandes:[],procedures:[],hcse:[],synthAnnee:null,maintFiltre:"all",maintAnnee:null,rcplOnglet:"soldes",pMo:undefined,pAn:undefined,formAnneeSco:null,eqFiltreArch:false,planAnneeSco:null},
   set(p){Object.assign(A.s,p);A.r();},
   toast(msg,ty="success"){if(A.s.tT)clearTimeout(A.s.tT);const t=setTimeout(()=>A.set({toast:null,tT:null}),3200);A.set({toast:{msg,ty},tT:t});},
   save(k,v){K.s(k,v);A.set({[k]:v});if(fbReady&&FB_COLLECTIONS.includes(k))fbSave(k,v);},
@@ -7846,8 +7937,8 @@ function bMain(){
   else if(v==="eq")bEQ();else if(v==="pr")bPR();
   if(A.s.modal)bMdl();
 }
-function rMdl(){const {modal}=A.s;if(!modal)return"";const m={"nd":rMdlND,"vd":rMdlVD,"ad":rMdlAD,"sa":rMdlSA,"sm":rMdlSM,"dp":rMdlDP,"no":rMdlNO,"do":rMdlDO,"nf":rMdlNF,"df":rMdlDF,"class-filiere":rMdlClassFiliere,"ndevis":rMdlNDevis,"allocuer":rMdlAllocuer,"detailBud":rMdlDetailBud,"paiementDevis":rMdlPaiementDevis,"nEch":rMdlNEch,"nLoc":rMdlNLoc,"nForm":rMdlNForm,"nAff":rMdlNAff,"nMaint":rMdlNMaint,"signalement":rMdlSignalement,"vehEdit":rMdlVehEdit,"vehAno":rMdlVehAno,"changePwd":rMdlChangePwd,"horEdit":rMdlHorEdit,"resetTest":rMdlResetTest,"commande":rMdlCommande,"absPdf":rMdlAbsPdf,"proc":rMdlProc}[modal.ty];return m?m():"";} 
-function bMdl(){const {modal}=A.s;const mc=document.getElementById("mcl");if(mc)mc.onclick=()=>A.set({modal:null});const m={"nd":bMdlND,"vd":bMdlVD,"ad":bMdlAD,"sa":bMdlSA,"sm":bMdlSM,"dp":bMdlDP,"no":bMdlNO,"do":bMdlDO,"nf":bMdlNF,"df":bMdlDF,"class-filiere":bMdlClassFiliere,"ndevis":bMdlNDevis,"allocuer":bMdlAllocuer,"detailBud":bMdlDetailBud,"paiementDevis":bMdlPaiementDevis,"nEch":bMdlNEch,"nLoc":bMdlNLoc,"nForm":bMdlNForm,"nAff":bMdlNAff,"nMaint":bMdlNMaint,"signalement":bMdlSignalement,"vehEdit":bMdlVehEdit,"vehAno":bMdlVehAno,"changePwd":bMdlChangePwd,"horEdit":bMdlHorEdit,"resetTest":bMdlResetTest,"commande":bMdlCommande,"absPdf":bMdlAbsPdf,"proc":bMdlProc}[modal.ty];if(m)m();}
+function rMdl(){const {modal}=A.s;if(!modal)return"";const m={"nd":rMdlND,"vd":rMdlVD,"ad":rMdlAD,"sa":rMdlSA,"sm":rMdlSM,"dp":rMdlDP,"no":rMdlNO,"do":rMdlDO,"nf":rMdlNF,"df":rMdlDF,"class-filiere":rMdlClassFiliere,"ndevis":rMdlNDevis,"allocuer":rMdlAllocuer,"detailBud":rMdlDetailBud,"paiementDevis":rMdlPaiementDevis,"nEch":rMdlNEch,"nLoc":rMdlNLoc,"nForm":rMdlNForm,"nAff":rMdlNAff,"nMaint":rMdlNMaint,"signalement":rMdlSignalement,"vehEdit":rMdlVehEdit,"vehAno":rMdlVehAno,"changePwd":rMdlChangePwd,"horEdit":rMdlHorEdit,"resetTest":rMdlResetTest,"commande":rMdlCommande,"absPdf":rMdlAbsPdf,"proc":rMdlProc,"hcse":rMdlHcse}[modal.ty];return m?m():"";} 
+function bMdl(){const {modal}=A.s;const mc=document.getElementById("mcl");if(mc)mc.onclick=()=>A.set({modal:null});const m={"nd":bMdlND,"vd":bMdlVD,"ad":bMdlAD,"sa":bMdlSA,"sm":bMdlSM,"dp":bMdlDP,"no":bMdlNO,"do":bMdlDO,"nf":bMdlNF,"df":bMdlDF,"class-filiere":bMdlClassFiliere,"ndevis":bMdlNDevis,"allocuer":bMdlAllocuer,"detailBud":bMdlDetailBud,"paiementDevis":bMdlPaiementDevis,"nEch":bMdlNEch,"nLoc":bMdlNLoc,"nForm":bMdlNForm,"nAff":bMdlNAff,"nMaint":bMdlNMaint,"signalement":bMdlSignalement,"vehEdit":bMdlVehEdit,"vehAno":bMdlVehAno,"changePwd":bMdlChangePwd,"horEdit":bMdlHorEdit,"resetTest":bMdlResetTest,"commande":bMdlCommande,"absPdf":bMdlAbsPdf,"proc":bMdlProc,"hcse":bMdlHcse}[modal.ty];if(m)m();}
 
 
 function rRCPL(){
@@ -7877,7 +7968,7 @@ function rRCPL(){
     actifs.forEach(m=>{
       const cp=Math.max(0,soldeCP(m));
       const cpn1=cpN1V(m), cpacq=cpAcqV(m);
-      const ra=Math.max(0,(m.ra||0)-(m.rp||0));
+      const ra=soldeHsupH(m); // heures sup (report N-1 + acquis)
       let absM=0;
       abs.forEach(a=>{
         if(a.mid!==m.id||a.ty==="Annulée")return;
@@ -7892,7 +7983,7 @@ function rRCPL(){
         <td style="padding:7px 8px;text-align:center;color:#888">${cpn1}<span style="font-size:11px">j</span></td>
         <td style="padding:7px 8px;text-align:center;color:#2E7D52">${cpacq}<span style="font-size:11px">j</span></td>
         <td style="padding:7px 8px;text-align:center;font-weight:800;color:#C8A84B">${cp}<span style="font-size:11px;color:#888">j</span></td>
-        <td style="padding:7px 8px;text-align:center;font-weight:700;color:#5C6B3A">${fH(ra*7)}</td>
+        <td style="padding:7px 8px;text-align:center;font-weight:700;color:#5C6B3A">${fH(ra)}</td>
         <td style="padding:7px 8px">
           <div style="display:flex;align-items:center;gap:6px">
             <div style="flex:1;height:8px;background:#EDE8D8;border-radius:4px;min-width:50px">
@@ -8045,13 +8136,16 @@ function rHR(){
   const vue=A.s.hrVue||"equipe";
   const toggle=`<div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
     <button class="btn ${vue==="equipe"?"bp":"bl"} bsm" data-hr-vue="equipe">👥 Déclarations de l'équipe</button>
-    <button class="btn ${vue==="perso"?"bp":"bl"} bsm" data-hr-vue="perso">👤 Mes heures</button>
+    <button class="btn ${vue==="perso"?"bp":"bl"} bsm" data-hr-vue="perso">👤 Mes heures / corriger</button>
   </div>`;
-  return toggle + rHRInner();
+  const persDropdown = (vue==="perso") ? `<div style="margin-bottom:12px;max-width:360px">${sel("hr-corr-mid",[{v:"",l:"👤 Mes heures"},...sortEq((A.s.eq||[]).filter(m=>!m.archive&&m.id!==A.s.user?.id)).map(m=>({v:m.id,l:"✏️ Corriger — "+m.nom+" "+m.pr}))], A.s.hrCorrMid||"")}</div>` : "";
+  return toggle + persDropdown + rHRInner();
 }
 function rHRInner(){
   const {role,user,eq,heu}=A.s;
-  const mb=eq.find(m=>m.id===user?.id);
+  const estDirU=(role==="direction"||user?.id==="mfr001");
+  const corrMid=(estDirU&&(A.s.hrVue||"equipe")==="perso"&&A.s.hrCorrMid)?A.s.hrCorrMid:null;
+  const mb=corrMid?eq.find(m=>m.id===corrMid):eq.find(m=>m.id===user?.id);
   const saisiePerso=mb&&(role==="salarie"||((user?.id==="mfr001"||role==="direction")&&(A.s.hrVue||"equipe")==="perso"));
 
   if(saisiePerso){
@@ -8093,7 +8187,7 @@ function rHRInner(){
     });
 
     let h=`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
-      <h2 style="color:#3A4425;font-size:22px;font-weight:800">⏱ Mes heures</h2>
+      ${corrMid?`<div style="background:#FEF3E2;border:1.5px solid #E8A030;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:14px;color:#B8670A;font-weight:700">✏️ Vous corrigez les heures de ${mb.nom} ${mb.pr}</div>`:""}<h2 style="color:#3A4425;font-size:22px;font-weight:800">⏱ ${corrMid?"Heures — "+mb.pr+" "+mb.nom:"Mes heures"}</h2>
       <div class="snav">
         <button class="btn bl bsm" id="hpv">← Sem.</button>
         <span>${fD(hLun)}</span>
@@ -8220,7 +8314,7 @@ function rHRInner(){
                 ${!dc.svcSoir?`<button class="btn" style="background:#F5EAF8;color:#6A2A8A;border:1.5px solid #A060C0;border-radius:8px;padding:4px 8px;font-size:11px;font-weight:600" data-add-svc="${dc.id}" data-add-type="svcSoir">+🌆</button>`:`<button class="btn" style="background:#EEE;color:#888;border:1px solid #CCC;border-radius:8px;padding:4px 8px;font-size:11px" data-rm-svc="${dc.id}" data-rm-type="svcSoir">×🌆</button>`}
               </div>
             `:""}
-            ${dc&&dc.st===ST.ATT&&dc.dep>0?`<button class="btn bl bsm" data-anh="${dc.id}">Annuler</button>`:""}
+            ${dc?`<button class="btn bl bsm" data-anh="${dc.id}">✏️ Corriger</button>`:""}
           </div>
         </div>
       </div>`;
@@ -8304,7 +8398,8 @@ function rHRInner(){
 }
 
 function bHR(){
-  document.querySelectorAll("[data-hr-vue]").forEach(b=>{b.onclick=()=>{A.s.hrVue=b.dataset.hrVue;A.r();};});
+  document.querySelectorAll("[data-hr-vue]").forEach(b=>{b.onclick=()=>{A.s.hrVue=b.dataset.hrVue;if(b.dataset.hrVue==="equipe")A.s.hrCorrMid="";A.r();};});
+  {const s=document.getElementById("hr-corr-mid");if(s)s.onchange=()=>{A.s.hrCorrMid=s.value;A.r();};}
   const pv=document.getElementById("hpv");
   if(pv)pv.onclick=()=>{const d=new Date(hLun+"T12:00:00");d.setDate(d.getDate()-7);hLun=d.toISOString().split("T")[0];A.r();};
   const nx=document.getElementById("hnx");
@@ -8411,7 +8506,7 @@ function bHR(){
 
   
   document.querySelectorAll("[data-anh]").forEach(b=>{
-    b.onclick=()=>{const l=A.s.heu.filter(h=>h.id!==b.dataset.anh);A.save("heu",l);A.toast("Déclaration annulée","warn");};
+    b.onclick=()=>{if(!confirm("Corriger cette journée ? La saisie sera effacée pour que vous puissiez la refaire correctement."))return;const l=A.s.heu.filter(h=>h.id!==b.dataset.anh);A.save("heu",l);A.toast("Saisie effacée — vous pouvez la refaire","warn");};
   });
 
   
