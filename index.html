@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#3A4425">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTMiIGZpbGw9IiMzQTQ0MjUiLz48dGV4dCB4PSIzMiIgeT0iNDMiIGZvbnQtZmFtaWx5PSJBcmlhbCxIZWx2ZXRpY2Esc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyMyIgZm9udC13ZWlnaHQ9IjcwMCIgZmlsbD0iI0M4QTg0QiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgbGV0dGVyLXNwYWNpbmc9IjEiPk1GUjwvdGV4dD48L3N2Zz4=">
 <title>MFR Néracais — RH</title>
 <style>
 
@@ -153,8 +154,8 @@ const PWDS_HASH={
   mfr028:"ab851bc5c0f5110e6eed00399809452f15f9a8ead38db264f42b2ebee5ce72cc"
 };
 const MNS=["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
-const JL={lun:"Lundi",mar:"Mardi",mer:"Mercredi",jeu:"Jeudi",ven:"Vendredi",sam:"Samedi"};
-const JK=["lun","mar","mer","jeu","ven","sam"];
+const JL={lun:"Lundi",mar:"Mardi",mer:"Mercredi",jeu:"Jeudi",ven:"Vendredi",sam:"Samedi",dim:"Dimanche"};
+const JK=["lun","mar","mer","jeu","ven","sam","dim"];
 const ST={ATT:"En attente",APP:"Approuvée",REF:"Refusée",ANN:"Annulée"};
 const TC={
   "Présence":{bg:"#EEF2E6",c:"#3A5220",b:"#7A9A4A",e:"✅"},
@@ -462,7 +463,7 @@ const K={
 //  FIREBASE — Synchronisation temps réel multi-postes
 // ══════════════════════════════════════════════════════════════════
 // Configuration du projet MFR-Neracais-RH
-const APP_VERSION="v155";
+const APP_VERSION="v157";
 const firebaseConfig = {
   apiKey: "AIzaSyAJNsp-EY6DkT8AWa0824HuZh2Wu2Frce4",
   authDomain: "gestion-rh-mfr-du-neracais.firebaseapp.com",
@@ -1898,6 +1899,18 @@ function rBlocAlertePointsEnfants(){
     ${alertes.map(a=>`<div style="font-size:13px;color:#333;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><span>• <strong>${a.nm}</strong> : ${a.enfant} — fin de droit au <strong>${a.fin}</strong> (perte de 2 points au 1er septembre ${a.anFin})</span><button class="btn bl bsm" data-courrier-enf-dir="${a.mid}|${a.idx}">📄 Courrier</button></div>`).join("")}
   </div>`;
 }
+function rBlocAlerteCommandes(){
+  const u=A.s.user;
+  if(!u || !CMD_USERS.includes(u.id)) return "";
+  const actives=(A.s.commandes||[]).filter(c=>!c.accuse).sort((a,b)=>(a.date||"").localeCompare(b.date||""));
+  if(!actives.length) return "";
+  return `<div style="background:#FEF9EF;border:1.5px solid #E8CF9A;border-radius:12px;padding:12px 16px;margin-bottom:14px">
+    <div style="font-size:14px;font-weight:800;color:#B8670A;margin-bottom:6px">🧺 ${actives.length} commande(s) cuisine à traiter</div>
+    ${actives.slice(0,6).map(c=>`<div style="font-size:13px;color:#333;margin-bottom:2px">• <strong>${c.type}</strong> · ${c.nombre} pers. · ${fD(c.date)}${c.heure?" à "+c.heure:""}${c.horsDelai?' <span style="color:#C0392B;font-weight:700">⚠️ hors délai</span>':""}</div>`).join("")}
+    ${actives.length>6?`<div style="font-size:12px;color:#888;margin-top:2px">… et ${actives.length-6} autre(s)</div>`:""}
+    <button class="btn bp bsm" id="btn-go-cmd" style="margin-top:8px">Voir les commandes →</button>
+  </div>`;
+}
 function rBlocAlerteLocation(){
   const {role,user}=A.s;
   const concerne = role==="direction" || ["mfr018","mfr019"].includes(user?.id);
@@ -2611,6 +2624,7 @@ function rDB(){
       </div>
       ${absFilH}
       ${anticipH}
+      ${rBlocAlerteCommandes()}
       ${rBlocAlerteLocation()}
       ${rBlocAlertePointsEnfants()}
       ${rBlocDevisDecides()}
@@ -2639,6 +2653,7 @@ function rDB(){
   return`<h2 style="color:#3A4425;font-size:22px;font-weight:800;margin-bottom:4px">Bonjour, ${user?.pr||""} 👋</h2>
     <p style="color:#888;font-size:13px;margin-bottom:14px">Période : ${getAS()}</p>
     ${rBlocRgpdAck()}
+    ${rBlocAlerteCommandes()}
     ${rBlocAlerteLocation()}
     ${rBlocCourrierEnfant()}
     ${rBlocAlertePointsEnfants()}
@@ -2659,6 +2674,7 @@ function rDB(){
 }
 
 function bDB(){
+  {const b=document.getElementById("btn-go-cmd");if(b)b.onclick=()=>A.set({vue:"cmd"});}
   document.querySelectorAll("[data-courrier-enf]").forEach(b=>{b.onclick=()=>{
     const idx=parseInt(b.dataset.courrierEnf); const u=A.s.user;
     const l=(A.s.eq||[]).map(m=>{ if(m.id!==u.id) return m; const enfants=(m.enfants||[]).map((e,i)=> (i===idx && !e.courrierVu) ? {...e, courrierVu:new Date().toISOString()} : e); return {...m, enfants}; });
@@ -8157,8 +8173,8 @@ function rHRInner(){
     const joursActifs=JK.filter(jk=>{
       const ds=getDJ(hLun,jk);
       // Si pas d'horaire théorique (ex: direction), tous les jours ouvrés lun-ven sont saisissables
-      const jourOuvre=sansHoraire?(jk!=="sam"):(prof?.j[jk]||(prof?.jm&&prof.jm[jk]));
-      return(jourOuvre||heu.find(x=>x.mid===mb.id&&x.dt===ds))&&ds<=today2();
+      const jourOuvre=sansHoraire?(jk!=="sam"&&jk!=="dim"):(prof?.j[jk]||(prof?.jm&&prof.jm[jk]));
+      return(jourOuvre||jk==="sam"||jk==="dim"||heu.find(x=>x.mid===mb.id&&x.dt===ds))&&ds<=today2();
     });
     const tousConfirmes=joursActifs.length>0&&joursActifs.every(jk=>{
       const ds=getDJ(hLun,jk);
@@ -8242,6 +8258,14 @@ function rHRInner(){
       const isVeillee=dc?.veillee||false;
       const hTEffectif=isVeillee?CRENEAUX_SPECIAUX.veillee.duree:hT;
 
+      // Week-end (samedi/dimanche) non travaillé → banalisé, saisie exceptionnelle possible
+      if((jk==="sam"||jk==="dim") && !jT && !dc){
+        h+=`<div style="padding:10px 14px;background:#F5F1E8;border-radius:10px;margin-bottom:7px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+          <span style="font-size:14px;color:#999">${JL[jk]} ${fD(ds)} — <em>Week-end (non travaillé)</em></span>
+          ${isPast?`<button class="btn bl bsm" style="font-size:12px;color:#5C6B3A" data-dpj="${jk}" data-dpd="${ds}">＋ J'ai travaillé exceptionnellement</button>`:""}
+        </div>`;
+        return;
+      }
       if(!jT&&!dc&&!isDim&&!sansHoraire){
         // Jour non travaillé (temps partiel) : banalisé, jamais compté comme incomplet,
         // mais saisie possible en cas de travail exceptionnel.
