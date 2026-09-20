@@ -463,7 +463,7 @@ const K={
 //  FIREBASE — Synchronisation temps réel multi-postes
 // ══════════════════════════════════════════════════════════════════
 // Configuration du projet MFR-Neracais-RH
-const APP_VERSION="v157";
+const APP_VERSION="v161";
 const firebaseConfig = {
   apiKey: "AIzaSyAJNsp-EY6DkT8AWa0824HuZh2Wu2Frce4",
   authDomain: "gestion-rh-mfr-du-neracais.firebaseapp.com",
@@ -1364,7 +1364,6 @@ const FILIERES = {
   "Orientation": {color:"#1A6B9A", bg:"#E3F1FA", classes:["4A","4B","3EME"]},
   "SAPAT":       {color:"#2E7D52", bg:"#E8F5EE", classes:["2SAPAT","1SAPAT","TSAPAT"]},
   "EPC":         {color:"#B8670A", bg:"#FEF3E2", classes:["EPC1","EPC2"]},
-  "Renfort":     {color:"#6A2A8A", bg:"#F0E8F5", classes:["RENFORT"]},
 };
 const CLASSES_META = {
   "4A":     {filiere:"Orientation", label:"4ème A"},
@@ -1375,9 +1374,8 @@ const CLASSES_META = {
   "TSAPAT": {filiere:"SAPAT",       label:"Term SAPAT"},
   "EPC1":   {filiere:"EPC",         label:"CAP EPC 1ère"},
   "EPC2":   {filiere:"EPC",         label:"CAP EPC 2nde"},
-  "RENFORT":{filiere:"Renfort",     label:"Renfort"},
 };
-const CLASSES_ORDER = ["4A","4B","3EME","2SAPAT","1SAPAT","TSAPAT","EPC1","EPC2","RENFORT"];
+const CLASSES_ORDER = ["4A","4B","3EME","2SAPAT","1SAPAT","TSAPAT","EPC1","EPC2"];
 
 
 
@@ -1685,7 +1683,7 @@ function rMdlHorEdit(){
   const p=HOR[mid];
   const mod=(A.s.horaires&&A.s.horaires[mid])||{};
   const tempActif = mod.temporaire && mod.tempJusqu;
-  const jours=JK.filter(jk=>jk!=="sam");
+  const jours=JK.filter(jk=>jk!=="sam"&&jk!=="dim");
   // Sélecteur de mode par jour
   const ligneJour=(jk)=>{
     const r=resumeJour(p?.j[jk]);
@@ -1739,7 +1737,7 @@ function jourDepuisMode(mode, heures){
 
 function bMdlHorEdit(){
   const mid=A.s.modal.data.id;
-  const jours=JK.filter(jk=>jk!=="sam");
+  const jours=JK.filter(jk=>jk!=="sam"&&jk!=="dim");
   // Case aménagement temporaire → afficher la date
   const cbTemp=document.getElementById("hor-temp");
   const wrap=document.getElementById("hor-temp-wrap");
@@ -1827,6 +1825,36 @@ function blocPointsEnfants(du,au){
   return `<h2 style="font-size:15px;color:#3A4425;margin:22px 0 10px;border-bottom:1px solid #C8A84B;padding-bottom:4px">Points « enfant à charge » — fin de droit sur la période</h2>
     <table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#EEF2E6"><th style="padding:6px 10px;border:1px solid #DDD;text-align:left">Salarié</th><th style="padding:6px 10px;border:1px solid #DDD;text-align:left">Enfant</th><th style="padding:6px 10px;border:1px solid #DDD">21 ans le</th><th style="padding:6px 10px;border:1px solid #DDD">Fin de droit</th><th style="padding:6px 10px;border:1px solid #DDD;text-align:left">Effet</th><th style="padding:6px 10px;border:1px solid #DDD">Pris connaissance le</th></tr></thead><tbody>${items.join("")}</tbody></table>`;
 }
+function corpsCourrierPE(m, enf){
+  const I=MFR_IDENT;
+  const dateStr=fD(date21(enf.naissance)); const b21=date21(enf.naissance); const finStr=fD(finDroitPE(enf.naissance)); const bp=(b21||"").split("-"); const moisAnnivNom=(bp.length>=2)?(MNS[parseInt(bp[1])-1]+" "+bp[0]):""; const moisAnnivStr="1er "+moisAnnivNom;
+  return `<div style="margin:24px 0 4px;text-align:right"><strong>${m.pr} ${m.nom}</strong><br>${m.po||""}</div>
+    <div style="text-align:right;margin-bottom:28px">${I.ville}, le ${fD(today2())}</div>
+    <p style="margin-bottom:16px"><strong>Objet :</strong> Extinction du bénéfice des points « enfant à charge »</p>
+    <p style="margin-bottom:14px">Madame, Monsieur ${m.pr} ${m.nom},</p>
+    <p style="margin-bottom:14px;line-height:1.7">Nous vous informons que votre enfant ${enf.prenom||""} atteint l'âge de <strong>21 ans le ${dateStr}</strong>.</p>
+    <p style="margin-bottom:14px;line-height:1.7">Conformément à l'<strong>Article V « Classification et traitement »</strong> de la Convention collective nationale des Maisons Familiales Rurales (IDCC 7508), le salaire de base intègre une majoration de <strong>2 points par mois et par enfant à charge, jusqu'à l'âge de 21 ans</strong>.</p>
+    <p style="margin-bottom:14px;line-height:1.7">Le bénéfice des <strong>deux points « enfant à charge »</strong> attachés à cet enfant s'éteint le mois précédant la date anniversaire : il est <strong>maintenu jusqu'au ${finStr} inclus</strong> et <strong>cesse à compter du ${moisAnnivStr}</strong>. Votre rémunération sera ajustée en conséquence à compter de la paie de ${moisAnnivNom}.</p>
+    <p style="margin-bottom:14px;line-height:1.7">Nous restons à votre disposition pour toute information complémentaire et vous prions d'agréer, Madame, Monsieur, l'expression de nos salutations distinguées.</p>
+    <div style="margin-top:44px;text-align:right"><strong>Pascale Daugé</strong><br>Directrice<br>${I.nomCourt}</div>`;
+}
+function blocCourriersPE(du,au){
+  const I=MFR_IDENT;
+  let out="";
+  (A.s.eq||[]).forEach(m=>{
+    if(m.archive) return;
+    (m.enfants||[]).forEach(enf=>{
+      if(!enf.naissance) return;
+      const b=date21(enf.naissance); const fin=finDroitPE(enf.naissance);
+      if(!fin) return;
+      if((fin>=du&&fin<=au)||(b>=du&&b<=au)){
+        out+=`<div style="page-break-before:always;padding-top:10px">${entete(I.raisonSociale,"",`${I.adresse} · ${I.cp} ${I.ville}`)}${corpsCourrierPE(m,enf)}</div>`;
+      }
+    });
+  });
+  return out;
+}
+
 function courrierPointsEnfants(mid, enfIdx){
   const I=MFR_IDENT;
   const m=(A.s.eq||[]).find(x=>x.id===mid); if(!m){A.toast("Salarié introuvable","error");return;}
@@ -1836,15 +1864,7 @@ function courrierPointsEnfants(mid, enfIdx){
   w.document.write(`<html><head><meta charset="UTF-8"><title>Courrier — Points enfant à charge</title>${cssImpression()}</head><body>
     <div style="text-align:right;margin-bottom:16px"><button onclick="window.print()" style="background:#3A4425;color:#fff;border:none;padding:9px 18px;border-radius:8px;font-size:14px;cursor:pointer">🖨 Imprimer / Enregistrer en PDF</button></div>
     ${entete(I.raisonSociale,"",`${I.adresse} · ${I.cp} ${I.ville}`)}
-    <div style="margin:24px 0 4px;text-align:right"><strong>${m.pr} ${m.nom}</strong><br>${m.po||""}</div>
-    <div style="text-align:right;margin-bottom:28px">${I.ville}, le ${fD(today2())}</div>
-    <p style="margin-bottom:16px"><strong>Objet :</strong> Extinction du bénéfice des points « enfant à charge »</p>
-    <p style="margin-bottom:14px">Madame, Monsieur ${m.pr} ${m.nom},</p>
-    <p style="margin-bottom:14px;line-height:1.7">Nous vous informons que votre enfant ${enf.prenom||""} atteint l'âge de <strong>21 ans le ${dateStr}</strong>.</p>
-    <p style="margin-bottom:14px;line-height:1.7">Conformément à l'<strong>Article V « Classification et traitement »</strong> de la Convention collective nationale des Maisons Familiales Rurales (IDCC 7508), le salaire de base intègre une majoration de <strong>2 points par mois et par enfant à charge, jusqu'à l'âge de 21 ans</strong>.</p>
-    <p style="margin-bottom:14px;line-height:1.7">Le bénéfice des <strong>deux points « enfant à charge »</strong> attachés à cet enfant s'éteint le mois précédant la date anniversaire : il est <strong>maintenu jusqu'au ${finStr} inclus</strong> et <strong>cesse à compter du ${moisAnnivStr}</strong>. Votre rémunération sera ajustée en conséquence à compter de la paie de ${moisAnnivNom}.</p>
-    <p style="margin-bottom:14px;line-height:1.7">Nous restons à votre disposition pour toute information complémentaire et vous prions d'agréer, Madame, Monsieur, l'expression de nos salutations distinguées.</p>
-    <div style="margin-top:44px;text-align:right"><strong>Pascale Daugé</strong><br>Directrice<br>${I.nomCourt}</div>
+    ${corpsCourrierPE(m,enf)}
     </body></html>`);
   w.document.close();
 }
@@ -1986,6 +2006,7 @@ function pdfAbsences(du,au){
     </div>
     ${blocs||'<p style="color:#888">Aucune absence sur cette période.</p>'}
     ${blocPointsEnfants(du,au)}
+    ${blocCourriersPE(du,au)}
     <div class="foot">Document interne établi pour la gestion sociale · ${I.nomCourt}</div>
     </body></html>`);
   w.document.close();
@@ -3045,7 +3066,7 @@ function logAction(ficheId, action, user){
 // Coordinateur pédagogique
 const COORD_PEDA_ID = "mfr002"; // Benoît BOURSINHAC
 const MAISON_ID = "mfr018"; // Loïc Durosier, maître de maison (valide les devis d'animation)
-function estAnimationEntite(entityId){ return entityId==="ANIMATION"||entityId==="ART_CULTURE"; }
+function estAnimationEntite(entityId){ return entityId==="ANIMATION"; }
 function peutValiderDevis(d,user,role){
   if(role==="direction") return true;              // la direction valide tout
   if(estAnimationEntite(d.entityId)) return user?.id===MAISON_ID;  // animation → maître de maison
@@ -6017,7 +6038,7 @@ function rBUDGET(){
     ...CLASSES_ORDER.map(k=>({id:k,...CLASSES_META[k],type:"classe"})),
     {id:"ANIMATION",label:"Animation",filiere:"Animation",type:"animation"},
     {id:"SPORT",label:"Sport",filiere:"Pédagogie",type:"pedagogie"},
-    {id:"ART_CULTURE",label:"Art et Culture",filiere:"Animation",type:"animation"},
+    {id:"ART_CULTURE",label:"Art et Culture",filiere:"Pédagogie",type:"pedagogie"},
   ];
 
   // Sélecteur année scolaire
@@ -6279,7 +6300,7 @@ function rMdlNDevis(){
     ...CLASSES_ORDER.map(k=>({id:k,...CLASSES_META[k]})),
     {id:"ANIMATION",label:"Animation",filiere:"Animation"},
     {id:"SPORT",label:"Sport",filiere:"Pédagogie"},
-    {id:"ART_CULTURE",label:"Art et Culture",filiere:"Animation"},
+    {id:"ART_CULTURE",label:"Art et Culture",filiere:"Pédagogie"},
   ];
   return mdl("+ Soumettre un devis",`
     <div class="ibox">Ce devis sera soumis à Benoît BOURSINHAC (coordinateur pédagogique) pour validation.</div>
@@ -8157,6 +8178,49 @@ function rHR(){
   const persDropdown = (vue==="perso") ? `<div style="margin-bottom:12px;max-width:360px">${sel("hr-corr-mid",[{v:"",l:"👤 Mes heures"},...sortEq((A.s.eq||[]).filter(m=>!m.archive&&m.id!==A.s.user?.id)).map(m=>({v:m.id,l:"✏️ Corriger — "+m.nom+" "+m.pr}))], A.s.hrCorrMid||"")}</div>` : "";
   return toggle + persDropdown + rHRInner();
 }
+function theoJourDu(mid, jk, ds){
+  const p=HOR[mid]; if(!p) return 0;
+  const abs=absenceJour(mid, ds);
+  if(abs.journee) return 0;
+  const full=gHT(mid, jk);
+  if(!abs.matin && !abs.aprem) return full;
+  const j=p.j&&p.j[jk];
+  if(j){ const matin=cH(j[0],j[1]), aprem=cH(j[2],j[3]);
+    if(abs.matin) return aprem;
+    if(abs.aprem) return matin;
+  }
+  return full/2; // créneaux personnalisés : demi-journée approximée
+}
+function cumulAnnee(mid){
+  const debut=debutPeriodeRef(), auj=today2();
+  let reel=0;
+  (A.s.heu||[]).forEach(x=>{ if(x.mid===mid && x.dt>=debut && x.dt<=auj) reel+=heuresReelles(x); });
+  let theo=0;
+  const p=HOR[mid];
+  const sansHoraire=!p||JK.every(jk=>!p.j[jk]&&!(p.jm&&p.jm[jk]));
+  if(!sansHoraire){
+    let d=new Date(debut+"T12:00:00"); const fin=new Date(auj+"T12:00:00");
+    while(d<=fin){
+      const ds=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+      const jk=JK[(d.getDay()+6)%7];
+      const dc=(A.s.heu||[]).find(x=>x.mid===mid&&x.dt===ds);
+      if(dc&&dc.veillee){ theo+=CRENEAUX_SPECIAUX.veillee.duree; }
+      else if(p.j[jk]||(p.jm&&p.jm[jk])){ theo+=theoJourDu(mid,jk,ds); }
+      d.setDate(d.getDate()+1);
+    }
+  }
+  return {reel, theo, ecart: reel-theo};
+}
+function blocCumulAnnee(mid){
+  const c=cumulAnnee(mid);
+  const eCol=c.ecart<0?"#C0392B":"#5C6B3A", eBg=c.ecart<0?"#FBEAEA":"#E8F0E0";
+  return `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">
+    <div style="background:#EEF2E6;border-radius:8px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:800;color:#3A4425">${fH(c.reel)}</div><div style="font-size:11px;color:#888;margin-top:2px">Heures réalisées<br><span style="font-size:10px">depuis le 1er sept.</span></div></div>
+    <div style="background:#F5F1E8;border-radius:8px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:800;color:#8A6D3B">${fH(c.theo)}</div><div style="font-size:11px;color:#888;margin-top:2px">Heures dues<br><span style="font-size:10px">théorique − absences</span></div></div>
+    <div style="background:${eBg};border-radius:8px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:800;color:${eCol}">${c.ecart>=0?"+":"−"}${fH(Math.abs(c.ecart))}</div><div style="font-size:11px;color:#888;margin-top:2px">Écart cumulé<br><span style="font-size:10px">réalisé − dû</span></div></div>
+  </div>`;
+}
+
 function rHRInner(){
   const {role,user,eq,heu}=A.s;
   const estDirU=(role==="direction"||user?.id==="mfr001");
@@ -8210,6 +8274,7 @@ function rHRInner(){
         <button class="btn bl bsm" id="hnx">Sem. →</button>
       </div>
     </div>
+    ${mb?blocCumulAnnee(mb.id):""}
     <div class="wbox">⚠️ Toute heure supplémentaire doit être validée en amont par la direction, sauf situation d'urgence. Les heures du dimanche sont récupérées à 1,5×.</div>
     ${prof?.note?`<div class="ibox">ℹ️ ${prof.note}</div>`:""}`;
 
@@ -8407,6 +8472,7 @@ function rHRInner(){
             }).join("")}
           </div>
         </div>
+        ${sem.jours.filter(j=>j.dep>0&&j.mo).length?`<div style="margin:2px 0 8px;padding:8px 10px;background:#FEF9EF;border:1px solid #E8CF9A;border-radius:8px">${sem.jours.filter(j=>j.dep>0&&j.mo).map(j=>`<div style="font-size:12px;color:#B8670A;margin-bottom:2px">📩 <strong>${fD(j.dt)}</strong> (+${fH(j.dep)}) : ${j.mo}</div>`).join("")}</div>`:""}
         ${hasAtt?`<div style="display:flex;flex-direction:column;gap:5px">
           <button class="btn bs bsm" data-val-sem="${sem.mid}_${sem.lun}">✓ Valider récup</button>
           <button class="btn bd bsm" data-ref-sem="${sem.mid}_${sem.lun}">✗ Refuser</button>
@@ -8581,12 +8647,7 @@ function rMdlDP(){
       ${fld("Fin de matinée",`<input type="time" id="dpfm" value="${pauseDeb}">`)}
     </div>
 
-    <p style="font-size:13px;font-weight:700;color:#3A4425;text-transform:uppercase;letter-spacing:.5px;margin:8px 0">☀️ Pause méridienne</p>
-    <div class="g2">
-      ${fld("Début de pause",`<input type="time" id="dpdp" value="${pauseDeb}" placeholder="ex: 12:00">`)}
-      ${fld("Fin de pause",`<input type="time" id="dpfp" value="${pauseFin}" placeholder="ex: 13:30">`)}
-    </div>
-    <div id="pause-info" style="font-size:13px;color:#888;margin-bottom:8px"></div>
+    <div id="pause-info" style="font-size:13px;color:#5C6B3A;margin:6px 0 10px;font-weight:600"></div>
 
     <p style="font-size:13px;font-weight:700;color:#3A4425;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">🌇 Après-midi</p>
     <div class="g2">
@@ -8611,15 +8672,14 @@ function bMdlDP(){
   const calcTotal=()=>{
     const hd=document.getElementById("dphd").value;   
     const fm=document.getElementById("dpfm").value;   
-    const dp=document.getElementById("dpdp").value;   
-    const fp=document.getElementById("dpfp").value;   
     const da=document.getElementById("dpda").value;   
     const hf=document.getElementById("dphf").value;   
+    const dp=fm, fp=da; // pause déduite de l'écart fin de matinée → reprise après-midi
     
-    const pauseDuree=dp&&fp?cH(dp,fp):0;
+    const pauseDuree=fm&&da?cH(fm,da):0;
     
     const pi=document.getElementById("pause-info");
-    if(pi&&dp&&fp) pi.textContent=`Pause méridienne : ${fH(pauseDuree)} (${dp} → ${fp})`;
+    if(pi&&fm&&da) pi.textContent=`Pause déduite : ${fH(pauseDuree)} (${fm} → ${da})`;
     else if(pi) pi.textContent="";
     
     if(!hd||!hf) return{r:0,dep:0,rc:0,pauseDuree,hd,hf,fm,dp,fp,da};
