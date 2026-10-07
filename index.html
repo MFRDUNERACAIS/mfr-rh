@@ -463,7 +463,7 @@ const K={
 //  FIREBASE — Synchronisation temps réel multi-postes
 // ══════════════════════════════════════════════════════════════════
 // Configuration du projet MFR-Neracais-RH
-const APP_VERSION="v161";
+const APP_VERSION="v164";
 const firebaseConfig = {
   apiKey: "AIzaSyAJNsp-EY6DkT8AWa0824HuZh2Wu2Frce4",
   authDomain: "gestion-rh-mfr-du-neracais.firebaseapp.com",
@@ -590,6 +590,7 @@ function fbActiverSync(){
           K.s(key, data);
           // Les horaires modifiés doivent être recompilés après synchro
           if(key==="horaires" && typeof rebuildHOR==="function") rebuildHOR();
+          if(key==="formations" && typeof reconcileFormAbs==="function") reconcileFormAbs();
           // Réécrire en base uniquement si une réaffectation a eu lieu
           if(_migr3) A.save(key, data);
           // Rafraîchir l'affichage seulement si pertinent
@@ -1919,6 +1920,18 @@ function rBlocAlertePointsEnfants(){
     ${alertes.map(a=>`<div style="font-size:13px;color:#333;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><span>• <strong>${a.nm}</strong> : ${a.enfant} — fin de droit au <strong>${a.fin}</strong> (perte de 2 points au 1er septembre ${a.anFin})</span><button class="btn bl bsm" data-courrier-enf-dir="${a.mid}|${a.idx}">📄 Courrier</button></div>`).join("")}
   </div>`;
 }
+function rBlocAlerteOM(){
+  const {role}=A.s;
+  if(role!=="direction") return "";
+  const attente=(A.s.ord||[]).filter(o=>o.st===ST.ATT).sort((a,b)=>(a.dd||"").localeCompare(b.dd||""));
+  if(!attente.length) return "";
+  return `<div style="background:#E8EEF5;border:1.5px solid #7A9CC0;border-radius:12px;padding:12px 16px;margin-bottom:14px">
+    <div style="font-size:14px;font-weight:800;color:#2A5A8A;margin-bottom:6px">🗺️ ${attente.length} ordre(s) de mission à valider</div>
+    ${attente.slice(0,6).map(o=>`<div style="font-size:13px;color:#333;margin-bottom:2px">• <strong>${o.nm}</strong> — ${o.ob||o.ty||"Déplacement"} · ${fD(o.dd)}${o.hd?" à "+o.hd:""}</div>`).join("")}
+    ${attente.length>6?`<div style="font-size:12px;color:#888;margin-top:2px">… et ${attente.length-6} autre(s)</div>`:""}
+    <button class="btn bp bsm" id="btn-go-om" style="margin-top:8px">Voir les ordres de mission →</button>
+  </div>`;
+}
 function rBlocAlerteCommandes(){
   const u=A.s.user;
   if(!u || !CMD_USERS.includes(u.id)) return "";
@@ -1973,6 +1986,55 @@ function bMdlAbsPdf(){
     pdfAbsences(du,au);
   };
 }
+function encartCabinetSocial(du,au){
+  const I=MFR_IDENT;
+  // 1. Absences hors télétravail sur la période
+  const abs=(A.s.abs||[]).filter(a=>{
+    const dd=a.dd, df=a.df||a.dd;
+    return a.ty!=="Annulée" && a.ty!=="Télétravail" && dd<=au && df>=du;
+  });
+  const byId={};
+  abs.forEach(a=>{ const k=a.mid||a.nm; (byId[k]=byId[k]||{nom:a.nm||nomDe(a.mid),lignes:[]}); byId[k].lignes.push(a); });
+  const cles=Object.keys(byId).sort((x,y)=>(byId[x].nom||"").localeCompare(byId[y].nom||""));
+  const totJ=abs.reduce((s,a)=>s+(a.nj||1),0);
+  let absHTML;
+  if(!cles.length){ absHTML=`<p style="color:#888;font-size:12.5px;margin:4px 0">Aucune absence à déclarer sur cette période.</p>`; }
+  else {
+    absHTML=`<table style="width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:4px">
+      <thead><tr style="background:#EDE4CF"><th style="text-align:left;padding:5px 8px">Salarié</th><th style="text-align:left;padding:5px 8px">Motif</th><th style="text-align:left;padding:5px 8px">Du</th><th style="text-align:left;padding:5px 8px">Au</th><th style="text-align:right;padding:5px 8px">Jours</th></tr></thead>
+      <tbody>${cles.map(k=>{const p=byId[k];const lignes=p.lignes.slice().sort((a,b)=>a.dd.localeCompare(b.dd));return lignes.map((a,i)=>`<tr style="border-bottom:1px solid #eee"><td style="padding:4px 8px;font-weight:${i===0?"700":"400"}">${i===0?p.nom:""}</td><td style="padding:4px 8px">${a.ty}</td><td style="padding:4px 8px">${fD(a.dd)}</td><td style="padding:4px 8px">${fD(a.df||a.dd)}</td><td style="padding:4px 8px;text-align:right">${a.nj||1}</td></tr>`).join("");}).join("")}
+      <tr style="background:#F5F1E6;font-weight:700"><td colspan="4" style="padding:5px 8px;text-align:right">Total jours d'absence</td><td style="padding:5px 8px;text-align:right">${totJ}</td></tr></tbody>
+    </table>`;
+  }
+  // 2. Notifications de fin de droit « points enfant à charge »
+  const notifs=[];
+  (A.s.eq||[]).forEach(m=>{
+    if(m.archive) return;
+    (m.enfants||[]).forEach(enf=>{
+      if(!enf.naissance) return;
+      const b=date21(enf.naissance); const fin=finDroitPE(enf.naissance);
+      if(!fin) return;
+      if((fin>=du&&fin<=au)||(b>=du&&b<=au)){ notifs.push({nm:`${m.nom} ${m.pr}`,enfant:enf.prenom||"—",b,fin,vu:enf.courrierVu}); }
+    });
+  });
+  let notifHTML;
+  if(!notifs.length){ notifHTML=`<p style="color:#888;font-size:12.5px;margin:4px 0">Aucune fin de droit « points enfant » sur cette période.</p>`; }
+  else {
+    notifHTML=`<table style="width:100%;border-collapse:collapse;font-size:12.5px">
+      <thead><tr style="background:#EDE4CF"><th style="text-align:left;padding:5px 8px">Salarié</th><th style="text-align:left;padding:5px 8px">Enfant</th><th style="text-align:left;padding:5px 8px">21 ans le</th><th style="text-align:left;padding:5px 8px">Fin de droit (2 points)</th><th style="text-align:left;padding:5px 8px">Courrier lu le</th></tr></thead>
+      <tbody>${notifs.map(n=>`<tr style="border-bottom:1px solid #eee"><td style="padding:4px 8px">${n.nm}</td><td style="padding:4px 8px">${n.enfant}</td><td style="padding:4px 8px">${fD(n.b)}</td><td style="padding:4px 8px;font-weight:700">${fD(n.fin)}</td><td style="padding:4px 8px;font-size:11px">${n.vu?fDT(n.vu):"non lu"}</td></tr>`).join("")}</tbody>
+    </table>`;
+  }
+  return `<div style="page-break-before:always;border:2px solid #3A4425;border-radius:10px;padding:16px 18px;margin-top:20px">
+    <h2 style="color:#3A4425;font-size:16px;margin:0 0 4px">📋 Cabinet social — éléments à transmettre</h2>
+    <p style="color:#888;font-size:12px;margin:0 0 14px">${I.raisonSociale} · Période du ${fD(du)} au ${fD(au)} · Édité le ${fD(today2())}</p>
+    <h3 style="color:#3A4425;font-size:13.5px;margin:10px 0 6px;border-bottom:1px solid #C8A84B;padding-bottom:2px">1. Absences (hors télétravail)</h3>
+    ${absHTML}
+    <h3 style="color:#3A4425;font-size:13.5px;margin:16px 0 6px;border-bottom:1px solid #C8A84B;padding-bottom:2px">2. Fin de droit « points enfant à charge »</h3>
+    ${notifHTML}
+  </div>`;
+}
+
 function pdfAbsences(du,au){
   const I=MFR_IDENT;
   // Une absence est retenue si elle chevauche la période
@@ -2005,7 +2067,7 @@ function pdfAbsences(du,au){
       <div class="sub">${I.raisonSociale} · Période du ${fD(du)} au ${fD(au)} · ${totalAbs} absence(s) · Édité le ${fD(today2())}</div>
     </div>
     ${blocs||'<p style="color:#888">Aucune absence sur cette période.</p>'}
-    ${blocPointsEnfants(du,au)}
+    ${encartCabinetSocial(du,au)}
     ${blocCourriersPE(du,au)}
     <div class="foot">Document interne établi pour la gestion sociale · ${I.nomCourt}</div>
     </body></html>`);
@@ -2645,6 +2707,7 @@ function rDB(){
       </div>
       ${absFilH}
       ${anticipH}
+      ${rBlocAlerteOM()}
       ${rBlocAlerteCommandes()}
       ${rBlocAlerteLocation()}
       ${rBlocAlertePointsEnfants()}
@@ -2674,6 +2737,7 @@ function rDB(){
   return`<h2 style="color:#3A4425;font-size:22px;font-weight:800;margin-bottom:4px">Bonjour, ${user?.pr||""} 👋</h2>
     <p style="color:#888;font-size:13px;margin-bottom:14px">Période : ${getAS()}</p>
     ${rBlocRgpdAck()}
+    ${rBlocAlerteOM()}
     ${rBlocAlerteCommandes()}
     ${rBlocAlerteLocation()}
     ${rBlocCourrierEnfant()}
@@ -2696,6 +2760,7 @@ function rDB(){
 
 function bDB(){
   {const b=document.getElementById("btn-go-cmd");if(b)b.onclick=()=>A.set({vue:"cmd"});}
+  {const b=document.getElementById("btn-go-om");if(b)b.onclick=()=>A.set({vue:"om"});}
   document.querySelectorAll("[data-courrier-enf]").forEach(b=>{b.onclick=()=>{
     const idx=parseInt(b.dataset.courrierEnf); const u=A.s.user;
     const l=(A.s.eq||[]).map(m=>{ if(m.id!==u.id) return m; const enfants=(m.enfants||[]).map((e,i)=> (i===idx && !e.courrierVu) ? {...e, courrierVu:new Date().toISOString()} : e); return {...m, enfants}; });
@@ -4008,7 +4073,9 @@ function bFORMATIONS(){
   document.querySelectorAll("[data-del-form]").forEach(b=>{
     b.onclick=()=>{
       if(!confirm("Supprimer cette formation ?")) return;
-      A.save("formations",(A.s.formations||[]).filter(x=>x.id!==b.dataset.delForm));
+      const _fid=b.dataset.delForm;
+      A.save("formations",(A.s.formations||[]).filter(x=>x.id!==_fid));
+      A.save("abs",(A.s.abs||[]).filter(a=>a.formId!==_fid));
       A.toast("Formation supprimée","warn");
     };
   });
@@ -4040,6 +4107,14 @@ function rMdlNForm(){
       <button class="btn bp" id="nf-submit">${edit?"💾 Enregistrer":"+ Ajouter"}</button>
     </div>`);
 }
+function reconcileFormAbs(){
+  const forms=(A.s.formations||[]).filter(f=>!f.demId && f.date);
+  const abs=A.s.abs||[];
+  const manquantes=forms.filter(f=>!abs.some(a=>a.formId===f.id));
+  if(!manquantes.length) return;
+  const nouv=manquantes.map(f=>({id:uid(),mid:f.mid,nm:f.nm,ty:"Formation",dd:f.date,df:f.date,nj:1,fr:"Journée entière",cr:today2(),formId:f.id}));
+  A.save("abs",[...abs,...nouv]);
+}
 function bMdlNForm(){
   const {edit}=A.s.modal.data;
   document.getElementById("nf-cancel").onclick=()=>A.set({modal:null});
@@ -4057,7 +4132,15 @@ function bMdlNForm(){
     const mb=A.s.eq.find(m=>m.id===mid);
     const entry={id:edit?.id||uid(),mid,nm:mb?`${mb.nom} ${mb.pr}`:"",intitule,type,organisme,date,heures,statut,annee,note,cr:today2()};
     const l=edit?(A.s.formations||[]).map(x=>x.id===edit.id?entry:x):[...(A.s.formations||[]),entry];
-    A.save("formations",l);A.set({modal:null});
+    A.save("formations",l);
+    // Lien formation → absence : la formation apparaît dans les absences (planning + récap).
+    // Exclu si la formation vient d'une demande approuvée (l'absence est déjà créée via la demande).
+    if(!entry.demId){
+      const absL=(A.s.abs||[]).filter(a=>a.formId!==entry.id);
+      absL.push({id:uid(),mid,nm:entry.nm,ty:"Formation",dd:date,df:date,nj:1,fr:"Journée entière",cr:today2(),formId:entry.id});
+      A.save("abs",absL);
+    }
+    A.set({modal:null});
     A.toast(`Formation ${edit?"modifiée":"enregistrée"} ✓`,"success");
   };
 }
@@ -8246,25 +8329,31 @@ function rHRInner(){
     });
 
     
-    let totalTheo=0,totalReel=0,totalDep=0,totalRecup=0,totalSvc=0;
+    let totalTheo=0,totalReel=0,totalDep=0,totalRecup=0,totalSvc=0,totalDim=0;
     JK.forEach(jk=>{
       const ds=getDJ(hLun,jk);
       const dc=heu.find(x=>x.mid===mb.id&&x.dt===ds);
       const estVeillee=dc?.veillee||false;
       // Théorique : si veillée, le matin est banalisé → on ne compte que la veillée (remplace la journée)
       if(estVeillee){
-        totalTheo+=CRENEAUX_SPECIAUX.veillee.duree; // 7h30, remplace la journée normale
+        totalTheo+=CRENEAUX_SPECIAUX.veillee.duree; // remplace la journée normale
+      } else if(dc){
+        totalTheo+=gHT(mb.id,jk); // jour pointé → théorique normal
       } else {
-        totalTheo+=gHT(mb.id,jk);
+        totalTheo+=theoJourDu(mb.id,jk,ds); // sinon, théorique diminué des absences (0 si journée entière)
       }
       if(dc){
         totalReel+=heuresReelles(dc); // heures réelles, services inclus
         totalDep+=dc.dep||0;
         totalRecup+=dc.rc||0;
+        if(jk==="dim") totalDim+=heuresReelles(dc);
         if(dc.svcMidi) totalSvc+=CRENEAUX_SPECIAUX.svc_midi.duree;
         if(dc.svcSoir) totalSvc+=CRENEAUX_SPECIAUX.svc_soir.duree;
       }
     });
+    // Récup générée de la semaine (annualisé) : écart net (réel − théorique) + majoration dimanche (×1,5).
+    // Un jour à +Xh compensé par un jour à −Xh dans la semaine → aucune heure supplémentaire.
+    const recupHebdo=(totalReel-totalTheo)+totalDim*0.5;
 
     let h=`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
       ${corrMid?`<div style="background:#FEF3E2;border:1.5px solid #E8A030;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:14px;color:#B8670A;font-weight:700">✏️ Vous corrigez les heures de ${mb.nom} ${mb.pr}</div>`:""}<h2 style="color:#3A4425;font-size:22px;font-weight:800">⏱ ${corrMid?"Heures — "+mb.pr+" "+mb.nom:"Mes heures"}</h2>
@@ -8274,8 +8363,7 @@ function rHRInner(){
         <button class="btn bl bsm" id="hnx">Sem. →</button>
       </div>
     </div>
-    ${mb?blocCumulAnnee(mb.id):""}
-    <div class="wbox">⚠️ Toute heure supplémentaire doit être validée en amont par la direction, sauf situation d'urgence. Les heures du dimanche sont récupérées à 1,5×.</div>
+    <div class="wbox">⚠️ Toute heure supplémentaire doit être validée en amont par la direction, sauf situation d'urgence. Les heures du dimanche sont récupérées à 1,5×. Décompte <strong>hebdomadaire</strong> (annualisation) : seuls l'excédent de la semaine et le travail du dimanche génèrent de la récupération.</div>
     ${prof?.note?`<div class="ibox">ℹ️ ${prof.note}</div>`:""}`;
 
     if(joursActifs.length>0&&!tousConfirmes){
@@ -8288,7 +8376,7 @@ function rHRInner(){
     h+=`<div style="display:grid;grid-template-columns:repeat(${canSvcSpecial?4:3},1fr);gap:8px;margin-bottom:14px">
       <div class="sc"><div class="lbl">Théorique</div><div class="val" style="color:#5C6B3A;font-size:18px">${fH(totalTheo)}</div></div>
       <div class="sc"><div class="lbl">Déclaré</div><div class="val" style="color:#1A6B9A;font-size:18px">${fH(totalReel)}</div></div>
-      <div class="sc"><div class="lbl">Récup générée</div><div class="val" style="color:#B8670A;font-size:18px">${fH(totalRecup)}</div></div>
+      <div class="sc"><div class="lbl">Récup générée</div><div class="val" style="color:${recupHebdo<0?'#C0392B':'#5C6B3A'};font-size:18px">${recupHebdo>=0?'+':'−'}${fH(Math.abs(recupHebdo))}</div></div>
       ${canSvcSpecial?`<div class="sc"><div class="lbl">Services spéciaux</div><div class="val" style="color:#6A2A8A;font-size:18px">${fH(totalSvc)}h</div></div>`:""}
     </div>`;
 
@@ -8341,7 +8429,11 @@ function rHRInner(){
         return;
       }
       if(absJ.journee&&!dc){
-        h+=`<div style="padding:10px 14px;background:#EEF2E6;border-radius:10px;margin-bottom:7px;border-left:3px solid #7A9A4A"><span style="font-weight:700;font-size:15px;color:#3A5220">${JL[jk]} <span style="font-size:13px;color:#888;font-weight:400">${fD(ds)}</span></span><div style="font-size:13px;color:#3A5220;margin-top:3px">🏖️ ${absJ.motif} — journée entière (validé) · aucune heure à saisir</div></div>`;
+        const estFormation=(absJ.motif==="Formation");
+        h+=`<div style="padding:10px 14px;background:#EEF2E6;border-radius:10px;margin-bottom:7px;border-left:3px solid #7A9A4A;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+          <div><span style="font-weight:700;font-size:15px;color:#3A5220">${JL[jk]} <span style="font-size:13px;color:#888;font-weight:400">${fD(ds)}</span></span><div style="font-size:13px;color:#3A5220;margin-top:3px">${estFormation?"🎓":"🏖️"} ${absJ.motif} — journée entière (validé) · aucune heure à saisir</div></div>
+          ${(estFormation&&isPast)?`<button class="btn bl bsm" style="font-size:12px;color:#5C6B3A" data-dpj="${jk}" data-dpd="${ds}">＋ Travail/transport en plus</button>`:""}
+        </div>`;
         return;
       }
       // Pour une personne sans horaire théorique (direction), ne pas afficher "Repos" — proposer la saisie
@@ -8445,9 +8537,10 @@ function rHRInner(){
     const nbMidi=sem.jours.filter(j=>j.svcMidi).length;
     const nbSoir=sem.jours.filter(j=>j.svcSoir).length;
     const nbVeillee=sem.jours.filter(j=>j.veillee).length;
-    const hasAtt=sem.jours.some(j=>j.st===ST.ATT&&j.dep>0);
+    const hasAtt=sem.jours.some(j=>j.st===ST.ATT);
+    const recupNetSem=sem.jours.reduce((s,j)=>{const estDim=new Date(j.dt+"T12:00:00").getDay()===0;const hr=heuresReelles(j);return s+(estDim?hr*1.5:(hr-(j.ht!=null?j.ht:gHT(j.mid,j.jk))));},0);
 
-    lH+=`<div class="card ca" style="border-left-color:${totalDep>0?"#B8670A":"#2E7D52"}">
+    lH+=`<div class="card ca" style="border-left-color:${recupNetSem>0?"#B8670A":"#2E7D52"}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
         <div style="flex:1">
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
@@ -8608,7 +8701,8 @@ function bHR(){
       const l=A.s.heu.map(x=>{
         if(x.mid!==mid||x.lun!==lun||x.st!==ST.ATT)return x;
         const htj=(x.ht!=null?x.ht:gHT(x.mid,x.jk));
-        netH += heuresReelles(x)-htj;   // écart signé du jour
+        const estDim=new Date(x.dt+"T12:00:00").getDay()===0;
+        netH += estDim ? heuresReelles(x)*1.5 : (heuresReelles(x)-htj);   // dimanche majoré ×1,5 ; sinon écart net (annualisation)
         return{...x,st:ST.APP,valPar:nomValidateur(),dateVal:today2()};
       });
       const neq=A.s.eq.map(m=>m.id===mid?{...m,ra:(m.ra||0)+netH/7}:m);
@@ -8685,8 +8779,9 @@ function bMdlDP(){
     if(!hd||!hf) return{r:0,dep:0,rc:0,pauseDuree,hd,hf,fm,dp,fp,da};
     const brut=cH(hd,hf);
     const r=Math.max(0,brut-pauseDuree);
+    // Annualisation : le dépassement quotidien est indicatif ; le crédit réel = écart NET de la semaine.
     const dep=sansHoraire?0:Math.max(0,r-ht);
-    const rc=dep*coef;
+    const rc=0; // pas de récup quotidienne automatique — créditée au net hebdomadaire
     const nfo=document.getElementById("dpnfo");
     if(nfo){
       nfo.style.display="block";
@@ -8712,7 +8807,7 @@ function bMdlDP(){
     const e={id:uid(),mid:mb.id,nm:`${mb.nom} ${mb.pr}`,sv:mb.sv,dt:ds,jk,
       hd,hf,fm:fm||"",dp:dp||"",fp:fp||"",da:da||"",
       pauseDuree,ht,hr:r,dep,rc,coef,mo:mo||"",isDim:isDim||false,
-      st:dep>0?ST.ATT:ST.APP,cr:today2(),lun:hLun,
+      st:(!sansHoraire&&(isDim||Math.abs(r-ht)>0.01))?ST.ATT:ST.APP,cr:today2(),lun:hLun,
       svcMidi:false,svcSoir:false,veillee:false};
     const l=[...A.s.heu.filter(x=>!(x.mid===mb.id&&x.dt===ds)),e];
     A.save("heu",l);A.set({modal:null});
