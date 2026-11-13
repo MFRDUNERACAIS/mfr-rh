@@ -463,7 +463,7 @@ const K={
 //  FIREBASE — Synchronisation temps réel multi-postes
 // ══════════════════════════════════════════════════════════════════
 // Configuration du projet MFR-Neracais-RH
-const APP_VERSION="v172";
+const APP_VERSION="v174";
 const firebaseConfig = {
   apiKey: "AIzaSyAJNsp-EY6DkT8AWa0824HuZh2Wu2Frce4",
   authDomain: "gestion-rh-mfr-du-neracais.firebaseapp.com",
@@ -1222,11 +1222,13 @@ function rMdlSA(){
   const actifs=sortEq(eq.filter(m=>!m.archive));
   return mdl("📅 Saisir une absence",`
     ${fld("Salarié(s) *",`
-      <div style="border:1.5px solid #DDD5B8;border-radius:8px;padding:8px 10px;max-height:190px;overflow:auto">
-        <label style="display:flex;align-items:center;gap:7px;padding:4px 0;font-weight:700;color:#3A4425;cursor:pointer;border-bottom:1px solid #EEE;margin-bottom:4px">
-          <input type="checkbox" id="sa-all"> ✓ Toute l'équipe
+      <div style="border:1.5px solid #DDD5B8;border-radius:8px;padding:10px 12px;max-height:260px;overflow:auto;background:#FCFBF7">
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 8px;font-weight:700;color:#3A4425;cursor:pointer;background:#EEF2E6;border-radius:6px;margin-bottom:8px">
+          <input type="checkbox" id="sa-all"> ✓ Sélectionner toute l'équipe
         </label>
-        ${actifs.map(m=>`<label style="display:flex;align-items:center;gap:7px;padding:3px 0;cursor:pointer"><input type="checkbox" class="sa-mb-cb" value="${m.id}"> ${m.nom} ${m.pr}</label>`).join("")}
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:4px 12px">
+          ${actifs.map(m=>`<label style="display:flex;align-items:center;gap:8px;padding:5px 8px;cursor:pointer;border-radius:6px;font-size:14px" onmouseover="this.style.background='#EEF2E6'" onmouseout="this.style.background='transparent'"><input type="checkbox" class="sa-mb-cb" value="${m.id}"> ${m.nom} ${m.pr}</label>`).join("")}
+        </div>
       </div>`,"Cochez une ou plusieurs personnes")}
     ${fld("Type d'absence *",sel("sa-ty",Object.keys(TC).filter(t=>t!=="Présence"&&t!=="Annulée"),"","-- Choisir --"))}
     <div class="g2">
@@ -1727,7 +1729,7 @@ function rHORAIRES(){
     const temp=mod&&mod.temporaire&&mod.tempJusqu&&today2()<=mod.tempJusqu;
     let resume;
     if(veilleur){ resume=`<span style="font-size:12px;color:#888;font-style:italic">Horaire de nuit (non modifiable ici)</span>`; }
-    else { resume=JK.filter(jk=>jk!=="sam").map(jk=>{const r=resumeJour(p?.j[jk]); return `<span style="font-size:11px;color:${r.color}">${JL[jk].slice(0,3)} : ${r.mode==="journee"?"J":r.mode==="matin"?"M":r.mode==="aprem"?"A-M":"—"}</span>`;}).join(" · "); }
+    else { resume=JK.filter(jk=>jk!=="dim").map(jk=>{const r=resumeJour(p?.j[jk]); return `<span style="font-size:11px;color:${r.color}">${JL[jk].slice(0,3)} : ${r.mode==="journee"?"J":r.mode==="matin"?"M":r.mode==="aprem"?"A-M":"—"}</span>`;}).join(" · "); }
     return `<div class="card" style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
       <div>
         <div style="font-size:15px;font-weight:700;color:#3A4425">${m.nom} ${m.pr}${temp?` <span style="font-size:11px;color:#B8670A">⏳ aménagement jusqu'au ${fD(mod.tempJusqu)}</span>`:""}</div>
@@ -1755,7 +1757,7 @@ function rMdlHorEdit(){
   const p=HOR[mid];
   const mod=(A.s.horaires&&A.s.horaires[mid])||{};
   const tempActif = mod.temporaire && mod.tempJusqu;
-  const jours=JK.filter(jk=>jk!=="sam"&&jk!=="dim");
+  const jours=JK.filter(jk=>jk!=="dim");
   // Sélecteur de mode par jour
   const ligneJour=(jk)=>{
     const r=resumeJour(p?.j[jk]);
@@ -1809,7 +1811,7 @@ function jourDepuisMode(mode, heures){
 
 function bMdlHorEdit(){
   const mid=A.s.modal.data.id;
-  const jours=JK.filter(jk=>jk!=="sam"&&jk!=="dim");
+  const jours=JK.filter(jk=>jk!=="dim");
   // Case aménagement temporaire → afficher la date
   const cbTemp=document.getElementById("hor-temp");
   const wrap=document.getElementById("hor-temp-wrap");
@@ -1990,6 +1992,25 @@ function rBlocAlertePointsEnfants(){
     <div style="font-size:14px;font-weight:800;color:#4A1A7A;margin-bottom:6px">👶 Points enfants à charge — fin de droit à anticiper</div>
     ${alertes.map(a=>`<div style="font-size:13px;color:#333;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><span>• <strong>${a.nm}</strong> : ${a.enfant} — fin de droit au <strong>${a.fin}</strong> (perte de 2 points au 1er septembre ${a.anFin})</span><button class="btn bl bsm" data-courrier-enf-dir="${a.mid}|${a.idx}">📄 Courrier</button></div>`).join("")}
   </div>`;
+}
+function rBlocAlerteDemandes(){
+  const {role}=A.s;
+  if(role!=="direction") return "";
+  const attente=(A.s.dem||[]).filter(d=>d.st===ST.ATT).sort((a,b)=>(a.dd||"").localeCompare(b.dd||""));
+  const annul=(A.s.dem||[]).filter(d=>d.annulDemandee&&d.st===ST.APP);
+  if(!attente.length && !annul.length) return "";
+  let html=`<div style="background:#FEF3E2;border:1.5px solid #E8A030;border-radius:12px;padding:12px 16px;margin-bottom:14px">`;
+  if(attente.length){
+    html+=`<div style="font-size:14px;font-weight:800;color:#B8670A;margin-bottom:6px">📥 ${attente.length} demande(s) à valider</div>
+    ${attente.slice(0,6).map(d=>`<div style="font-size:13px;color:#333;margin-bottom:2px">• <strong>${d.nm}</strong> — ${d.ty} · ${fD(d.dd)}${d.df&&d.df!==d.dd?" → "+fD(d.df):""}</div>`).join("")}
+    ${attente.length>6?`<div style="font-size:12px;color:#888;margin-top:2px">… et ${attente.length-6} autre(s)</div>`:""}`;
+  }
+  if(annul.length){
+    html+=`<div style="font-size:14px;font-weight:800;color:#B8670A;margin:${attente.length?"8px":"0"} 0 6px">↩️ ${annul.length} demande(s) d'annulation à traiter</div>
+    ${annul.slice(0,4).map(d=>`<div style="font-size:13px;color:#333;margin-bottom:2px">• <strong>${d.nm}</strong> — ${d.ty} · ${fD(d.dd)}</div>`).join("")}`;
+  }
+  html+=`<button class="btn bp bsm" id="btn-go-dm" style="margin-top:8px">Voir les demandes →</button></div>`;
+  return html;
 }
 function rBlocAlerteFrais(){
   const {role}=A.s;
@@ -2831,6 +2852,7 @@ function rDB(){
       </div>
       ${absFilH}
       ${anticipH}
+      ${rBlocAlerteDemandes()}
       ${rBlocAlerteFrais()}
       ${rBlocAlerteOM()}
       ${rBlocAlerteCommandes()}
@@ -2887,6 +2909,7 @@ function bDB(){
   {const b=document.getElementById("btn-go-cmd");if(b)b.onclick=()=>A.set({vue:"cmd"});}
   {const b=document.getElementById("btn-go-om");if(b)b.onclick=()=>A.set({vue:"om"});}
   {const b=document.getElementById("btn-go-fr");if(b)b.onclick=()=>A.set({vue:"fr"});}
+  {const b=document.getElementById("btn-go-dm");if(b)b.onclick=()=>A.set({vue:"dm"});}
   document.querySelectorAll("[data-courrier-enf]").forEach(b=>{b.onclick=()=>{
     const idx=parseInt(b.dataset.courrierEnf); const u=A.s.user;
     const l=(A.s.eq||[]).map(m=>{ if(m.id!==u.id) return m; const enfants=(m.enfants||[]).map((e,i)=> (i===idx && !e.courrierVu) ? {...e, courrierVu:new Date().toISOString()} : e); return {...m, enfants}; });
@@ -8520,6 +8543,7 @@ function rHRInner(){
     });
     const tousConfirmes=joursActifs.length>0&&joursActifs.every(jk=>{
       const ds=getDJ(hLun,jk);
+      if(estFerie(ds)) return true; // jour férié : aucune saisie attendue
       return heu.find(x=>x.mid===mb.id&&x.dt===ds);
     });
 
@@ -8611,6 +8635,14 @@ function rHRInner(){
       const isVeillee=dc?.veillee||false;
       const hTEffectif=isVeillee?CRENEAUX_SPECIAUX.veillee.duree:hT;
 
+      // Jour férié → banalisé (non attendu), sauf si des heures ont déjà été saisies
+      if(estFerie(ds) && !dc){
+        h+=`<div style="padding:10px 14px;background:#F0E8F5;border-radius:10px;margin-bottom:7px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+          <span style="font-size:14px;color:#7050B0;font-weight:600">${JL[jk]} ${fD(ds)} — 🎌 ${JOURS_FERIES[ds]} <span style="font-weight:400;color:#999">(férié, non travaillé)</span></span>
+          ${isPast?`<button class="btn bl bsm" style="font-size:12px;color:#5C6B3A" data-dpj="${jk}" data-dpd="${ds}">＋ J'ai travaillé</button>`:""}
+        </div>`;
+        return;
+      }
       // Week-end (samedi/dimanche) non travaillé → banalisé, saisie exceptionnelle possible
       if((jk==="sam"||jk==="dim") && !jT && !dc){
         h+=`<div style="padding:10px 14px;background:#F5F1E8;border-radius:10px;margin-bottom:7px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
