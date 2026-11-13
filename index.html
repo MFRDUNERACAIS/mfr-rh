@@ -463,7 +463,7 @@ const K={
 //  FIREBASE — Synchronisation temps réel multi-postes
 // ══════════════════════════════════════════════════════════════════
 // Configuration du projet MFR-Neracais-RH
-const APP_VERSION="v164";
+const APP_VERSION="v172";
 const firebaseConfig = {
   apiKey: "AIzaSyAJNsp-EY6DkT8AWa0824HuZh2Wu2Frce4",
   authDomain: "gestion-rh-mfr-du-neracais.firebaseapp.com",
@@ -520,35 +520,66 @@ async function initFirebase(){
 
 // Écrire une collection dans Firestore
 async function fbSave(key, data){
-  if(!fbReady || !fbDB) return;
+  if(!fbReady || !fbDB) return false;
   try {
     fbSyncEnCours[key] = true;
     const ref = window._fs.doc(fbDB, "mfr-rh", key);
     await window._fs.setDoc(ref, { data: JSON.stringify(data), maj: new Date().toISOString() });
     setTimeout(()=>{ fbSyncEnCours[key] = false; }, 500);
+    return true;
   } catch(e){
     console.error(`Erreur sauvegarde ${key}:`, e);
     fbSyncEnCours[key] = false;
+    return false;
   }
+}
+
+// ── Pièces jointes des procédures : un document Firestore par fichier (limite 1 Mo par document)
+async function fbSaveDoc(id,obj){
+  if(!fbReady||!fbDB) return false;
+  try{ await window._fs.setDoc(window._fs.doc(fbDB,"mfr-rh",id),{data:JSON.stringify(obj),maj:new Date().toISOString()}); return true; }
+  catch(e){ console.error("Erreur sauvegarde "+id,e); return false; }
+}
+async function fbLoadDoc(id){
+  if(!fbReady||!fbDB) return null;
+  try{ const snap=await window._fs.getDoc(window._fs.doc(fbDB,"mfr-rh",id)); return snap.exists()?JSON.parse(snap.data().data):null; }
+  catch(e){ console.error("Erreur chargement "+id,e); return null; }
+}
+async function hydrateProcPJ(){
+  const list=A.s.procedures||[]; let changed=false; const out=[];
+  for(const p of list){
+    if(!(p.pj&&p.pj.length)){out.push(p);continue;}
+    const pj=[];
+    for(const f of p.pj){
+      if(f.data||!f.ref){pj.push(f);continue;}
+      const d=await fbLoadDoc("pj_"+f.ref);
+      if(d&&d.data){pj.push({...f,data:d.data});changed=true;} else pj.push(f);
+    }
+    out.push({...p,pj});
+  }
+  if(changed){ A.s.procedures=out; A.r(); }
 }
 
 // Charger toutes les collections depuis Firestore (au démarrage)
 async function fbLoadAll(){
-  if(!fbReady || !fbDB) return {};
+  if(!fbReady || !fbDB) return {_data:{}, _hadError:true, _okCount:0};
   const result = {};
+  let hadError=false, okCount=0;
   for(const key of FB_COLLECTIONS){
     try {
       const ref = window._fs.doc(fbDB, "mfr-rh", key);
       const snap = await window._fs.getDoc(ref);
+      okCount++;
       if(snap.exists()){
         const d = snap.data();
         result[key] = d.data ? JSON.parse(d.data) : null;
       }
     } catch(e){
       console.error(`Erreur chargement ${key}:`, e);
+      hadError=true;
     }
   }
-  return result;
+  return {_data:result, _hadError:hadError, _okCount:okCount};
 }
 
 // Activer les écouteurs temps réel (mise à jour auto entre postes)
@@ -566,6 +597,12 @@ function fbActiverSync(){
       if(snap.exists()){
         const d = snap.data();
         let data = d.data ? JSON.parse(d.data) : null;
+        // ⚠️ GARDE ANTI-VIDAGE : ne jamais remplacer l'équipe déjà chargée par une liste vide
+        // (protège contre la propagation d'un effacement accidentel entre postes).
+        if(key==="eq" && Array.isArray(data) && data.length===0 && Array.isArray(A.s.eq) && A.s.eq.length>0){
+          console.warn("Mise à jour 'eq' vide ignorée (protection anti-vidage)");
+          return;
+        }
         if(data !== null){
           // Migration fusion des 3èmes : réaffecter 3A / 3B → 3EME (devis + budgets)
           let _migr3=false;
@@ -590,6 +627,7 @@ function fbActiverSync(){
           K.s(key, data);
           // Les horaires modifiés doivent être recompilés après synchro
           if(key==="horaires" && typeof rebuildHOR==="function") rebuildHOR();
+          if(key==="procedures") { setTimeout(()=>hydrateProcPJ(),0); }
           if(key==="formations" && typeof reconcileFormAbs==="function") reconcileFormAbs();
           // Réécrire en base uniquement si une réaffectation a eu lieu
           if(_migr3) A.save(key, data);
@@ -1183,7 +1221,13 @@ function rMdlSA(){
   const {eq}=A.s;
   const actifs=sortEq(eq.filter(m=>!m.archive));
   return mdl("📅 Saisir une absence",`
-    ${fld("Salarié *",sel("sa-mb",actifs.map(m=>({v:m.id,l:`${m.nom} ${m.pr}`})),"","-- Choisir --"))}
+    ${fld("Salarié(s) *",`
+      <div style="border:1.5px solid #DDD5B8;border-radius:8px;padding:8px 10px;max-height:190px;overflow:auto">
+        <label style="display:flex;align-items:center;gap:7px;padding:4px 0;font-weight:700;color:#3A4425;cursor:pointer;border-bottom:1px solid #EEE;margin-bottom:4px">
+          <input type="checkbox" id="sa-all"> ✓ Toute l'équipe
+        </label>
+        ${actifs.map(m=>`<label style="display:flex;align-items:center;gap:7px;padding:3px 0;cursor:pointer"><input type="checkbox" class="sa-mb-cb" value="${m.id}"> ${m.nom} ${m.pr}</label>`).join("")}
+      </div>`,"Cochez une ou plusieurs personnes")}
     ${fld("Type d'absence *",sel("sa-ty",Object.keys(TC).filter(t=>t!=="Présence"&&t!=="Annulée"),"","-- Choisir --"))}
     <div class="g2">
       ${fld("Date de début *",`<input type="date" id="sa-dd" value="${today2()}" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:9px 12px;width:100%">`)}
@@ -1198,18 +1242,20 @@ function rMdlSA(){
 }
 function bMdlSA(){
   document.getElementById("sa-cancel").onclick=()=>A.set({modal:null});
+  // Case « Toute l'équipe » coche/décoche toutes les personnes
+  const allCb=document.getElementById("sa-all");
+  if(allCb) allCb.onchange=()=>{ document.querySelectorAll(".sa-mb-cb").forEach(cb=>{cb.checked=allCb.checked;}); };
   document.getElementById("sa-submit").onclick=()=>{
-    const mid=document.getElementById("sa-mb").value;
+    const mids=Array.from(document.querySelectorAll(".sa-mb-cb")).filter(cb=>cb.checked).map(cb=>cb.value);
     const ty=document.getElementById("sa-ty").value;
     const dd=document.getElementById("sa-dd").value;
     const df=document.getElementById("sa-df").value||dd;
     const co=document.getElementById("sa-co").value;
-    if(!mid||!ty||!dd){alert("Renseignez le salarié, le type et la date.");return;}
-    const mb=A.s.eq.find(m=>m.id===mid);
+    if(!mids.length||!ty||!dd){alert("Cochez au moins une personne, puis renseignez le type et la date.");return;}
     const nj=nJO(dd,df,1);
-    const abs={id:uid(),mid,nm:mb?`${mb.nom} ${mb.pr}`:"",ty,dd,df,nj,co,cr:today2(),saisieDir:true};
-    A.save("abs",[...A.s.abs,abs]);A.set({modal:null});
-    A.toast(`Absence enregistrée ✓`,"success");
+    const nouvelles=mids.map(mid=>{ const mb=A.s.eq.find(m=>m.id===mid); return {id:uid(),mid,nm:mb?`${mb.nom} ${mb.pr}`:"",ty,dd,df,nj,co,cr:today2(),saisieDir:true}; });
+    A.save("abs",[...A.s.abs,...nouvelles]);A.set({modal:null});
+    A.toast(nouvelles.length>1?`${nouvelles.length} absences enregistrées ✓`:"Absence enregistrée ✓","success");
   };
 }
 
@@ -1325,13 +1371,38 @@ function bAB(){
 
 
 function rOM(){
-  const {role,user,eq,ord}=A.s;const vis=(role==="salarie"?ord.filter(o=>o.mid===user?.id):ord).sort((a,b)=>(b.cr||"").localeCompare(a.cr||""));const enOM=ord.filter(o=>o.st===ST.ATT).length;
+  const {role,user,eq,ord}=A.s;
+  const isDir=role==="direction";
+  let base=isDir?ord.slice():ord.filter(o=>o.mid===user?.id);
+  const enOM=ord.filter(o=>o.st===ST.ATT).length;
+  // Filtre par personne (direction)
+  const filtrePers=A.s.omFiltrePers||"tous";
+  if(isDir && filtrePers!=="tous") base=base.filter(o=>o.mid===filtrePers);
+  const carteOM=(o)=>{const ac=o.st===ST.APP?"#2E7D52":o.st===ST.REF?"#C0392B":"#B8670A";return `<div class="card ca" style="border-left-color:${ac}"><div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px"><div style="flex:1"><div style="display:flex;align-items:center;gap:7px;margin-bottom:5px;flex-wrap:wrap">${isDir?`<span style="font-weight:800;font-size:17px;color:#3A4425">${o.nm}</span>`:""}<span class="tsv">${o.sv||""}</span>${sBdg(o.st)}</div><div style="font-size:17px;font-weight:600;margin-bottom:3px">📋 ${o.ob}${o.ty?` <span style="background:#EEF2E6;color:#3A5220;border:1px solid #7A9A4A;border-radius:12px;padding:1px 9px;font-size:12px;font-weight:700;margin-left:6px">${o.ty}</span>`:""}</div><div style="font-size:16px;color:#555">📅 ${fD(o.dd)} · ${o.hd} de ${o.ld}${o.hr?` · retour ${o.hr}`:""}</div><div style="font-size:15px;color:#888;margin-top:2px">🚗 Véhicule : ${o.ve==="oui"?"Oui":"Non"} · ${(o.dests||[]).length} dest.</div>${o.st===ST.APP?`<div style="font-size:15px;color:#2E7D52;margin-top:3px">✅ Validé le ${fD(o.dv||"")}</div>`:""}<div style="font-size:15px;color:#888;margin-top:2px">Soumis le ${fD(o.cr)}</div></div><div style="display:flex;gap:6px;flex-wrap:wrap">${o.st===ST.APP?`<button class="btn bg bsm" data-pom="${o.id}">🖨 PDF</button>`:""} ${isDir&&o.st===ST.ATT?`<button class="btn bs bsm" data-vom="${o.id}" data-voms="${ST.APP}">✓</button><button class="btn bd bsm" data-vom="${o.id}" data-voms="${ST.REF}">✗</button>`:""} ${((isDir&&(o.st===ST.ATT||o.st===ST.APP))||(o.mid===A.s.user?.id&&o.st===ST.ATT))?`<button class="btn bw bsm" data-vom="${o.id}" data-voms="${ST.ANN}">🗑 Annuler</button>`:""} <button class="btn bl bsm" data-dom="${o.id}">Détail</button></div></div></div>`;};
   let lH="";
-  if(!vis.length)lH=`<div class="card" style="text-align:center;padding:40px"><p style="color:#888">Aucun ordre de mission${role==="salarie"?" — cliquez sur '+ Nouvel ordre de mission'":""}</p></div>`;
-  else vis.forEach(o=>{const ac=o.st===ST.APP?"#2E7D52":o.st===ST.REF?"#C0392B":"#B8670A";lH+=`<div class="card ca" style="border-left-color:${ac}"><div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px"><div style="flex:1"><div style="display:flex;align-items:center;gap:7px;margin-bottom:5px;flex-wrap:wrap">${role==="direction"?`<span style="font-weight:800;font-size:17px;color:#3A4425">${o.nm}</span>`:""}<span class="tsv">${o.sv||""}</span>${sBdg(o.st)}</div><div style="font-size:17px;font-weight:600;margin-bottom:3px">📋 ${o.ob}${o.ty?` <span style="background:#EEF2E6;color:#3A5220;border:1px solid #7A9A4A;border-radius:12px;padding:1px 9px;font-size:12px;font-weight:700;margin-left:6px">${o.ty}</span>`:""}</div><div style="font-size:16px;color:#555">📅 ${fD(o.dd)} · ${o.hd} de ${o.ld}${o.hr?` · retour ${o.hr}`:""}</div><div style="font-size:15px;color:#888;margin-top:2px">🚗 Véhicule : ${o.ve==="oui"?"Oui":"Non"} · ${(o.dests||[]).length} dest.</div>${o.st===ST.APP?`<div style="font-size:15px;color:#2E7D52;margin-top:3px">✅ Validé le ${fD(o.dv||"")}</div>`:""}<div style="font-size:15px;color:#888;margin-top:2px">Soumis le ${fD(o.cr)}</div></div><div style="display:flex;gap:6px;flex-wrap:wrap">${o.st===ST.APP?`<button class="btn bg bsm" data-pom="${o.id}">🖨 PDF</button>`:""} ${role==="direction"&&o.st===ST.ATT?`<button class="btn bs bsm" data-vom="${o.id}" data-voms="${ST.APP}">✓</button><button class="btn bd bsm" data-vom="${o.id}" data-voms="${ST.REF}">✗</button>`:""} ${((role==="direction"&&(o.st===ST.ATT||o.st===ST.APP))||(o.mid===A.s.user?.id&&o.st===ST.ATT))?`<button class="btn bw bsm" data-vom="${o.id}" data-voms="${ST.ANN}">🗑 Annuler</button>`:""} <button class="btn bl bsm" data-dom="${o.id}">Détail</button></div></div></div>`;});
-  return`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px"><h2 style="color:#3A4425;font-size:22px;font-weight:800">🗺️ Ordres de mission</h2><div style="display:flex;gap:8px;align-items:center">${role==="direction"&&enOM>0?`<span style="background:#FEF3E2;color:#B8670A;border:1.5px solid #E8A030;border-radius:20px;padding:3px 12px;font-size:15px;font-weight:700">${enOM} en attente</span>`:""} ${role==="salarie"?`<button class="btn bp" id="bnom">+ Nouvel ordre de mission</button>`:""}</div></div>${lH}`;
+  if(!base.length){
+    lH=`<div class="card" style="text-align:center;padding:40px"><p style="color:#888">Aucun ordre de mission${role==="salarie"?" — cliquez sur '+ Nouvel ordre de mission'":""}</p></div>`;
+  } else {
+    // Regroupement par mois (date de mission), sections repliables
+    const MOIS_FR=["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+    const parMois={};
+    base.forEach(o=>{ const ym=(o.dd||o.cr||"").slice(0,7); (parMois[ym]=parMois[ym]||[]).push(o); });
+    const moisTries=Object.keys(parMois).sort().reverse();
+    const ouverts=A.s.omMoisOuverts||[moisTries[0]];
+    lH=moisTries.map(ym=>{
+      const pp=ym.split("-"); let lbl=(MOIS_FR[parseInt(pp[1])-1]||ym)+" "+pp[0]; lbl=lbl.charAt(0).toUpperCase()+lbl.slice(1);
+      const ouvert=ouverts.includes(ym);
+      const cartes=parMois[ym].slice().sort((a,b)=>(b.dd||"").localeCompare(a.dd||"")).map(carteOM).join("");
+      return `<div style="margin-bottom:10px"><button data-om-mois="${ym}" style="width:100%;text-align:left;background:#F0ECDD;border:1px solid #D8CBA0;border-radius:10px;padding:9px 14px;cursor:pointer;font-weight:700;color:#3A4425;font-size:15px;display:flex;justify-content:space-between;align-items:center"><span>${ouvert?"▼":"▶"} ${lbl}</span><span style="font-size:13px;color:#888">${parMois[ym].length}</span></button>${ouvert?`<div style="margin-top:8px">${cartes}</div>`:""}</div>`;
+    }).join("");
+  }
+  // Sélecteur de personne (direction)
+  const selPers = isDir ? `<div style="margin-bottom:12px;max-width:340px">${sel("om-filtre-pers",[{v:"tous",l:"👥 Tout le personnel"},...sortEq(eq.filter(m=>!m.archive)).map(m=>({v:m.id,l:`${m.nom} ${m.pr}`}))],filtrePers)}</div>` : "";
+  return`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px"><h2 style="color:#3A4425;font-size:22px;font-weight:800">🗺️ Ordres de mission</h2><div style="display:flex;gap:8px;align-items:center">${isDir&&enOM>0?`<span style="background:#FEF3E2;color:#B8670A;border:1.5px solid #E8A030;border-radius:20px;padding:3px 12px;font-size:15px;font-weight:700">${enOM} en attente</span>`:""} ${role==="salarie"?`<button class="btn bp" id="bnom">+ Nouvel ordre de mission</button>`:""}</div></div>${selPers}${lH}`;
 }
 function bOM(){
+  {const s=document.getElementById("om-filtre-pers");if(s)s.onchange=()=>{A.s.omFiltrePers=s.value;A.r();};}
+  document.querySelectorAll("[data-om-mois]").forEach(btn=>{btn.onclick=()=>{const ym=btn.dataset.omMois;const cur=A.s.omMoisOuverts||[];A.s.omMoisOuverts=cur.includes(ym)?cur.filter(x=>x!==ym):[...cur,ym];A.r();};});
   const b=document.getElementById("bnom");if(b){omD=[{dest:"",jeu:""}];b.onclick=()=>A.set({modal:{ty:"no"}});}
   document.querySelectorAll("[data-vom]").forEach(b=>{b.onclick=()=>{const id=b.dataset.vom,st=b.dataset.voms;if(st===ST.ANN&&!confirm("Annuler cet ordre de mission ?"))return;const l=A.s.ord.map(o=>o.id===id?{...o,st,dv:today2()}:o);A.save("ord",l);A.toast(`Ordre de mission ${st.toLowerCase()} ✓`,st===ST.APP?"success":st===ST.ANN?"warn":"error");};});
   document.querySelectorAll("[data-pom]").forEach(b=>{b.onclick=()=>{const o=A.s.ord.find(x=>x.id===b.dataset.pom);if(o)pdfOM(o);};});
@@ -1920,6 +1991,18 @@ function rBlocAlertePointsEnfants(){
     ${alertes.map(a=>`<div style="font-size:13px;color:#333;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><span>• <strong>${a.nm}</strong> : ${a.enfant} — fin de droit au <strong>${a.fin}</strong> (perte de 2 points au 1er septembre ${a.anFin})</span><button class="btn bl bsm" data-courrier-enf-dir="${a.mid}|${a.idx}">📄 Courrier</button></div>`).join("")}
   </div>`;
 }
+function rBlocAlerteFrais(){
+  const {role}=A.s;
+  if(role!=="direction") return "";
+  const attente=(A.s.fr||[]).filter(f=>f.st==="En attente Direction"||f.st==="Soumise").sort((a,b)=>(a.cr||"").localeCompare(b.cr||""));
+  if(!attente.length) return "";
+  return `<div style="background:#FDEEF0;border:1.5px solid #C06070;border-radius:12px;padding:12px 16px;margin-bottom:14px">
+    <div style="font-size:14px;font-weight:800;color:#8A2A40;margin-bottom:6px">💶 ${attente.length} fiche(s) de frais à valider</div>
+    ${attente.slice(0,6).map(f=>`<div style="font-size:13px;color:#333;margin-bottom:2px">• <strong>${f.nm}</strong> — ${f.objet||"Frais"} · ${fD(f.cr)}</div>`).join("")}
+    ${attente.length>6?`<div style="font-size:12px;color:#888;margin-top:2px">… et ${attente.length-6} autre(s)</div>`:""}
+    <button class="btn bp bsm" id="btn-go-fr" style="margin-top:8px">Voir les fiches de frais →</button>
+  </div>`;
+}
 function rBlocAlerteOM(){
   const {role}=A.s;
   if(role!=="direction") return "";
@@ -2210,33 +2293,74 @@ function bPROCEDURES(){
   document.querySelectorAll("[data-preview-proc]").forEach(img=>{img.onclick=()=>{const w=window.open("","_blank","width=800,height=600");w.document.write(`<img src="${img.dataset.previewProc}" style="max-width:100%;max-height:100vh">`);w.document.close();};});
 }
 
+async function fichierPJ(f){
+  if(f.type&&f.type.startsWith("image/")&&f.size>300000){
+    const url=URL.createObjectURL(f);
+    const img=await new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=rej;im.src=url;});
+    let w=img.width,hh=img.height; const max=1600;
+    if(Math.max(w,hh)>max){const r=max/Math.max(w,hh);w=Math.round(w*r);hh=Math.round(hh*r);}
+    const cv=document.createElement("canvas");cv.width=w;cv.height=hh;cv.getContext("2d").drawImage(img,0,0,w,hh);
+    URL.revokeObjectURL(url);
+    return {data:cv.toDataURL("image/jpeg",0.8),type:"image/jpeg"};
+  }
+  const data=await new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.readAsDataURL(f);});
+  return {data,type:f.type};
+}
+const PJ_MAX_CHARS=950000; // ≈ 700 Ko de fichier : un document Firestore est limité à 1 Mo
 function bMdlProc(){
   const edit=A.s.modal.data.edit||null;
   let pj=[...(edit?.pj||[])];
-  const renderList=()=>{const list=document.getElementById("proc-pj-list");if(!list)return;list.innerHTML=pj.map((p,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 10px;background:#FAF7F0;border:1px solid #DDD;border-radius:8px;margin-bottom:4px"><span style="flex:1;font-size:13px">${p.name}</span>${p.type&&p.type.startsWith("image/")?`<img src="${p.data}" style="width:38px;height:28px;object-fit:cover;border-radius:3px">`:"<span>📄</span>"}<button class="btn bd bsm" data-rm-pj="${i}">✕</button></div>`).join("");list.querySelectorAll("[data-rm-pj]").forEach(b=>{b.onclick=()=>{pj.splice(parseInt(b.dataset.rmPj),1);renderList();};});};
+  const renderList=()=>{const list=document.getElementById("proc-pj-list");if(!list)return;list.innerHTML=pj.map((p,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 10px;background:#FAF7F0;border:1px solid #DDD;border-radius:8px;margin-bottom:4px"><span style="flex:1;font-size:13px">${p.name}</span>${p.type&&p.type.startsWith("image/")&&p.data?`<img src="${p.data}" style="width:38px;height:28px;object-fit:cover;border-radius:3px">`:"<span>📄</span>"}<button class="btn bd bsm" data-rm-pj="${i}">✕</button></div>`).join("");list.querySelectorAll("[data-rm-pj]").forEach(b=>{b.onclick=()=>{pj.splice(parseInt(b.dataset.rmPj),1);renderList();};});};
   renderList();
   const inp=document.getElementById("proc-pj-input");
   if(inp) inp.onchange=async(e)=>{
     for(const f of Array.from(e.target.files)){
-      if(f.size>5*1024*1024){alert(`${f.name} trop volumineux (max 5 Mo).`);continue;}
-      const data=await new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.readAsDataURL(f);});
-      pj.push({name:f.name,type:f.type,size:f.size,data});
+      try{
+        const r=await fichierPJ(f);
+        if(r.data.length>PJ_MAX_CHARS){alert(`${f.name} est trop volumineux (maximum ≈ 700 Ko). Réduisez le fichier (PDF compressé, photo en plus petite résolution) puis rajoutez-le.`);continue;}
+        pj.push({name:f.name,type:r.type,size:f.size,data:r.data,fresh:true});
+      }catch(err){ alert(`Impossible de lire ${f.name}.`); }
     }
     renderList();
   };
   const c=document.getElementById("proc-cancel");if(c)c.onclick=()=>A.set({modal:null});
   const sub=document.getElementById("proc-submit");
-  if(sub) sub.onclick=()=>{
+  if(sub) sub.onclick=async()=>{
     const titre=document.getElementById("proc-titre").value.trim();
     const corps=document.getElementById("proc-corps").value.trim();
     if(!titre){alert("Indiquez un titre.");return;}
     const u=A.s.user;
+    // 1. Écrire chaque nouveau fichier (ou ancien fichier encore inline) dans son propre document
+    for(const f of pj){
+      if(f.data&&(!f.ref||f.fresh)){
+        if(!f.ref) f.ref=uid();
+        const ok=await fbSaveDoc("pj_"+f.ref,{name:f.name,type:f.type,data:f.data});
+        if(!ok){alert("Enregistrement impossible : vérifiez la connexion internet puis réessayez.");return;}
+        f.fresh=false;
+      }
+    }
+    // 2. Construire la liste en mémoire (avec fichiers) et la liste à sauvegarder (références seulement)
+    const meta=pj=>pj.map(f=>({name:f.name,type:f.type,size:f.size,ref:f.ref}));
+    let memList;
     if(edit){
-      const l=(A.s.procedures||[]).map(x=>x.id===edit.id?{...x,titre,corps,pj,maj:today2()}:x);
-      A.save("procedures",l);
+      memList=(A.s.procedures||[]).map(x=>x.id===edit.id?{...x,titre,corps,pj:[...pj],maj:today2()}:x);
     } else {
-      const np={id:uid(),titre,corps,pj,cree:today2(),maj:today2(),auteur:u?`${u.pr||""} ${u.nom||""}`.trim():"Direction",archivé:false};
-      A.save("procedures",[...(A.s.procedures||[]),np]);
+      const np={id:uid(),titre,corps,pj:[...pj],cree:today2(),maj:today2(),auteur:u?`${u.pr||""} ${u.nom||""}`.trim():"Direction",archivé:false};
+      memList=[...(A.s.procedures||[]),np];
+    }
+    const saveList=memList.map(p=>({...p,pj:meta(p.pj||[])}));
+    // Taille du document Firestore complet (plafond technique 1 Mo → marge de sécurité ~950 000 caractères)
+    const docChars=JSON.stringify(saveList).length;
+    if(docChars>950000){alert("La liste des procédures est trop volumineuse pour être enregistrée dans le cloud (limite technique atteinte). Archivez d'anciennes procédures, ou dites-le moi pour répartir le stockage.");return;}
+    // Enregistrement local immédiat
+    K.s("procedures",saveList); A.s.procedures=memList; A.r();
+    // Enregistrement cloud VÉRIFIÉ : on confirme seulement si Firestore a bien reçu la fiche
+    if(fbReady){
+      const ok=await fbSave("procedures",saveList);
+      if(!ok){
+        A.toast("⚠️ Enregistrement cloud échoué — la fiche est gardée sur cet appareil mais risque de disparaître. Vérifiez la console (F12) et signalez l'erreur.","error");
+        return;
+      }
     }
     A.set({modal:null});A.toast("Procédure enregistrée ✓","success");
   };
@@ -2707,6 +2831,7 @@ function rDB(){
       </div>
       ${absFilH}
       ${anticipH}
+      ${rBlocAlerteFrais()}
       ${rBlocAlerteOM()}
       ${rBlocAlerteCommandes()}
       ${rBlocAlerteLocation()}
@@ -2761,6 +2886,7 @@ function rDB(){
 function bDB(){
   {const b=document.getElementById("btn-go-cmd");if(b)b.onclick=()=>A.set({vue:"cmd"});}
   {const b=document.getElementById("btn-go-om");if(b)b.onclick=()=>A.set({vue:"om"});}
+  {const b=document.getElementById("btn-go-fr");if(b)b.onclick=()=>A.set({vue:"fr"});}
   document.querySelectorAll("[data-courrier-enf]").forEach(b=>{b.onclick=()=>{
     const idx=parseInt(b.dataset.courrierEnf); const u=A.s.user;
     const l=(A.s.eq||[]).map(m=>{ if(m.id!==u.id) return m; const enfants=(m.enfants||[]).map((e,i)=> (i===idx && !e.courrierVu) ? {...e, courrierVu:new Date().toISOString()} : e); return {...m, enfants}; });
@@ -5834,7 +5960,7 @@ function rSYNTHESE(){
         </tr></thead>
         <tbody>
           ${actifs.map(m=>{
-            const quot=m.quotite??100;
+            const quot=(Array.isArray(m.ttHist)&&m.ttHist.length)?ttQuotEnVigueur(m.ttHist):(m.quotite??100); const quotDep=(Array.isArray(m.ttHist)&&m.ttHist.length)?ttDateEnVigueur(m.ttHist):"";
             const objectif=Math.round(OBJ_TEMPS_PLEIN*quot/100);
             // Réalisé = heures déclarées et approuvées cette année scolaire
             const hDecl=(heu||[]).filter(x=>x.mid===m.id&&x.dt>=dateDebStr&&x.dt<=dateFinStr&&x.st==="Approuvée").reduce((s,x)=>s+heuresReelles(x),0);
@@ -5845,7 +5971,7 @@ function rSYNTHESE(){
             const barColor=pct>=100?"#C0392B":pct>=90?"#B8670A":"#5C6B3A";
             return`<tr style="border-bottom:1px solid #EDE8D8">
               <td style="padding:6px 12px;font-weight:600">${m.nom} ${m.pr}${veil?`<span style="display:block;font-size:11px;font-weight:400;color:#7050B0">🌙 Veilleur (équiv. nuit)</span>`:""}</td>
-              <td style="padding:6px 8px;text-align:center;color:${quot<100?"#B8670A":"#555"}">${quot}%</td>
+              <td style="padding:6px 8px;text-align:center;color:${quot<100?"#B8670A":"#555"}">${quot}%${quotDep?`<span style="display:block;font-size:10px;font-weight:400;color:#999">depuis le ${fD(quotDep)}</span>`:""}</td>
               <td style="padding:6px 8px;text-align:right;color:#555">${fH(objectif)}</td>
               <td style="padding:6px 8px;text-align:right;font-weight:700;color:#1A6B9A">${hDecl>0?fH(hDecl):"—"}</td>
               <td style="padding:6px 8px;text-align:right;font-weight:600;color:#5C6B3A">${hDecl>0?fH(reste):"—"}</td>
@@ -7686,13 +7812,68 @@ function bEQ(){
     };
   });
 }
+let _ttLignes=[];
+function ttQuot(heures){ const q=Math.round((parseFloat(heures)||0)/35*100); return Math.max(0,Math.min(100,q)); }
+function ttDateEnVigueur(lignes){
+  const auj=today2();
+  const enVig=(lignes||[]).filter(l=>(parseFloat(l.heures)||0)>0 && (l.dateEffet||"")<=auj).sort((a,b)=>(b.dateEffet||"").localeCompare(a.dateEffet||""));
+  return enVig.length?(enVig[0].dateEffet||""):"";
+}
+function ttQuotEnVigueur(lignes){
+  const auj=today2();
+  const enVig=(lignes||[]).filter(l=>(parseFloat(l.heures)||0)>0 && (l.dateEffet||"")<=auj).sort((a,b)=>(b.dateEffet||"").localeCompare(a.dateEffet||""));
+  if(enVig.length) return ttQuot(enVig[0].heures);
+  const toutes=(lignes||[]).filter(l=>(parseFloat(l.heures)||0)>0).sort((a,b)=>(b.dateEffet||"").localeCompare(a.dateEffet||""));
+  return toutes.length?ttQuot(toutes[0].heures):100;
+}
+
 function rMdlSM(){const i=A.s.modal.data?.init||{};return mdl(i.id?"Modifier":"Ajouter un membre",`<div class="g2">${fld("Prénom *",`<input id="mbpr" value="${i.pr||""}">`)} ${fld("Nom *",`<input id="mbno" value="${i.nom||""}">`)}</div>${fld("Service *",sel("mbsv",SVC,i.sv||"","-- Choisir --"))}${fld("Poste",`<input id="mbpo" value="${i.po||""}" placeholder="ex: Formateur…">`)}${fld("Email",`<input type="email" id="mbem" value="${i.em||""}">`)}${fld("Date d'entrée",`<input id="mbde" value="${i.de||""}" placeholder="ex: 01/09/2025">`)}${fld("Date de naissance",`<input type="date" id="mbnais" value="${normNaissance(i.naissance||"")}">`,"pour les anniversaires sur l'accueil")}
     ${fld("Mot de passe",`<input type="password" id="mbpw" placeholder="${i.id?"Laisser vide pour ne pas changer":"Définir un mot de passe"}">`,i.id?"Laisser vide = mot de passe inchangé":"")}<div class="dvd"></div><div class="g2">${fld("Congés payés acquis par mois (j)",`<input type="number" id="mbcpmens" value="${i.cpMensuel??2.5}" min="0" step="0.5" title="Jours de congés payés crédités automatiquement chaque 1er du mois">`,"2,5j standard · 5j direction · crédité en fin de mois") } ${fld("Solde congés N-1 (à saisir)",`<input type="number" id="mbcpn1" value="${cpN1V(i)}" min="0" step="0.5">`,"Report de l'année précédente")}${fld("Congés en cours d'acquisition",`<input type="number" id="mbcpacq" value="${cpAcqV(i)}" min="0" step="0.5">`,"Alimenté en fin de mois — ajustable si besoin")}${fld("Solde heures sup. N-1 (h)",`<input type="number" id="mbhsn1" value="${i.hsN1||0}" step="0.5">`,"Report des heures supplémentaires de l'année précédente")} ${fld("Plafond Télétravail",`<div style="padding:9px 12px;background:#F4F1E8;border-radius:8px;font-size:13px;color:#5C6B3A"><strong>160 h / an</strong> — identique pour tous (1er sept → 31 août)</div>`)}</div>
-    <div class="g2">${fld("Quotité temps de travail (%)",`<input type="number" id="mbquot" value="${i.quotite??100}" min="0" max="100" step="1" title="100% = temps plein (1599h/an) · 80% = 1279h...">`,"100% = 1599h/an · sert au tableau d'annualisation")}${fld("Taux horaire brut (€/h)",`<input type="number" id="mb-taux" value="${i.tauxHoraire??25}" min="0" step="0.01" placeholder="ex: 25.00">`,"sert au calcul du coût de main d'œuvre (entretien) — confidentiel")}</div><div class="dvd"></div>${fld("Enfants à charge (points enfants — 5 max)",`${[0,1,2,3,4].map(ie=>{const e=(i.enfants||[])[ie]||{};return `<div style="display:flex;gap:6px;margin-bottom:5px"><input id="mb-enf-pr-${ie}" value="${e.prenom||""}" placeholder="Prénom enfant ${ie+1}" style="flex:1;border:1.5px solid #DDD5B8;border-radius:8px;padding:7px 10px"><input type="date" id="mb-enf-dt-${ie}" value="${e.naissance||""}" style="width:150px;border:1.5px solid #DDD5B8;border-radius:8px;padding:6px 8px"></div>`;}).join("")}`,"Prénom + mois/année (MM/AAAA) par enfant. À ses 21 ans, les 2 points s'éteignent — la direction est alertée et un courrier part sur le compte du salarié.")}<div class="dvd"></div><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn bl" id="smcn">Annuler</button><button class="btn bp" id="smsb">${i.id?"Mettre à jour":"Ajouter"}</button></div>`);}
+    <div class="g2"><input type="hidden" id="mbquot" value="${i.quotite??100}"><div id="tt-encart" style="grid-column:1/-1"></div>${fld("Taux horaire brut (€/h)",`<input type="number" id="mb-taux" value="${i.tauxHoraire??25}" min="0" step="0.01" placeholder="ex: 25.00">`,"sert au calcul du coût de main d'œuvre (entretien) — confidentiel")}</div><div class="dvd"></div>${fld("Enfants à charge (points enfants — 5 max)",`${[0,1,2,3,4].map(ie=>{const e=(i.enfants||[])[ie]||{};return `<div style="display:flex;gap:6px;margin-bottom:5px"><input id="mb-enf-pr-${ie}" value="${e.prenom||""}" placeholder="Prénom enfant ${ie+1}" style="flex:1;border:1.5px solid #DDD5B8;border-radius:8px;padding:7px 10px"><input type="date" id="mb-enf-dt-${ie}" value="${e.naissance||""}" style="width:150px;border:1.5px solid #DDD5B8;border-radius:8px;padding:6px 8px"></div>`;}).join("")}`,"Prénom + mois/année (MM/AAAA) par enfant. À ses 21 ans, les 2 points s'éteignent — la direction est alertée et un courrier part sur le compte du salarié.")}<div class="dvd"></div><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn bl" id="smcn">Annuler</button><button class="btn bp" id="smsb">${i.id?"Mettre à jour":"Ajouter"}</button></div>`);}
 function bMdlSM(){
   document.getElementById("smcn").onclick=()=>A.set({modal:null});
+  // ─── Encart historique du temps de travail (calcul auto de la quotité) ───
+  let _ttSync=null;
+  {
+    const _init=A.s.modal.data?.init||{};
+    _ttLignes = (Array.isArray(_init.ttHist)&&_init.ttHist.length)
+      ? _init.ttHist.map(l=>({...l}))
+      : [{dateEffet:_init.de||"", heures:Math.round((_init.quotite??100)/100*35*10)/10, motif:"Situation initiale"}];
+    const syncTt=()=>{
+      const rows=document.querySelectorAll("#tt-encart .tt-row");
+      if(rows.length){
+        _ttLignes=Array.from(rows).map(r=>({dateEffet:r.querySelector(".tt-date").value,heures:parseFloat(r.querySelector(".tt-h").value)||0,motif:r.querySelector(".tt-motif").value}));
+      }
+      const q=ttQuotEnVigueur(_ttLignes);
+      const hid=document.getElementById("mbquot"); if(hid) hid.value=q;
+      const disp=document.getElementById("tt-quot-disp"); if(disp) disp.innerHTML=`Quotité en vigueur : <strong>${q}%</strong> · objectif annuel <strong>${fH(1599*q/100)}</strong>`;
+    };
+    _ttSync=syncTt;
+    const renderTt=()=>{
+      const c=document.getElementById("tt-encart"); if(!c) return;
+      const lignesH=_ttLignes.map((l,idx)=>`<div class="tt-row" style="display:flex;gap:6px;margin-bottom:5px;align-items:center;flex-wrap:wrap">
+        <input type="date" class="tt-date" value="${l.dateEffet||""}" style="border:1px solid #DDD5B8;border-radius:6px;padding:5px 7px">
+        <input type="number" class="tt-h" value="${l.heures||""}" min="0" max="48" step="0.5" placeholder="h/sem" style="width:78px;border:1px solid #DDD5B8;border-radius:6px;padding:5px 7px"><span class="tt-pct" style="font-size:12px;color:#888;min-width:62px">${ttQuot(l.heures)}% (/35h)</span>
+        <input class="tt-motif" value="${(l.motif||"").replace(/"/g,'&quot;')}" placeholder="Motif (avenant, passage 80%…)" style="flex:1;min-width:120px;border:1px solid #DDD5B8;border-radius:6px;padding:5px 7px">
+        <button type="button" class="btn bd bsm tt-del" data-i="${idx}">✕</button>
+      </div>`).join("");
+      c.innerHTML=`<div style="background:#F4F1E8;border-radius:8px;padding:10px 12px;margin-bottom:4px">
+        <div style="font-weight:700;color:#3A4425;font-size:14px;margin-bottom:4px">⏱ Temps de travail (historique)</div>
+        <div style="font-size:12px;color:#888;margin-bottom:8px">Une ligne par changement : date d'effet + heures hebdomadaires + motif. La quotité est calculée sur une base de 35 h ; la ligne la plus récente (déjà en vigueur) fait foi.</div>
+        ${lignesH}
+        <button type="button" class="btn bl bsm" id="tt-add">+ Ajouter une ligne</button>
+        <div id="tt-quot-disp" style="margin-top:8px;font-size:14px;color:#1A6B9A"></div>
+      </div>`;
+      c.querySelectorAll(".tt-del").forEach(b=>b.onclick=()=>{ syncTt(); _ttLignes.splice(parseInt(b.dataset.i),1); if(!_ttLignes.length)_ttLignes.push({dateEffet:"",heures:35,motif:""}); renderTt(); });
+      c.querySelectorAll(".tt-h,.tt-date").forEach(inp=>inp.oninput=syncTt);
+      const add=document.getElementById("tt-add"); if(add) add.onclick=()=>{ syncTt(); _ttLignes.push({dateEffet:today2(),heures:35,motif:""}); renderTt(); };
+      syncTt();
+    };
+    renderTt();
+  }
   document.getElementById("smsb").onclick=()=>{
     const i=A.s.modal.data?.init||{};
+    if(_ttSync)_ttSync(); // fige la quotité calculée (mbquot) depuis l'historique du temps de travail
     const pr=document.getElementById("mbpr").value,nom=document.getElementById("mbno").value,sv=document.getElementById("mbsv").value;
     if(!pr||!nom||!sv)return;
     const newpw=document.getElementById("mbpw").value.trim();
@@ -7720,7 +7901,7 @@ function bMdlSM(){
         ttp:TT_PLAFOND_ANNUEL,
         ttu:i.ttu||0,
         pwhash:pwhash||i.pwhash||"",
-        cpMensuel:parseFloat(document.getElementById("mbcpmens")?.value??2.5),quotite:parseFloat(document.getElementById("mbquot")?.value)||100,dernVisite,dateEssai,dateFinContrat,typeContrat,enfants,tauxHoraire:parseFloat(document.getElementById("mb-taux")?.value)||i.tauxHoraire||25
+        cpMensuel:parseFloat(document.getElementById("mbcpmens")?.value??2.5),quotite:parseFloat(document.getElementById("mbquot")?.value)||100,ttHist:(_ttLignes||[]).filter(l=>(parseFloat(l.heures)||0)>0||l.dateEffet),dernVisite,dateEssai,dateFinContrat,typeContrat,enfants,tauxHoraire:parseFloat(document.getElementById("mb-taux")?.value)||i.tauxHoraire||25
       };
       const l=i.id?A.s.eq.map(m=>m.id===i.id?e:m):[...A.s.eq,e];
       A.save("eq",l);A.set({modal:null});
@@ -7899,21 +8080,29 @@ const A={
       return;
     }
     // Charger les données depuis Firebase
-    const fbData=await fbLoadAll();
-    let firstInit=true;
+    const load=await fbLoadAll();
+    const fbData=load._data||{};
+    // Le chargement est-il FIABLE ? (toutes les clés sondées sans erreur réseau)
+    const chargementFiable = !load._hadError && load._okCount===FB_COLLECTIONS.length;
+    let existeDansFB=false;
     FB_COLLECTIONS.forEach(key=>{
       if(fbData[key]!==undefined&&fbData[key]!==null){
-        firstInit=false;
+        existeDansFB=true;
         A.s[key]=fbData[key];
         K.s(key,fbData[key]);
       }
     });
-    // Si Firebase est vide (toute première utilisation), y pousser les données locales
-    if(firstInit){
-      console.log("Firebase vide — initialisation avec les données locales");
+    // ⚠️ SÉCURITÉ ANTI-ÉCRASEMENT : on ne pousse les données locales QUE si l'on est CERTAIN
+    // que Firebase est réellement vide (chargement fiable + aucune donnée distante).
+    // En cas d'erreur réseau, on ne pousse RIEN → évite d'écraser les vraies données par EQ0 par défaut.
+    if(!existeDansFB && chargementFiable){
+      console.log("Firebase confirmé vide — initialisation avec les données locales");
       for(const key of FB_COLLECTIONS){
         if(A.s[key]&&A.s[key].length>0){ await fbSave(key,A.s[key]); }
       }
+    } else if(!chargementFiable){
+      console.warn("Chargement cloud incomplet — aucune écriture automatique (protection des données)");
+      A.toast("⚠ Chargement cloud incomplet — vos données sont protégées. Rechargez la page (Ctrl+Maj+R).","warn");
     }
     rechargerCPAnnuels();
     // Activer la synchronisation temps réel
@@ -8304,6 +8493,13 @@ function blocCumulAnnee(mid){
   </div>`;
 }
 
+function objectifAnnuel(m){ const q=(m&&Array.isArray(m.ttHist)&&m.ttHist.length)?ttQuotEnVigueur(m.ttHist):((m&&m.quotite!=null&&!isNaN(m.quotite))?m.quotite:100); return 1599*q/100; }
+function heureCompteeAn(x){ const base=heuresReelles(x); const estDim=new Date((x.dt||"")+"T12:00:00").getDay()===0; return estDim?base*1.5:base; }
+function cumulAnnuelReel(mid){
+  const debut=debutPeriodeRef(), auj=today2();
+  return (A.s.heu||[]).filter(x=>x.mid===mid && x.dt>=debut && x.dt<=auj).reduce((s,x)=>s+heureCompteeAn(x),0);
+}
+
 function rHRInner(){
   const {role,user,eq,heu}=A.s;
   const estDirU=(role==="direction"||user?.id==="mfr001");
@@ -8317,11 +8513,10 @@ function rHRInner(){
 
     
     const sansHoraire=!prof||JK.every(jk=>!prof.j[jk]&&!(prof.jm&&prof.jm[jk]));
+    // Aucune journée n'est bloquée : tous les jours (passés ou aujourd'hui) sont saisissables.
     const joursActifs=JK.filter(jk=>{
       const ds=getDJ(hLun,jk);
-      // Si pas d'horaire théorique (ex: direction), tous les jours ouvrés lun-ven sont saisissables
-      const jourOuvre=sansHoraire?(jk!=="sam"&&jk!=="dim"):(prof?.j[jk]||(prof?.jm&&prof.jm[jk]));
-      return(jourOuvre||jk==="sam"||jk==="dim"||heu.find(x=>x.mid===mb.id&&x.dt===ds))&&ds<=today2();
+      return ds<=today2();
     });
     const tousConfirmes=joursActifs.length>0&&joursActifs.every(jk=>{
       const ds=getDJ(hLun,jk);
@@ -8373,11 +8568,16 @@ function rHRInner(){
     }
 
     
-    h+=`<div style="display:grid;grid-template-columns:repeat(${canSvcSpecial?4:3},1fr);gap:8px;margin-bottom:14px">
-      <div class="sc"><div class="lbl">Théorique</div><div class="val" style="color:#5C6B3A;font-size:18px">${fH(totalTheo)}</div></div>
-      <div class="sc"><div class="lbl">Déclaré</div><div class="val" style="color:#1A6B9A;font-size:18px">${fH(totalReel)}</div></div>
-      <div class="sc"><div class="lbl">Récup générée</div><div class="val" style="color:${recupHebdo<0?'#C0392B':'#5C6B3A'};font-size:18px">${recupHebdo>=0?'+':'−'}${fH(Math.abs(recupHebdo))}</div></div>
-      ${canSvcSpecial?`<div class="sc"><div class="lbl">Services spéciaux</div><div class="val" style="color:#6A2A8A;font-size:18px">${fH(totalSvc)}h</div></div>`:""}
+    // Balance ANNUELLE (annualisation 1599 h × quotité) — remplace le théorique hebdomadaire
+    const _objAn=objectifAnnuel(mb), _realAn=cumulAnnuelReel(mb.id), _resteAn=_objAn-_realAn;
+    h+=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px">
+      <div class="sc"><div class="lbl">Réalisé (année)</div><div class="val" style="color:#1A6B9A;font-size:18px">${fH(_realAn)}</div></div>
+      <div class="sc"><div class="lbl">Objectif annuel</div><div class="val" style="color:#5C6B3A;font-size:18px">${fH(_objAn)}</div></div>
+      <div class="sc"><div class="lbl">${_resteAn>=0?"Reste à faire":"Dépassement"}</div><div class="val" style="color:${_resteAn>=0?'#8A6D3B':'#2E7D52'};font-size:18px">${_resteAn>=0?'':'+'}${fH(Math.abs(_resteAn))}</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(${canSvcSpecial?2:1},1fr);gap:8px;margin-bottom:14px">
+      <div class="sc"><div class="lbl">Déclaré cette semaine</div><div class="val" style="color:#1A6B9A;font-size:16px">${fH(totalReel)}</div></div>
+      ${canSvcSpecial?`<div class="sc"><div class="lbl">Services spéciaux</div><div class="val" style="color:#6A2A8A;font-size:16px">${fH(totalSvc)}h</div></div>`:""}
     </div>`;
 
     
