@@ -18,7 +18,8 @@ button{cursor:pointer}
 .hdr-s{font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.8px}
 .nav{position:fixed;top:0;left:0;bottom:0;width:180px;background:#3A4425;display:flex;flex-direction:column;box-shadow:4px 0 20px rgba(0,0,0,.15);z-index:100;overflow-y:auto;padding-top:8px}
 .nb{width:100%;border:none;background:none;padding:14px 16px;cursor:pointer;display:flex;flex-direction:row;align-items:center;gap:12px;position:relative;text-align:left;border-radius:0}
-.nb.nb-ic{font-size:22px;min-width:26px;text-align:center}.nb-lb{font-size:15px;font-weight:600;color:#FAF7F0;letter-spacing:.2px}.nb.act .nb-lb{color:#C8A84B}.nb-bdg{position:absolute;top:8px;right:10px;background:#C0392B;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:700}.nb.act{background:rgba(200,168,75,.25);border-left:4px solid #C8A84B}.nb:hover{background:rgba(255,255,255,.08)}.on{border-top:2.5px solid #5C6B3A}
+.nb.nb-ic{font-size:22px;min-width:26px;text-align:center}.nb-lb{font-size:15px;font-weight:600;color:#FAF7F0;letter-spacing:.2px}.nb.act .nb-lb{color:#C8A84B}@keyframes notifpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.nb-bdg{position:absolute;top:8px;right:10px;background:#C0392B;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:700}.nb.act{background:rgba(200,168,75,.25);border-left:4px solid #C8A84B}.nb:hover{background:rgba(255,255,255,.08)}.on{border-top:2.5px solid #5C6B3A}
 .nb .ic{font-size:22px;min-width:26px;text-align:center}
 .nb .lb{font-size:15px;font-weight:600;color:#FAF7F0}
 .nb.on .lb{color:#C8A84B}
@@ -463,7 +464,7 @@ const K={
 //  FIREBASE — Synchronisation temps réel multi-postes
 // ══════════════════════════════════════════════════════════════════
 // Configuration du projet MFR-Neracais-RH
-const APP_VERSION="v174";
+const APP_VERSION="v177";
 const firebaseConfig = {
   apiKey: "AIzaSyAJNsp-EY6DkT8AWa0824HuZh2Wu2Frce4",
   authDomain: "gestion-rh-mfr-du-neracais.firebaseapp.com",
@@ -826,7 +827,9 @@ function rDM(){
   const vis=isSal
     ? dem.filter(d=>d.mid===user?.id)
     : dem;
-  const sorted=vis.slice().sort((a,b)=>(b.cr||"").localeCompare(a.cr||""));
+  const fSal=isDir?(A.s.fSal_dm||""):"";
+  const visF=fSal?vis.filter(d=>d.mid===fSal):vis;
+  const sorted=visF.slice().sort((a,b)=>(b.cr||"").localeCompare(a.cr||""));
 
   // Compteurs
   const enAtt=dem.filter(d=>d.st===ST.ATT&&(isSal?d.mid===user?.id:true)).length;
@@ -910,7 +913,7 @@ function rDM(){
     <h2 style="color:#3A4425;font-size:22px;font-weight:800">🗓 Congés & absences</h2>
     <div style="display:flex;gap:8px;flex-wrap:wrap">${isDir?`<button class="btn bp" id="btn-new-abs">+ Saisir une absence</button>`:""}<button class="btn ${isDir?"bl":"bp"}" id="btn-new-dem">+ Nouvelle demande</button></div>
   </div>
-  ${tabsH}${kpiH}${listeH}`;
+  ${tabsH}${kpiH}${isDir?barreFiltreSalarie("dm",vis):""}${listeH}`;
 }
 
 function bDM(){
@@ -1766,7 +1769,7 @@ function rMdlHorEdit(){
     return `<div style="padding:6px 0;border-bottom:1px solid #F0ECDD">
       <div style="display:flex;align-items:center;gap:8px">
         <span style="width:80px;font-size:13px;font-weight:700;color:#3A4425">${JL[jk]}</span>
-        ${sel(`hor-${jk}`, [["journee","Journée entière"],["matin","Matin seulement"],["aprem","Après-midi seulement"],["off","Non travaillé"]], r.mode)}
+        ${sel(`hor-${jk}`, [{v:"journee",l:"🟩 Travaillé toute la journée"},{v:"matin",l:"🌅 Matin seulement"},{v:"aprem",l:"🌇 Après-midi seulement"},{v:"off",l:"⬜ Non travaillé (jour non salarié)"}], r.mode)}
       </div>
       <div class="hor-heures" data-jk="${jk}" style="display:none;gap:6px;margin:6px 0 0 88px;flex-wrap:wrap;align-items:center;font-size:12px;color:#666">
         <span>Matin</span><input type="time" id="hor-${jk}-dm" value="${dm}" style="border:1px solid #DDD;border-radius:6px;padding:3px 6px">
@@ -1929,16 +1932,22 @@ function blocCourriersPE(du,au){
   return out;
 }
 
-function courrierPointsEnfants(mid, enfIdx){
+function courrierPointsEnfants(mid, enfIdx, editable){
   const I=MFR_IDENT;
   const m=(A.s.eq||[]).find(x=>x.id===mid); if(!m){A.toast("Salarié introuvable","error");return;}
   const enf=(m.enfants||[])[enfIdx]; if(!enf||!enf.naissance){A.toast("Enfant introuvable","error");return;}
-  const dateStr=fD(date21(enf.naissance)); const b21=date21(enf.naissance); const finStr=fD(finDroitPE(enf.naissance)); const bp=(b21||"").split("-"); const moisAnnivNom=(bp.length>=2)?(MNS[parseInt(bp[1])-1]+" "+bp[0]):""; const moisAnnivStr="1er "+moisAnnivNom;
   const w=window.open("","_blank");
-  w.document.write(`<html><head><meta charset="UTF-8"><title>Courrier — Points enfant à charge</title>${cssImpression()}</head><body>
-    <div style="text-align:right;margin-bottom:16px"><button onclick="window.print()" style="background:#3A4425;color:#fff;border:none;padding:9px 18px;border-radius:8px;font-size:14px;cursor:pointer">🖨 Imprimer / Enregistrer en PDF</button></div>
+  const barre=`<div class="no-print" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+    ${editable?`<span style="font-size:13px;color:#8A5A10;background:#FFF8E6;border:1px solid #E8CF9A;border-radius:8px;padding:6px 12px">✏️ Vous pouvez modifier directement le texte ci-dessous avant d'imprimer.</span>`:"<span></span>"}
+    <button onclick="window.print()" style="background:#3A4425;color:#fff;border:none;padding:9px 18px;border-radius:8px;font-size:14px;cursor:pointer">🖨 Imprimer / Enregistrer en PDF</button>
+  </div>`;
+  const corps=editable
+    ? `<div contenteditable="true" class="zone-edit" style="outline:1.5px dashed #C8A84B;outline-offset:8px;border-radius:4px;padding:2px">${corpsCourrierPE(m,enf)}</div>`
+    : corpsCourrierPE(m,enf);
+  w.document.write(`<html><head><meta charset="UTF-8"><title>Courrier — Points enfant à charge</title>${cssImpression()}<style>@media print{.no-print{display:none!important}.zone-edit{outline:none!important}}</style></head><body>
+    ${barre}
     ${entete(I.raisonSociale,"",`${I.adresse} · ${I.cp} ${I.ville}`)}
-    ${corpsCourrierPE(m,enf)}
+    ${corps}
     </body></html>`);
   w.document.close();
 }
@@ -1990,7 +1999,7 @@ function rBlocAlertePointsEnfants(){
   if(!alertes.length) return "";
   return `<div style="background:#F0E8F5;border:1.5px solid #6A2A8A;border-radius:12px;padding:12px 16px;margin-bottom:14px">
     <div style="font-size:14px;font-weight:800;color:#4A1A7A;margin-bottom:6px">👶 Points enfants à charge — fin de droit à anticiper</div>
-    ${alertes.map(a=>`<div style="font-size:13px;color:#333;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><span>• <strong>${a.nm}</strong> : ${a.enfant} — fin de droit au <strong>${a.fin}</strong> (perte de 2 points au 1er septembre ${a.anFin})</span><button class="btn bl bsm" data-courrier-enf-dir="${a.mid}|${a.idx}">📄 Courrier</button></div>`).join("")}
+    ${alertes.map(a=>`<div style="font-size:13px;color:#333;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><span>• <strong>${a.nm}</strong> : ${a.enfant} — fin de droit au <strong>${a.fin}</strong> (perte de 2 points au 1er septembre ${a.anFin})</span><button class="btn bl bsm" data-courrier-enf-dir="${a.mid}|${a.idx}">📄 Courrier (modifiable)</button></div>`).join("")}
   </div>`;
 }
 function rBlocAlerteDemandes(){
@@ -2095,7 +2104,7 @@ function encartCabinetSocial(du,au){
   // 1. Absences hors télétravail sur la période
   const abs=(A.s.abs||[]).filter(a=>{
     const dd=a.dd, df=a.df||a.dd;
-    return a.ty!=="Annulée" && a.ty!=="Télétravail" && dd<=au && df>=du;
+    return a.ty!=="Annulée" && a.ty!=="Télétravail" && a.ty!=="Formation" && dd<=au && df>=du;
   });
   const byId={};
   abs.forEach(a=>{ const k=a.mid||a.nm; (byId[k]=byId[k]||{nom:a.nm||nomDe(a.mid),lignes:[]}); byId[k].lignes.push(a); });
@@ -2106,7 +2115,7 @@ function encartCabinetSocial(du,au){
   else {
     absHTML=`<table style="width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:4px">
       <thead><tr style="background:#EDE4CF"><th style="text-align:left;padding:5px 8px">Salarié</th><th style="text-align:left;padding:5px 8px">Motif</th><th style="text-align:left;padding:5px 8px">Du</th><th style="text-align:left;padding:5px 8px">Au</th><th style="text-align:right;padding:5px 8px">Jours</th></tr></thead>
-      <tbody>${cles.map(k=>{const p=byId[k];const lignes=p.lignes.slice().sort((a,b)=>a.dd.localeCompare(b.dd));return lignes.map((a,i)=>`<tr style="border-bottom:1px solid #eee"><td style="padding:4px 8px;font-weight:${i===0?"700":"400"}">${i===0?p.nom:""}</td><td style="padding:4px 8px">${a.ty}</td><td style="padding:4px 8px">${fD(a.dd)}</td><td style="padding:4px 8px">${fD(a.df||a.dd)}</td><td style="padding:4px 8px;text-align:right">${a.nj||1}</td></tr>`).join("");}).join("")}
+      <tbody>${cles.map(k=>{const p=byId[k];const lignes=p.lignes.slice().sort((a,b)=>(a.dd||"").localeCompare(b.dd||""));return lignes.map((a,i)=>`<tr style="border-bottom:1px solid #eee"><td style="padding:4px 8px;font-weight:${i===0?"700":"400"}">${i===0?p.nom:""}</td><td style="padding:4px 8px">${a.ty}</td><td style="padding:4px 8px">${fD(a.dd)}</td><td style="padding:4px 8px">${fD(a.df||a.dd)}</td><td style="padding:4px 8px;text-align:right">${a.nj||1}</td></tr>`).join("");}).join("")}
       <tr style="background:#F5F1E6;font-weight:700"><td colspan="4" style="padding:5px 8px;text-align:right">Total jours d'absence</td><td style="padding:5px 8px;text-align:right">${totJ}</td></tr></tbody>
     </table>`;
   }
@@ -2132,7 +2141,7 @@ function encartCabinetSocial(du,au){
   return `<div style="page-break-before:always;border:2px solid #3A4425;border-radius:10px;padding:16px 18px;margin-top:20px">
     <h2 style="color:#3A4425;font-size:16px;margin:0 0 4px">📋 Cabinet social — éléments à transmettre</h2>
     <p style="color:#888;font-size:12px;margin:0 0 14px">${I.raisonSociale} · Période du ${fD(du)} au ${fD(au)} · Édité le ${fD(today2())}</p>
-    <h3 style="color:#3A4425;font-size:13.5px;margin:10px 0 6px;border-bottom:1px solid #C8A84B;padding-bottom:2px">1. Absences (hors télétravail)</h3>
+    <h3 style="color:#3A4425;font-size:13.5px;margin:10px 0 6px;border-bottom:1px solid #C8A84B;padding-bottom:2px">1. Absences (hors télétravail et formation)</h3>
     ${absHTML}
     <h3 style="color:#3A4425;font-size:13.5px;margin:16px 0 6px;border-bottom:1px solid #C8A84B;padding-bottom:2px">2. Fin de droit « points enfant à charge »</h3>
     ${notifHTML}
@@ -2144,21 +2153,22 @@ function pdfAbsences(du,au){
   // Une absence est retenue si elle chevauche la période
   const abs=(A.s.abs||[]).filter(a=>{
     const dd=a.dd, df=a.df||a.dd;
-    return a.ty!=="Annulée" && dd<=au && df>=du;
+    // Formation et télétravail = temps travaillé → exclus du relevé d'absences
+    return a.ty!=="Annulée" && a.ty!=="Formation" && a.ty!=="Télétravail" && dd<=au && df>=du;
   });
-  // Grouper par personne
+  // Grouper par personne (ordre alphabétique), absences classées par date à l'intérieur
   const byId={};
   abs.forEach(a=>{ const k=a.mid||a.nm; (byId[k]=byId[k]||{nom:a.nm||nomDe(a.mid),lignes:[]}); byId[k].lignes.push(a); });
   const cles=Object.keys(byId).sort((x,y)=>(byId[x].nom||"").localeCompare(byId[y].nom||""));
   const totalAbs=abs.length;
   const blocs=cles.map(k=>{
-    const p=byId[k]; const lignes=p.lignes.slice().sort((a,b)=>a.dd.localeCompare(b.dd));
+    const p=byId[k]; const lignes=p.lignes.slice().sort((a,b)=>(a.dd||"").localeCompare(b.dd||""));
     const totJ=lignes.reduce((s,a)=>s+(a.nj||1),0);
     return `<div style="margin-bottom:14px;break-inside:avoid">
       <div style="font-weight:700;color:#3A4425;font-size:14px;border-bottom:1.5px solid #C8A84B;padding-bottom:3px;margin-bottom:6px">${p.nom} <span style="font-weight:400;color:#888;font-size:12px">— ${totJ} jour(s)</span></div>
       <table style="width:100%;border-collapse:collapse;font-size:12.5px">
-        <thead><tr style="background:#F0ECDD"><th style="text-align:left;padding:4px 8px">Motif</th><th style="text-align:left;padding:4px 8px">Du</th><th style="text-align:left;padding:4px 8px">Au</th><th style="text-align:right;padding:4px 8px">Jours</th></tr></thead>
-        <tbody>${lignes.map(a=>`<tr style="border-bottom:1px solid #eee"><td style="padding:4px 8px">${a.ty}</td><td style="padding:4px 8px">${fD(a.dd)}</td><td style="padding:4px 8px">${fD(a.df||a.dd)}</td><td style="padding:4px 8px;text-align:right">${a.nj||1}</td></tr>`).join("")}</tbody>
+        <thead><tr style="background:#F0ECDD"><th style="text-align:left;padding:4px 8px">Du</th><th style="text-align:left;padding:4px 8px">Au</th><th style="text-align:left;padding:4px 8px">Motif</th><th style="text-align:right;padding:4px 8px">Jours</th></tr></thead>
+        <tbody>${lignes.map(a=>`<tr style="border-bottom:1px solid #eee"><td style="padding:4px 8px;white-space:nowrap">${fD(a.dd)}</td><td style="padding:4px 8px;white-space:nowrap">${fD(a.df||a.dd)}</td><td style="padding:4px 8px">${a.ty}</td><td style="padding:4px 8px;text-align:right">${a.nj||1}</td></tr>`).join("")}</tbody>
       </table>
     </div>`;
   }).join("");
@@ -2650,6 +2660,29 @@ function rBlocAnniversaires(eq){
 }
 
 
+function marquerProcVu(){
+  const u=A.s.user; if(!u) return;
+  const ids=(A.s.procedures||[]).filter(p=>!p.archivé).map(p=>p.id);
+  K.s(`procVu_${u.id}`, ids);
+}
+function alerteNouvellesProcedures(){
+  const u=A.s.user; if(!u) return "";
+  const procs=(A.s.procedures||[]).filter(p=>!p.archivé);
+  const vu=K.g(`procVu_${u.id}`);
+  // Première consultation : on mémorise l'état actuel sans alerter
+  if(!Array.isArray(vu)){ K.s(`procVu_${u.id}`, procs.map(p=>p.id)); return ""; }
+  const nouv=procs.filter(p=>!vu.includes(p.id)).sort((a,b)=>(b.cree||"").localeCompare(a.cree||""));
+  if(!nouv.length) return "";
+  const noms=nouv.slice(0,5).map(p=>p.titre).join(", ");
+  return `<div style="background:#FFF8E6;border:2px solid #E8A030;border-radius:12px;padding:13px 16px;margin-bottom:14px;box-shadow:0 2px 6px rgba(232,160,48,.18)">
+    <div style="font-size:15px;color:#8A5A10;font-weight:700;margin-bottom:4px">📑 ${nouv.length} nouvelle${nouv.length>1?"s":""} procédure${nouv.length>1?"s":""} ajoutée${nouv.length>1?"s":""}</div>
+    <div style="font-size:13.5px;color:#6A4A10;margin-bottom:10px">${noms}${nouv.length>5?` (+${nouv.length-5})`:""}</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn bp bsm" id="btn-proc-voir">📂 Consulter</button>
+      <button class="btn bl bsm" id="btn-proc-vu">✓ J'ai lu</button>
+    </div>
+  </div>`;
+}
 function rDB(){
   const {role,user,eq,abs,dem}=A.s;
   const ms=getMC();
@@ -2916,7 +2949,7 @@ function bDB(){
     A.save("eq",l); A.s.user=l.find(m=>m.id===u.id);
     courrierPointsEnfants(u.id, idx);
   };});
-  document.querySelectorAll("[data-courrier-enf-dir]").forEach(b=>{b.onclick=()=>{const[mid,ix]=b.dataset.courrierEnfDir.split("|");courrierPointsEnfants(mid,parseInt(ix));};});
+  document.querySelectorAll("[data-courrier-enf-dir]").forEach(b=>{b.onclick=()=>{const[mid,ix]=b.dataset.courrierEnfDir.split("|");courrierPointsEnfants(mid,parseInt(ix),true);};});
   document.querySelectorAll("[data-devis-vu]").forEach(b=>{b.onclick=()=>{const id=b.dataset.devisVu;const l=(A.s.devis||[]).map(d=>d.id===id?{...d,vuAuteur:true}:d);A.save("devis",l);};});
   document.querySelectorAll("[data-nav]").forEach(b=>b.onclick=()=>A.set({vue:b.dataset.nav,modal:null}));
   const bsig=document.getElementById("btn-signaler");
@@ -3056,8 +3089,8 @@ function bPLANNING_CLASSES(){
 function rFILIERES(){
   const {eq}=A.s;
   const pedago=eq.filter(m=>m.sv==="Pédagogie"&&!m.archive);
-  const nonClasses=pedago.filter(m=>!m.filiere);
-  const classes=pedago.filter(m=>m.filiere);
+  const nonClasses=pedago.filter(m=>!(m.filiere&&FILIERES[m.filiere]));
+  const classes=pedago.filter(m=>m.filiere&&FILIERES[m.filiere]);
 
   
   let resumeH=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-bottom:16px">`;
@@ -3089,14 +3122,14 @@ function rFILIERES(){
   } else {
     tabH+=`<div style="display:flex;flex-direction:column;gap:6px">`;
     pedago.forEach(m=>{
-      const fmeta=m.filiere?FILIERES[m.filiere]:null;
+      const fmeta=(m.filiere&&FILIERES[m.filiere])?FILIERES[m.filiere]:null;
       tabH+=`<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 13px;background:#FAF7F0;border:1px solid #DDD5B8;border-radius:9px;flex-wrap:wrap;gap:8px">
         <div style="display:flex;align-items:center;gap:8px">
           <span style="font-weight:700;font-size:15px;color:#3A4425">${m.nom} ${m.pr}</span>
           <span style="font-size:12px;color:#888">${m.po||""}</span>
         </div>
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-          ${m.filiere
+          ${fmeta
             ?`<span style="background:${fmeta.bg};color:${fmeta.color};border:1.5px solid ${fmeta.color};border-radius:20px;padding:3px 12px;font-size:13px;font-weight:700">${m.filiere}</span>`
             :`<span style="background:#FDECEA;color:#C0392B;border:1.5px solid #E08080;border-radius:20px;padding:3px 12px;font-size:13px;font-weight:700">⚠ Non classé</span>`}
           <select data-assign-filiere="${m.id}" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:5px 8px;font-size:13px;background:#fff">
@@ -6376,14 +6409,17 @@ function rBUDGET(){
     </div>`;
 
   // Liste des devis récents
+  const fSalDv=(isDir||isCoord)?(A.s.fSal_dv||""):"";
   const devisVis=(A.s.devis||[]).filter(d=>{
     if(d.annee!==annee)return false;
     if(role==="salarie"&&!isSandrine&&d.mid!==user?.id&&!peutValiderDevis(d,user,role))return false;
     if(A.s.budFilter==="att"&&d.st!==ST_BUD.ATT)return false;
+    if(fSalDv&&d.mid!==fSalDv)return false;
     return true;
   }).sort((a,b)=>(b.cr||"").localeCompare(a.cr||""));
+  const barreDv=(isDir||isCoord)?barreFiltreSalarie("dv",(A.s.devis||[]).filter(d=>d.annee===annee)):"";
 
-  let devisH="";
+  let devisH=(devisVis.length===0&&fSalDv)?`<div class="card"><h3 style="font-size:16px;color:#3A4425;margin-bottom:12px">📋 Devis</h3>${barreDv}<p style="color:#888;margin:0">Aucun devis pour ce salarié sur cette année.</p></div>`:"";
   if(devisVis.length>0){
     const stColors={
       [ST_BUD.ATT]:{bg:"#FEF3E2",c:"#B8670A",b:"#E8A030"},
@@ -6392,7 +6428,7 @@ function rBUDGET(){
       [ST_BUD.PAY]:{bg:"#E3F1FA",c:"#1A6B9A",b:"#4A85B0"},
       [ST_BUD.ANN]:{bg:"#F0F0F0",c:"#888",b:"#CCC"},
     };
-    devisH=`<div class="card"><h3 style="font-size:16px;color:#3A4425;margin-bottom:12px">📋 Devis${A.s.budFilter==="att"?" — En attente":""} (${devisVis.length})</h3>`;
+    devisH=`<div class="card"><h3 style="font-size:16px;color:#3A4425;margin-bottom:12px">📋 Devis${A.s.budFilter==="att"?" — En attente":""} (${devisVis.length})</h3>${barreDv}`;
     devisVis.slice(0,20).forEach(d=>{
       const e=entites.find(x=>x.id===d.entityId);
       const sc=stColors[d.st]||stColors[ST_BUD.ANN];
@@ -6602,7 +6638,8 @@ function bMdlNDevis(){
     const dt=document.getElementById("dv-dt").value;
     const co=document.getElementById("dv-co").value;
     if(!entityId||!ob||!post||!mt){alert("Renseignez tous les champs obligatoires.");return;}
-    const mb=A.s.eq.find(m=>m.id===A.s.user?.id);
+    const mb=A.s.eq.find(m=>m.id===A.s.user?.id)||A.s.user;
+    if(!mb||!mb.id){alert("Session expirée. Reconnectez-vous pour soumettre le devis.");return;}
     const now=new Date();
     const horodatage=`${today2()} ${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}:${String(now.getSeconds()).padStart(2,"0")}`;
     const devis={id:uid(),cr:today2(),horodatage,annee,
@@ -8147,10 +8184,49 @@ function tBdg(ty,sm=false){const c=TC[ty]||TC["Autre"];return`<span class="bt" s
 function sBdg(s){const c={[ST.ATT]:{bg:"#FEF3E2",c:"#B8670A",b:"#E8A030"},[ST.APP]:{bg:"#E8F5EE",c:"#2E7D52",b:"#5AAA80"},[ST.REF]:{bg:"#FDECEA",c:"#C0392B",b:"#E08080"},[ST.ANN]:{bg:"#F0F0F0",c:"#888",b:"#CCC"}}[s]||{bg:"#EEE",c:"#666",b:"#CCC"};return`<span class="bs2" style="background:${c.bg};color:${c.c};border-color:${c.b}">${s}</span>`;}
 function fld(lb,inp,hint=""){return`<div class="fld"><label>${lb}</label>${inp}${hint?`<span style="font-size:15px;color:#888">${hint}</span>`:""}</div>`;}
 function sel(id,opts,val="",ph="",cls=""){const o=opts.map(o=>{const v=o.v!==undefined?o.v:o,l=o.l!==undefined?o.l:o;return`<option value="${v}"${val===v?" selected":""}>${l}</option>`;}).join("");return`<select id="${id}" class="${cls}">${ph?`<option value="">${ph}</option>`:""}${o}</select>`;}
+// Barre de filtre « par salarié » pour les vues de demandes (direction)
+function barreFiltreSalarie(viewKey, liste){
+  const eq=A.s.eq||[];
+  const nom=(mid)=>{const m=eq.find(x=>x.id===mid);return m?`${m.nom} ${m.pr}`:(mid||"—");};
+  const mids=[...new Set((liste||[]).map(d=>d.mid).filter(Boolean))].sort((a,b)=>nom(a).localeCompare(nom(b)));
+  if(mids.length<2) return "";
+  const cur=A.s["fSal_"+viewKey]||"";
+  const opts=mids.map(mid=>`<option value="${mid}"${cur===mid?" selected":""}>${nom(mid)}</option>`).join("");
+  return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+    <span style="font-size:13px;color:#5C6B3A;font-weight:600">🔎 Filtrer par salarié :</span>
+    <select data-filtre-sal="${viewKey}" style="border:1.5px solid #DDD5B8;border-radius:8px;padding:6px 10px;font-size:13px;background:#fff;min-width:180px">
+      <option value="">Tous les salariés (${mids.length})</option>${opts}
+    </select>
+    ${cur?`<button class="btn bl bsm" data-filtre-sal-clear="${viewKey}">✕ Réinitialiser</button>`:""}
+  </div>`;
+}
 function mdl(ti,body,w=540){return`<div class="ovl" id="mov"><div class="mdl" style="max-width:${w}px"><div class="mh"><h3>${ti}</h3><button class="mc" id="mcl">×</button></div><div class="mb">${body}</div></div></div>`;}
 
 
-function rLogin(){return`<div class="lgbg"><div class="lgbox"><div class="lglogo" style="background:none;padding:0"><img src="data:image/png;base64,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" style="width:100px;height:auto;object-fit:contain" alt="MFR"></div><h1 style="text-align:center;font-size:23px;font-weight:800;color:#3A4425;margin-bottom:4px">MFR du Néracais</h1><p style="text-align:center;font-size:15px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:24px">Gestion RH · Équipe</p><div id="lc"><p style="text-align:center;color:#555;font-size:17px;margin-bottom:12px">Qui êtes-vous ?</p><button class="btn bp bfull blg" id="bd" style="margin-bottom:10px">🏫 Direction / Administration</button><button class="btn bg bfull blg" id="bs">👤 Membre de l'équipe</button></div>
+function saisonMFR(d=new Date()){
+  const m=d.getMonth(), jour=d.getDate();
+  if(m===11||m<=1){
+    const noel=(m===11&&jour>=10);
+    return {cle:"hiver",nom:"Hiver",
+      grad:"linear-gradient(150deg,#28394A 0%,#3C5570 55%,#6E8FA8 100%)",
+      accent:"#3E6E95",
+      deco:noel?["🎄","❄️","✨"]:["❄️","🌲","✨"],
+      mot:noel?"Belle fin d'année à la MFR — temps du partage et des projets":"L'hiver à la MFR — saison de la réflexion et de la préparation"};
+  }
+  if(m>=2&&m<=4) return {cle:"printemps",nom:"Printemps",
+      grad:"linear-gradient(150deg,#3A6B3A 0%,#5C9A4E 55%,#9FC96E 100%)",
+      accent:"#4E8A3A",deco:["🌸","🌱","🐝"],
+      mot:"Le printemps à la MFR — la nature et les projets s'éveillent"};
+  if(m>=5&&m<=7) return {cle:"ete",nom:"Été",
+      grad:"linear-gradient(150deg,#2A7390 0%,#3A9AB0 50%,#E8C45A 100%)",
+      accent:"#1F86A8",deco:["☀️","🌻","🌾"],
+      mot:"L'été à la MFR — lumière, récoltes et nouveaux horizons"};
+  return {cle:"automne",nom:"Automne",
+    grad:"linear-gradient(150deg,#6B4426 0%,#9A6B35 55%,#C89448 100%)",
+    accent:"#B2691A",deco:["🍂","🍁","🌰"],
+    mot:"L'automne à la MFR — saison de la rentrée et des récoltes"};
+}
+function rLogin(){const s=saisonMFR();const deco=`<span style="position:absolute;top:6%;left:8%;font-size:46px;opacity:.14;transform:rotate(-12deg)">${s.deco[0]}</span><span style="position:absolute;bottom:10%;right:9%;font-size:56px;opacity:.13;transform:rotate(10deg)">${s.deco[1]}</span><span style="position:absolute;top:15%;right:13%;font-size:34px;opacity:.12">${s.deco[2]}</span><span style="position:absolute;bottom:17%;left:12%;font-size:30px;opacity:.12;transform:rotate(-8deg)">${s.deco[0]}</span>`;return`<div class="lgbg" style="background:${s.grad};position:relative;overflow:hidden">${deco}<div class="lgbox"><div class="lglogo" style="background:none;padding:0"><img src="data:image/png;base64,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" style="width:100px;height:auto;object-fit:contain" alt="MFR"></div><h1 style="text-align:center;font-size:23px;font-weight:800;color:#3A4425;margin-bottom:4px">MFR du Néracais</h1><p style="text-align:center;font-size:15px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Gestion RH · Équipe</p><div style="text-align:center;margin-bottom:22px"><div style="font-size:19px;letter-spacing:7px;margin-bottom:5px">${s.deco.join(" ")}</div><div style="font-size:12.5px;color:${s.accent};font-weight:600;font-style:italic;line-height:1.4;padding:0 6px">${s.mot}</div></div><div id="lc"><p style="text-align:center;color:#555;font-size:17px;margin-bottom:12px">Qui êtes-vous ?</p><button class="btn bp bfull blg" id="bd" style="margin-bottom:10px">🏫 Direction / Administration</button><button class="btn bg bfull blg" id="bs">👤 Membre de l'équipe</button></div>
     <div style="margin-top:20px;padding:12px;background:#EEF2E6;border-radius:10px;font-size:12px;color:#555;text-align:center;line-height:1.5">
       🔒 Vos données sont traitées dans le cadre de votre contrat de travail conformément au RGPD.<br>
       Responsable de traitement : MFR du Néracais · <a href="mailto:mfr.barbaste@mfr.asso.fr" style="color:#5C6B3A">mfr.barbaste@mfr.asso.fr</a>
@@ -8184,10 +8260,33 @@ function bLogin(){
 }
 
 
+function rEcranRgpdBloquant(){
+  const u=A.s.user||{};
+  return `<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(135deg,#F7F4EA,#EDE4CF)">
+    <div style="max-width:620px;width:100%;background:#fff;border:2px solid #C8A84B;border-radius:16px;padding:26px 28px;box-shadow:0 8px 28px rgba(0,0,0,.12)">
+      <div style="font-size:20px;font-weight:800;color:#3A4425;margin-bottom:4px">🔒 Information sur vos données personnelles</div>
+      <div style="font-size:13px;color:#888;margin-bottom:16px">Bonjour ${u.pr||""} ${u.nom||""} — avant d'accéder à l'application, merci de prendre connaissance de cette note.</div>
+      <div style="background:#FFFDF7;border:1px solid #E5D7A8;border-radius:10px;padding:14px 16px;margin-bottom:16px;max-height:46vh;overflow:auto">
+        ${RGPD_NOTE_LIGNES.map(l=>`<div style="font-size:13.5px;color:#333;margin-bottom:9px;line-height:1.55">${l}</div>`).join("")}
+      </div>
+      <div style="font-size:12.5px;color:#666;margin-bottom:16px">En cliquant sur « J'ai lu et compris », vous confirmez avoir été informé(e). Cette confirmation tient lieu d'accusé de réception et est <strong>obligatoire</strong> pour utiliser l'application.</div>
+      <div style="display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap">
+        <button class="btn bl" id="btn-logout-rgpd">⬡ Me déconnecter</button>
+        <button class="btn bp" id="btn-rgpd-ack">✓ J'ai lu et compris</button>
+      </div>
+    </div>
+  </div>`;
+}
 function rMain(){
-  const {role,user,vue,toast,dem,ord}=A.s;
-  const nAtt=dem.filter(d=>d.st===ST.ATT).length;
+  const {role,user,vue,toast,dem,ord,fr}=A.s;
+  // RGPD obligatoire : blocage total tant que le salarié n'a pas accusé lecture
+  if(user && role!=="direction"){
+    const _pRgpd=(A.s.eq||[]).find(x=>x.id===user.id);
+    if(_pRgpd && !_pRgpd.rgpdAck) return rEcranRgpdBloquant();
+  }
+  const nAtt=dem.filter(d=>d.st===ST.ATT||(d.annulDemandee&&d.st===ST.APP)).length;
   const nOM=ord.filter(o=>o.st===ST.ATT).length;
+  const nFr=(fr||[]).filter(f=>f.st==="En attente Direction"||f.st==="Soumise").length;
   const nu=user?`${user.pr||""} ${user.nom||""}`.trim():"";
   const navItems=[
     {id:"db",ic:"🏠",lb:"Accueil"},
@@ -8196,13 +8295,13 @@ function rMain(){
     {id:"dm",ic:"📨",lb:"Congés & absences",bdg:role==="direction"?nAtt:0},
     
     {id:"hr",ic:"⏱",lb:"Heures"},
-    {id:"om",ic:"🗺️",lb:"Missions"},
-    {id:"fr",ic:"💶",lb:"Frais"},{id:"bu",ic:"💰",lb:"Budget"},...(canSeeSynth(role,user?.id)?[{id:"al",ic:"🔔",lb:"Alertes"}]:[]),...(canSeeSynth(role,user?.id)?[{id:"sy",ic:"📊",lb:"Bilan RH"}]:[]),{id:"lo",ic:"🏠",lb:"Locations"},{id:"cmd",ic:"🧺",lb:"Commandes"},{id:"proc",ic:"📑",lb:"Procédures"},...(canSeeSynth(role,user?.id)?[{id:"fo",ic:"🎓",lb:"Formations"}]:[]),...(canSeeMaint(role,user?.id)?[{id:"mt",ic:"🔧",lb:"Entretien"}]:[]),...(canSeeMaint(role,user?.id)?[{id:"veh",ic:"🚗",lb:"Véhicules"}]:[]),
+    {id:"om",ic:"🗺️",lb:"Missions",bdg:role==="direction"?nOM:0},
+    {id:"fr",ic:"💶",lb:"Frais",bdg:role==="direction"?nFr:0},{id:"bu",ic:"💰",lb:"Budget"},...(canSeeSynth(role,user?.id)?[{id:"al",ic:"🔔",lb:"Alertes"}]:[]),...(canSeeSynth(role,user?.id)?[{id:"sy",ic:"📊",lb:"Bilan RH"}]:[]),{id:"lo",ic:"🏠",lb:"Locations"},{id:"cmd",ic:"🧺",lb:"Commandes"},{id:"proc",ic:"📑",lb:"Procédures"},...(canSeeSynth(role,user?.id)?[{id:"fo",ic:"🎓",lb:"Formations"}]:[]),...(canSeeMaint(role,user?.id)?[{id:"mt",ic:"🔧",lb:"Entretien"}]:[]),...(canSeeMaint(role,user?.id)?[{id:"veh",ic:"🚗",lb:"Véhicules"}]:[]),
     ...(role==="direction"?[{id:"pc",ic:"🎓",lb:"Classes"},{id:"fi",ic:"📚",lb:"Filières"},{id:"im",ic:"🖨️",lb:"Imprimer"}]:[]),...(canSeeEq(role,user?.id)?[{id:"eq",ic:"👥",lb:"Personnel"}]:[]),...(canSeeEq(role,user?.id)?[{id:"horaires",ic:"🕒",lb:"Horaires"}]:[]),...(role==="direction"?[{id:"pr",ic:"⚙️",lb:"Réglages"}]:[])
   ];
   const nav=navItems.map(n=>`<button class="nb${vue===n.id?" on act":""}" data-v="${n.id}"><span class="nb-ic">${n.ic}</span><span class="nb-lb">${n.lb}</span>${n.bdg>0?`<span class="nb-bdg">${n.bdg}</span>`:""}</button>`).join("");
   let content="";
-  if(vue==="db")content=rDB();
+  if(vue==="db")content=alerteNouvellesProcedures()+rDB();
   else if(vue==="rc")content=rRCPL();
   else if(vue==="dm")content=rDM();
   else if(vue==="ab"){A.s.dmSousOnglet="absences";content=rDM();}
@@ -8233,6 +8332,7 @@ function rMain(){
     </div></div>
   <div style="display:flex;align-items:center;gap:8px">
     ${role==="salarie"?`<button class="btn bgo bsm" id="bnd">+ Demande</button>`:""}
+    ${role==="direction"&&(nAtt+nOM+nFr)>0?`<button id="btn-notif-hdr" title="${nAtt+nOM+nFr} élément(s) à valider" style="position:relative;background:#FEF3E2;border:1.5px solid #E8A030;color:#B8670A;font-weight:800;border-radius:8px;padding:5px 11px;font-size:15px;cursor:pointer;animation:notifpulse 1.6s ease-in-out infinite">🔔<span style="position:absolute;top:-7px;right:-7px;background:#C0392B;color:#fff;border-radius:11px;padding:1px 6px;font-size:11px;font-weight:800;min-width:18px;text-align:center">${nAtt+nOM+nFr}</span></button>`:""}
     <button class="btn bl bsm" id="btn-changepwd-hdr" title="Changer mon mot de passe">🔑</button>
     <button class="btn bd bsm" id="btn-logout-hdr" title="Se déconnecter">⬡ Quitter</button>
   </div></div><div class="app">${content}</div><nav class="nav"><div style="padding:16px 14px 10px;border-bottom:1px solid rgba(200,168,75,.3);margin-bottom:6px"><div style="font-size:13px;font-weight:800;color:#C8A84B;letter-spacing:.5px;text-transform:uppercase">MFR Néracais</div><div style="font-size:11px;color:rgba(250,247,240,.5);margin-top:2px">${nu||""}</div></div>${nav}</nav>${tst}${modal}`;
@@ -8243,6 +8343,12 @@ function bMain(){
   const bcpw=document.getElementById("btn-changepwd-hdr");
   if(bcpw)bcpw.onclick=()=>A.set({modal:{ty:"changePwd",data:{}}});
   const blo2=document.getElementById("btn-logout-hdr");
+  {const b=document.getElementById("btn-notif-hdr");if(b)b.onclick=()=>A.set({vue:"db"});}
+  {const bv=document.getElementById("btn-proc-voir");if(bv)bv.onclick=()=>{marquerProcVu();A.set({vue:"proc"});};}
+  {const bu=document.getElementById("btn-proc-vu");if(bu)bu.onclick=()=>{marquerProcVu();A.r();};}
+  {const blr=document.getElementById("btn-logout-rgpd");if(blr)blr.onclick=()=>{A.s.role=null;A.s.user=null;K.s("ses",null);A.r();};}
+  document.querySelectorAll("[data-filtre-sal]").forEach(s=>{s.onchange=()=>{A.set({["fSal_"+s.dataset.filtreSal]:s.value});};});
+  document.querySelectorAll("[data-filtre-sal-clear]").forEach(b=>{b.onclick=()=>{A.set({["fSal_"+b.dataset.filtreSalClear]:""});};});
   if(blo2)blo2.onclick=()=>{
     if(!confirm("Se déconnecter ?"))return;
     A.s.role=null;A.s.user=null;K.s("ses",null);A.r();
@@ -8520,7 +8626,19 @@ function objectifAnnuel(m){ const q=(m&&Array.isArray(m.ttHist)&&m.ttHist.length
 function heureCompteeAn(x){ const base=heuresReelles(x); const estDim=new Date((x.dt||"")+"T12:00:00").getDay()===0; return estDim?base*1.5:base; }
 function cumulAnnuelReel(mid){
   const debut=debutPeriodeRef(), auj=today2();
-  return (A.s.heu||[]).filter(x=>x.mid===mid && x.dt>=debut && x.dt<=auj).reduce((s,x)=>s+heureCompteeAn(x),0);
+  const base=(A.s.heu||[]).filter(x=>x.mid===mid && x.dt>=debut && x.dt<=auj).reduce((s,x)=>s+heureCompteeAn(x),0);
+  // Formation = temps travaillé : on crédite les heures théoriques des jours de formation non pointés
+  let credit=0;
+  (A.s.abs||[]).forEach(a=>{
+    if(a.mid!==mid || a.ty!=="Formation") return;
+    let d=new Date((a.dd)+"T12:00:00"); const fin=new Date((a.df||a.dd)+"T12:00:00");
+    while(d<=fin){
+      const ds=d.toISOString().split("T")[0];
+      if(ds>=debut && ds<=auj && !(A.s.heu||[]).some(x=>x.mid===mid&&x.dt===ds)) credit+=heuresTheoJour(mid, ds, a.fr);
+      d.setDate(d.getDate()+1);
+    }
+  });
+  return base+credit;
 }
 
 function rHRInner(){
@@ -8544,7 +8662,11 @@ function rHRInner(){
     const tousConfirmes=joursActifs.length>0&&joursActifs.every(jk=>{
       const ds=getDJ(hLun,jk);
       if(estFerie(ds)) return true; // jour férié : aucune saisie attendue
-      return heu.find(x=>x.mid===mb.id&&x.dt===ds);
+      if(heu.find(x=>x.mid===mb.id&&x.dt===ds)) return true; // heures déjà saisies
+      // Jour non travaillé dans l'horaire type (temps partiel, week-end) → non attendu
+      const jT=prof?.j&&prof.j[jk]; const jmT=prof?.jm&&prof.jm[jk];
+      if(!jT&&!jmT) return true;
+      return false;
     });
 
     
@@ -8663,7 +8785,7 @@ function rHRInner(){
       if(absJ.journee&&!dc){
         const estFormation=(absJ.motif==="Formation");
         h+=`<div style="padding:10px 14px;background:#EEF2E6;border-radius:10px;margin-bottom:7px;border-left:3px solid #7A9A4A;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-          <div><span style="font-weight:700;font-size:15px;color:#3A5220">${JL[jk]} <span style="font-size:13px;color:#888;font-weight:400">${fD(ds)}</span></span><div style="font-size:13px;color:#3A5220;margin-top:3px">${estFormation?"🎓":"🏖️"} ${absJ.motif} — journée entière (validé) · aucune heure à saisir</div></div>
+          <div><span style="font-weight:700;font-size:15px;color:#3A5220">${JL[jk]} <span style="font-size:13px;color:#888;font-weight:400">${fD(ds)}</span></span><div style="font-size:13px;color:#3A5220;margin-top:3px">${estFormation?`🎓 ${absJ.motif} — temps travaillé (compté automatiquement)`:`🏖️ ${absJ.motif} — journée entière (validé) · aucune heure à saisir`}</div></div>
           ${(estFormation&&isPast)?`<button class="btn bl bsm" style="font-size:12px;color:#5C6B3A" data-dpj="${jk}" data-dpd="${ds}">＋ Travail/transport en plus</button>`:""}
         </div>`;
         return;
